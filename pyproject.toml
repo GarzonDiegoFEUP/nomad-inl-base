@@ -77,7 +77,7 @@ select = [
     "UP",
     # isort
     "I",
-    # pylint 
+    # pylint
     "PL",
 ]
 
@@ -113,6 +113,7 @@ where = ["src"]
 [project.entry-points.'nomad.plugin']
 parser_entry_point = "nomad_inl_base.parsers:parser_entry_point"
 schema_package_entry_point = "nomad_inl_base.schema_packages:schema_package_entry_point"
+cyclyc_voltammetry_entry_point = "nomad_inl_base.schema_packages:cyclyc_voltammetry_entry_point"
 
 
 
