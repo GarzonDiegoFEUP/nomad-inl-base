@@ -111,9 +111,10 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [project.entry-points.'nomad.plugin']
-parser_entry_point = "nomad_inl_base.parsers:parser_entry_point"
+CVarser_entry_point = "nomad_inl_base.parsers:CV_parser_entry_point"
+EDparser_entry_point1 = "nomad_inl_base.parsers:ED_parser_entry_point"
 schema_package_entry_point = "nomad_inl_base.schema_packages:schema_package_entry_point"
-cyclyc_voltammetry_entry_point = "nomad_inl_base.schema_packages:cyclyc_voltammetry_entry_point"
+cyclic_voltammetry_entry_point = "nomad_inl_base.schema_packages:cyclic_voltammetry_entry_point"
 
 
 

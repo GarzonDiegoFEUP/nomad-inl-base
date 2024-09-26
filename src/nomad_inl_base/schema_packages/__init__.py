@@ -25,7 +25,8 @@ class CyclicVoltammetryPackageEntryPoint(SchemaPackageEntryPoint):
         return m_package
 
 
-schema_package_entry_point = CyclicVoltammetryPackageEntryPoint(
+cyclic_voltammetry_entry_point = CyclicVoltammetryPackageEntryPoint(
     name='CyclicVoltammetry',
     description='CyclicVoltammetry entry point configuration.',
 )
+

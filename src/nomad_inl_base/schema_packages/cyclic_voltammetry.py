@@ -12,59 +12,270 @@ if TYPE_CHECKING:
 
 from nomad.config import config
 from nomad.datamodel.data import Schema
-from nomad.metainfo import Quantity, SchemaPackage
+from nomad_material_processing.solution.general import *
+from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection
+
+from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
+from nomad.datamodel.metainfo.basesections import Measurement
+from nomad_material_processing.general import TimeSeries
+from nomad_material_processing.vapor_deposition.general import SampleParameters
+import numpy as np
+
+from nomad.datamodel.metainfo.plot import PlotSection, PlotlyFigure
+from nomad.datamodel.data import EntryData
+import plotly.express as px
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 
 configuration = config.get_plugin_entry_point(
-    'nomad_inl_base.schema_packages:schema_package_entry_point'
+    'nomad_inl_base.schema_packages:cyclic_voltammetry_entry_point'
 )
 
 m_package = SchemaPackage()
 
+class CurrentTimeSeries(TimeSeries):
+    m_def = Section(label_quantity='set_value', a_eln={'hide': ['set_value','set_time',]})
 
-class PotentiostatMeasurement(Schema):
+    value = Quantity(
+        type=np.float64,
+        description='The observed current as a function of time.',
+        shape=['*'],
+        unit='ampere',
+    )
+
+class CurrentDensityTimeSeries(TimeSeries):
+    m_def = Section(label_quantity='set_value', a_eln={'hide': ['set_value','set_time',]})
+
+    value = Quantity(
+        type=np.float64,
+        description='The observed current density as a function of time.',
+        shape=['*'],
+        unit='ampere/meter**2',
+    )
+
+class ScanTimeSeries(TimeSeries):
+    m_def = Section(label_quantity='set_value', a_eln={'hide': ['set_value','set_time',]})
+
+    value = Quantity(
+        type=np.float64,
+        description='The observed scan as a function of time.',
+        shape=['*'],
+    )
+
+
+class VoltageTimeSeries(TimeSeries):
+    m_def = Section(label_quantity='set_value', a_eln={'hide': ['set_value','set_time',]})
+
+    value = Quantity(
+        type=np.float64,
+        description='The observed voltage as a function of time.',
+        shape=['*'],
+        unit='volt',
+    )
+
+
+class ChronoamperometryMeasurement(PlotSection, Measurement, Schema):
     m_def = Section(
         links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
     )
 
-    data_file = Quantity(
-        type=str,
-        a_eln=dict(component='FileEditQuantity'),
-        a_browser=dict(adaptor='RawFileAdaptor'),
+    area_electrode = Quantity(
+        type=np.float64,
+        description='Area of the electrode ',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='centimeter**2',
+        ),
+        unit='meter**2',
     )
 
-    station = Quantity(type=str, a_eln=dict(component='StringEditQuantity'))
-
-    function = Quantity(type=str, a_eln=dict(component='StringEditQuantity'))
-
-    environment = Quantity(
-        links=['https://w3id.org/nfdi4cat/voc4cat_0007223'],
-        type=Reference(Environment.m_def),
-        a_eln=dict(component='ReferenceEditQuantity'),
+    Voltage_applied = Quantity(
+        type=np.float64,
+        description='Voltage applied to the electrode',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity
+        ),
+        unit='V',
     )
 
-    setup = Quantity(
-        links=['https://w3id.org/nfdi4cat/voc4cat_0007230'],
-        type=Reference(ElectroChemicalSetup.m_def),
-        a_eln=dict(component='ReferenceEditQuantity'),
-    )
-
-    connected_experiments = Quantity(
-        type=Reference(SectionProxy('PotentiostatMeasurement')),
-        shape=['*'],
-        a_eln=dict(component='ReferenceEditQuantity'),
-    )
-
-    pretreatment = SubSection(section_def=VoltammetryCycle)
-
-    setup_parameters = SubSection(section_def=PotentiostatSetup)
-
-    properties = SubSection(section_def=PotentiostatProperties)
+    current = SubSection(section_def=CurrentTimeSeries)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
+        super(ChronoamperometryMeasurement, self).normalize(archive, logger)
+
+        self.figures = []
+
+        y_current = np.array(self.current.value) * 1000
+        x_time = self.current.time
+
+        y_label = 'Current (mA)'
+        if self.area_electrode is not None:
+            y_current /= self.area_electrode
+            y_label = 'Current density (mA cm' + r'$^{-2}$' + ')'
+
+        first_line = px.scatter(x=x_time, y=y_current)
+        figure1 = make_subplots(rows=1, cols=1)
+        figure1.add_trace(first_line.data[0], row=1, col=1)
+        figure1.update_layout(template='plotly_white',
+                              height=400, width=716,
+                              xaxis_title="Time (s)",
+                              yaxis_title=y_label,
+                              title_text='ED curve')
+
+        self.figures.append(PlotlyFigure(label='figure 1', figure=figure1.to_plotly_json()))
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
-        self.message = f'Hello {self.name}!'
+        #self.message = f'Hello {self.name}!'
+
+class PotentiostatMeasurement(PlotSection, Measurement, Schema):
+    m_def = Section(
+        links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
+    )
+
+
+    #data_file = Quantity(
+    #    type=str,
+    #    a_eln=dict(component='FileEditQuantity'),
+    #    a_browser=dict(adaptor='RawFileAdaptor'),
+    #)
+
+    area_electrode = Quantity(
+        type=np.float64,
+        description='Area of the electrode ',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='centimeter**2',
+        ),
+        unit='meter**2',
+    )
+
+    rate = Quantity(
+        type=np.float64,
+        description='Rate of the CV measurement',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='millivolt/second',
+        ),
+        unit='volt/second',
+    )
+
+    current = SubSection(section_def=CurrentTimeSeries)
+    voltage = SubSection(section_def=VoltageTimeSeries)
+    scan = SubSection(section_def=ScanTimeSeries)
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super(PotentiostatMeasurement, self).normalize(archive, logger)
+
+        self.figures = []
+
+        scan_plotted = 3.
+
+        scan = np.array(self.scan.value)
+        voltage = np.array(self.voltage.value)
+        current = np.array(self.current.value) * 1000
+
+        x_voltage = voltage[scan == scan_plotted]
+        y_current = current[scan == scan_plotted]
+
+        y_label = 'Current (mA)'
+        if self.area_electrode is not None:
+            y_current /= self.area_electrode
+            y_label = 'Current density (mA cm' + r'$^{-2}$' + ')'
+
+
+        if np.isnan(y_current).all():
+            scan_plotted = 2.
+            x_voltage = voltage[scan == scan_plotted]
+            y_current = current[scan == scan_plotted]
+
+        first_line = px.scatter(x=x_voltage, y=y_current)
+        figure1 = make_subplots(rows=1, cols=1)
+        figure1.add_trace(first_line.data[0], row=1, col=1)
+        figure1.update_layout(template='plotly_white',
+                              height=400, width=716,
+                              xaxis_title="Voltage (V)",
+                              yaxis_title=y_label,
+                              title_text='CV curve, scan ' + str(int(scan_plotted)))
+
+        self.figures.append(PlotlyFigure(label='figure 1', figure=figure1.to_plotly_json()))
+
+        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        #self.message = f'Hello {self.name}!'
+
+
+
+class ElectrolyteSolution(Solution):
+    m_def = Section(
+        links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
+    )
+
+    molar_concentration = Quantity(
+        type=np.float64,
+        description='Concentration of the electrolyte',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mole/liter',
+        ),
+        unit='mole/m**3',
+    )
+
+    molal_concentration = Quantity(
+        type=np.float64,
+        description='Concentration of the electrolyte',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mole/kg',
+        ),
+        unit='mole/kg',
+    )
+
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super(ElectrolyteSolution, self).normalize(archive, logger)
+
+        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        #self.message = f'Hello {self.name}!'
+
+
+class WorkingElectrode(SampleParameters, Schema):
+    m_def = Section(
+        links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
+    )
+
+    area_electrode = Quantity(
+        type=np.float64,
+        description='Area of the electrode ',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='centimeter**2',
+        ),
+        unit='meter**2',
+    )
+
+    substrate = Quantity(
+        type=str,
+        description='Substrate of the electrode',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity,
+        ),
+        default='SLG',
+    )
+
+    layer = Quantity(
+        type=str,
+        description='Layer of the electrode',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity,
+        ),
+        default='Mo',
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super(WorkingElectrode, self).normalize(archive, logger)
+
+        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        #self.message = f'Hello {self.name}!'
+
 
 
 m_package.__init_metainfo__()
