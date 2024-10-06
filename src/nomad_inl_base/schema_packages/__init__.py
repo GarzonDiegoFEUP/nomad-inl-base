@@ -16,6 +16,7 @@ schema_package_entry_point = NewSchemaPackageEntryPoint(
     description='New schema package entry point configuration.',
 )
 
+
 class CyclicVoltammetryPackageEntryPoint(SchemaPackageEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
@@ -30,6 +31,7 @@ cyclic_voltammetry_entry_point = CyclicVoltammetryPackageEntryPoint(
     description='CyclicVoltammetry entry point configuration.',
 )
 
+
 class StarPackageEntryPoint(SchemaPackageEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
@@ -38,7 +40,8 @@ class StarPackageEntryPoint(SchemaPackageEntryPoint):
 
         return m_package
 
+
 star_entry_point = StarPackageEntryPoint(
-    name = 'STAR processes',
-    description = 'STAR processes entry point configuration.',
+    name='STAR processes',
+    description='STAR processes entry point configuration.',
 )

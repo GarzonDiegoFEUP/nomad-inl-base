@@ -10,20 +10,19 @@ if TYPE_CHECKING:
         BoundLogger,
     )
 
+import numpy as np
+import plotly.express as px
 from nomad.config import config
-from nomad.datamodel.data import Schema
-from nomad_material_processing.solution.general import *
-from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection
-
+from nomad.datamodel.data import EntryData
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import Measurement
-from nomad_material_processing.general import TimeSeries, ThinFilmStack, ThinFilm, RectangleCuboid, Substrate
-import numpy as np
-
-from nomad.datamodel.metainfo.plot import PlotSection, PlotlyFigure
-from nomad.datamodel.data import EntryData
-import plotly.express as px
-import plotly.graph_objs as go
+from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
+from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection
+from nomad_material_processing.general import (
+    ThinFilmStack,
+    TimeSeries,
+)
+from nomad_material_processing.solution.general import *
 from plotly.subplots import make_subplots
 
 configuration = config.get_plugin_entry_point(
@@ -32,8 +31,17 @@ configuration = config.get_plugin_entry_point(
 
 m_package = SchemaPackage()
 
+
 class CurrentTimeSeries(TimeSeries):
-    m_def = Section(label_quantity='set_value', a_eln={'hide': ['set_value','set_time',]})
+    m_def = Section(
+        label_quantity='set_value',
+        a_eln={
+            'hide': [
+                'set_value',
+                'set_time',
+            ]
+        },
+    )
 
     value = Quantity(
         type=np.float64,
@@ -42,8 +50,17 @@ class CurrentTimeSeries(TimeSeries):
         unit='ampere',
     )
 
+
 class CurrentDensityTimeSeries(TimeSeries):
-    m_def = Section(label_quantity='set_value', a_eln={'hide': ['set_value','set_time',]})
+    m_def = Section(
+        label_quantity='set_value',
+        a_eln={
+            'hide': [
+                'set_value',
+                'set_time',
+            ]
+        },
+    )
 
     value = Quantity(
         type=np.float64,
@@ -52,8 +69,17 @@ class CurrentDensityTimeSeries(TimeSeries):
         unit='ampere/meter**2',
     )
 
+
 class ScanTimeSeries(TimeSeries):
-    m_def = Section(label_quantity='set_value', a_eln={'hide': ['set_value','set_time',]})
+    m_def = Section(
+        label_quantity='set_value',
+        a_eln={
+            'hide': [
+                'set_value',
+                'set_time',
+            ]
+        },
+    )
 
     value = Quantity(
         type=np.float64,
@@ -61,10 +87,17 @@ class ScanTimeSeries(TimeSeries):
         shape=['*'],
     )
 
+
 class VoltageTimeSeries(TimeSeries):
-
-
-    m_def = Section(label_quantity='set_value', a_eln={'hide': ['set_value','set_time',]})
+    m_def = Section(
+        label_quantity='set_value',
+        a_eln={
+            'hide': [
+                'set_value',
+                'set_time',
+            ]
+        },
+    )
 
     value = Quantity(
         type=np.float64,
@@ -72,6 +105,7 @@ class VoltageTimeSeries(TimeSeries):
         shape=['*'],
         unit='volt',
     )
+
 
 class ChronoamperometryMeasurement(PlotSection, Measurement, EntryData):
     m_def = Section(
@@ -91,9 +125,7 @@ class ChronoamperometryMeasurement(PlotSection, Measurement, EntryData):
     Voltage_applied = Quantity(
         type=np.float64,
         description='Voltage applied to the electrode',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity
-        ),
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
         unit='V',
     )
 
@@ -115,28 +147,33 @@ class ChronoamperometryMeasurement(PlotSection, Measurement, EntryData):
         first_line = px.scatter(x=x_time, y=y_current)
         figure1 = make_subplots(rows=1, cols=1)
         figure1.add_trace(first_line.data[0], row=1, col=1)
-        figure1.update_layout(template='plotly_white',
-                              height=400, width=716,
-                              xaxis_title="Time (s)",
-                              yaxis_title=y_label,
-                              title_text='ED curve')
+        figure1.update_layout(
+            template='plotly_white',
+            height=400,
+            width=716,
+            xaxis_title='Time (s)',
+            yaxis_title=y_label,
+            title_text='ED curve',
+        )
 
-        self.figures.append(PlotlyFigure(label='figure 1', figure=figure1.to_plotly_json()))
+        self.figures.append(
+            PlotlyFigure(label='figure 1', figure=figure1.to_plotly_json())
+        )
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
-        #self.message = f'Hello {self.name}!'
+        # self.message = f'Hello {self.name}!'
+
 
 class PotentiostatMeasurement(PlotSection, Measurement, EntryData):
     m_def = Section(
         links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
     )
 
-
-    #data_file = Quantity(
+    # data_file = Quantity(
     #    type=str,
     #    a_eln=dict(component='FileEditQuantity'),
     #    a_browser=dict(adaptor='RawFileAdaptor'),
-    #)
+    # )
 
     area_electrode = Quantity(
         type=np.float64,
@@ -167,7 +204,7 @@ class PotentiostatMeasurement(PlotSection, Measurement, EntryData):
 
         self.figures = []
 
-        scan_plotted = 3.
+        scan_plotted = 3.0
 
         scan = np.array(self.scan.value)
         voltage = np.array(self.voltage.value)
@@ -181,25 +218,29 @@ class PotentiostatMeasurement(PlotSection, Measurement, EntryData):
             y_current /= self.area_electrode
             y_label = 'Current density (mA cm' + r'$^{-2}$' + ')'
 
-
         if np.isnan(y_current).all():
-            scan_plotted = 2.
+            scan_plotted = 2.0
             x_voltage = voltage[scan == scan_plotted]
             y_current = current[scan == scan_plotted]
 
         first_line = px.scatter(x=x_voltage, y=y_current)
         figure1 = make_subplots(rows=1, cols=1)
         figure1.add_trace(first_line.data[0], row=1, col=1)
-        figure1.update_layout(template='plotly_white',
-                              height=400, width=716,
-                              xaxis_title="Voltage (V)",
-                              yaxis_title=y_label,
-                              title_text='CV curve, scan ' + str(int(scan_plotted)))
+        figure1.update_layout(
+            template='plotly_white',
+            height=400,
+            width=716,
+            xaxis_title='Voltage (V)',
+            yaxis_title=y_label,
+            title_text='CV curve, scan ' + str(int(scan_plotted)),
+        )
 
-        self.figures.append(PlotlyFigure(label='figure 1', figure=figure1.to_plotly_json()))
+        self.figures.append(
+            PlotlyFigure(label='figure 1', figure=figure1.to_plotly_json())
+        )
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
-        #self.message = f'Hello {self.name}!'
+        # self.message = f'Hello {self.name}!'
 
 
 class ElectrolyteSolution(Solution):
@@ -227,17 +268,17 @@ class ElectrolyteSolution(Solution):
         unit='mole/kg',
     )
 
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super(ElectrolyteSolution, self).normalize(archive, logger)
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
-        #self.message = f'Hello {self.name}!'
+        # self.message = f'Hello {self.name}!'
 
 
 class WorkingElectrode(ThinFilmStack, EntryData):
     m_def = Section(
-        links=['https://w3id.org/nfdi4cat/voc4cat_0007206'], a_eln={'hide': ['name','datetime', 'ID', 'description']}
+        links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
+        a_eln={'hide': ['name', 'datetime', 'ID', 'description']},
     )
 
     area_electrode = Quantity(
@@ -250,13 +291,11 @@ class WorkingElectrode(ThinFilmStack, EntryData):
         unit='meter**2',
     )
 
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super(WorkingElectrode, self).normalize(archive, logger)
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
-        #self.message = f'Hello {self.name}!'
-
+        # self.message = f'Hello {self.name}!'
 
 
 m_package.__init_metainfo__()

@@ -1,10 +1,10 @@
-import pandas as pd
-import json, yaml, math
+import json
+import math
+
+import yaml
 from nomad.datamodel.context import ClientContext
-from nomad.datamodel.metainfo.basesections import (
-    ExperimentStep,
-)
 from nomad.units import ureg
+
 
 def get_reference(upload_id, entry_id):
     return f'../uploads/{upload_id}/archive/{entry_id}'
@@ -15,8 +15,10 @@ def get_entry_id(upload_id, filename):
 
     return hash(upload_id, filename)
 
+
 def get_hash_ref(upload_id, filename):
     return f'{get_reference(upload_id, get_entry_id(upload_id, filename))}#data'
+
 
 def dict_nan_equal(dict1, dict2):
     """
@@ -28,6 +30,7 @@ def dict_nan_equal(dict1, dict2):
         if not nan_equal(dict1[key], dict2[key]):
             return False
     return True
+
 
 def nan_equal(a, b):
     """
@@ -42,6 +45,7 @@ def nan_equal(a, b):
     else:
         return a == b
 
+
 def list_nan_equal(list1, list2):
     """
     Compare two lists with NaN values.
@@ -54,12 +58,12 @@ def list_nan_equal(list1, list2):
     return True
 
 
-def create_filename(datafile, data_measurement, special_txt, archive,
-                     logger, filetype='yaml'):
-
+def create_filename(
+    datafile, data_measurement, special_txt, archive, logger, filetype='yaml'
+):
     from nomad.datamodel.datamodel import EntryArchive, EntryMetadata
 
-    #create a filename and archive
+    # create a filename and archive
 
     filename = f'{datafile}.{special_txt}.archive.{filetype}'
 
@@ -100,6 +104,7 @@ def create_archive(
             f'To do so, remove the existing archive and click reprocess again.'
         )
     return get_hash_ref(context.upload_id, filename)
+
 
 def fill_quantity(dataframe, column_header, read_unit=None):
     """
