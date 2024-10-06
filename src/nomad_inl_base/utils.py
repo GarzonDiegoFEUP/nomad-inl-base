@@ -54,6 +54,27 @@ def list_nan_equal(list1, list2):
     return True
 
 
+def create_filename(datafile, data_measurement, special_txt, archive,
+                     logger, filetype='yaml'):
+
+    from nomad.datamodel.datamodel import EntryArchive, EntryMetadata
+
+    #create a filename and archive
+
+    filename = f'{datafile}.{special_txt}.archive.{filetype}'
+
+    if archive.m_context.raw_path_exists(filename):
+        logger.warn(f'Process archive already exists: {filename}')
+    else:
+        archive = EntryArchive(
+            data=data_measurement,
+            m_context=archive.m_context,
+            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
+        )
+
+    return filename, archive
+
+
 def create_archive(
     entry_dict, context, filename, file_type, logger, *, overwrite: bool = False
 ):

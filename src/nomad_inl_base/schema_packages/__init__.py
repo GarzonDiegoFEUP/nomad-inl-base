@@ -30,3 +30,15 @@ cyclic_voltammetry_entry_point = CyclicVoltammetryPackageEntryPoint(
     description='CyclicVoltammetry entry point configuration.',
 )
 
+class StarPackageEntryPoint(SchemaPackageEntryPoint):
+    parameter: int = Field(0, description='Custom configuration parameter')
+
+    def load(self):
+        from nomad_inl_base.schema_packages.star import m_package
+
+        return m_package
+
+star_entry_point = StarPackageEntryPoint(
+    name = 'STAR processes',
+    description = 'STAR processes entry point configuration.',
+)

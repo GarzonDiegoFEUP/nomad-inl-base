@@ -17,8 +17,7 @@ from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection
 
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import Measurement
-from nomad_material_processing.general import TimeSeries
-from nomad_material_processing.vapor_deposition.general import SampleParameters
+from nomad_material_processing.general import TimeSeries, ThinFilmStack, ThinFilm, RectangleCuboid, Substrate
 import numpy as np
 
 from nomad.datamodel.metainfo.plot import PlotSection, PlotlyFigure
@@ -62,8 +61,9 @@ class ScanTimeSeries(TimeSeries):
         shape=['*'],
     )
 
-
 class VoltageTimeSeries(TimeSeries):
+
+
     m_def = Section(label_quantity='set_value', a_eln={'hide': ['set_value','set_time',]})
 
     value = Quantity(
@@ -73,8 +73,7 @@ class VoltageTimeSeries(TimeSeries):
         unit='volt',
     )
 
-
-class ChronoamperometryMeasurement(PlotSection, Measurement, Schema):
+class ChronoamperometryMeasurement(PlotSection, Measurement, EntryData):
     m_def = Section(
         links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
     )
@@ -127,7 +126,7 @@ class ChronoamperometryMeasurement(PlotSection, Measurement, Schema):
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
         #self.message = f'Hello {self.name}!'
 
-class PotentiostatMeasurement(PlotSection, Measurement, Schema):
+class PotentiostatMeasurement(PlotSection, Measurement, EntryData):
     m_def = Section(
         links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
     )
@@ -203,7 +202,6 @@ class PotentiostatMeasurement(PlotSection, Measurement, Schema):
         #self.message = f'Hello {self.name}!'
 
 
-
 class ElectrolyteSolution(Solution):
     m_def = Section(
         links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
@@ -237,9 +235,9 @@ class ElectrolyteSolution(Solution):
         #self.message = f'Hello {self.name}!'
 
 
-class WorkingElectrode(SampleParameters, Schema):
+class WorkingElectrode(ThinFilmStack, EntryData):
     m_def = Section(
-        links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
+        links=['https://w3id.org/nfdi4cat/voc4cat_0007206'], a_eln={'hide': ['name','datetime', 'ID', 'description']}
     )
 
     area_electrode = Quantity(
@@ -252,23 +250,6 @@ class WorkingElectrode(SampleParameters, Schema):
         unit='meter**2',
     )
 
-    substrate = Quantity(
-        type=str,
-        description='Substrate of the electrode',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.StringEditQuantity,
-        ),
-        default='SLG',
-    )
-
-    layer = Quantity(
-        type=str,
-        description='Layer of the electrode',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.StringEditQuantity,
-        ),
-        default='Mo',
-    )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super(WorkingElectrode, self).normalize(archive, logger)
