@@ -17,13 +17,24 @@ from nomad.datamodel.data import (
     EntryData,
     EntryDataCategory,
 )
+
+from nomad.metainfo.metainfo import (
+    Category,
+)
+
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import (
     CompositeSystem,
     ReadableIdentifiers,
     SystemComponent,
 )
-from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection
+from nomad.metainfo import (
+    Quantity,
+    SchemaPackage,
+    Section,
+    SubSection,
+    Category
+)
 from nomad.units import ureg
 from nomad_material_processing.general import (
     Geometry,
