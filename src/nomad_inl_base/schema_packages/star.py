@@ -100,8 +100,8 @@ configuration = config.get_plugin_entry_point(
 m_package = SchemaPackage()
 
 
-class STARCategory(EntryDataCategory):
-    m_def = Category(label='STAR', categories=[EntryDataCategory])
+#class STARCategory(EntryDataCategory):
+#    m_def = Category(label='STAR', categories=[EntryDataCategory])
 
 
 # classes regarding the Vapor Source
@@ -137,7 +137,7 @@ class SputteringTarget(CompositeSystem, EntryData):
     """
 
     m_def = Section(
-        categories=[STARCategory],
+        #categories=[STARCategory],
         a_eln={
             'hide': ['datetime'],
             'properties': SectionProperties(
@@ -744,7 +744,7 @@ class StarThinFilm(ThinFilm):
 
 
 class StarSubstrate(Substrate, EntryData):
-    m_def = Section(label='Substrate', categories=[STARCategory])
+    m_def = Section(label='Substrate', )#categories=[STARCategory])
 
     material = Quantity(
         type=str,
@@ -818,7 +818,7 @@ class StarThinFilmReference(ThinFilmReference):
 
 
 class StarStack(ThinFilmStack, EntryData):
-    m_def = Section(label='Thin Film Stack', categories=[STARCategory])
+    m_def = Section(label='Thin Film Stack',)# categories=[STARCategory])
 
     layers = SubSection(
         section_def=StarThinFilmReference,
@@ -932,7 +932,7 @@ class StarSampleParameters(SampleParameters):
 
 # Classes regarding the complete Sputtering Process
 class StarSputtering(SputterDeposition, EntryData):
-    m_def = Section(label='General STAR Sputtering', categories=[STARCategory])
+    m_def = Section(label='General STAR Sputtering',)# categories=[STARCategory])
 
     base_pressure = Quantity(
         type=np.float64,
@@ -1102,7 +1102,7 @@ class StarSputtering(SputterDeposition, EntryData):
 
 
 class StarRFSputtering(StarSputtering):
-    m_def = Section(label='STAR RF Sputtering', categories=[STARCategory])
+    m_def = Section(label='STAR RF Sputtering',)# categories=[STARCategory])
 
     steps = SubSection(
         section_def=StarRFStep,
@@ -1117,7 +1117,7 @@ class StarRFSputtering(StarSputtering):
 
 
 class StarDCSputtering(StarSputtering):
-    m_def = Section(label='STAR DC Sputtering', categories=[STARCategory])
+    m_def = Section(label='STAR DC Sputtering',)# categories=[STARCategory])
 
     steps = SubSection(
         section_def=StarDCStep,
