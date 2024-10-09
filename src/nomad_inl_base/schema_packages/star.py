@@ -18,9 +18,9 @@ from nomad.datamodel.data import (
     EntryDataCategory,
 )
 
-from nomad.metainfo.metainfo import (
-    Category,
-)
+#from nomad.metainfo.metainfo import (
+#    Category,
+#)
 
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import (
@@ -33,7 +33,7 @@ from nomad.metainfo import (
     SchemaPackage,
     Section,
     SubSection,
-    Category
+    Category,
 )
 from nomad.units import ureg
 from nomad_material_processing.general import (
