@@ -132,7 +132,7 @@ class ChronoamperometryMeasurement(PlotSection, Measurement, EntryData):
     current = SubSection(section_def=CurrentTimeSeries)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(ChronoamperometryMeasurement, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         self.figures = []
 
@@ -200,7 +200,7 @@ class PotentiostatMeasurement(PlotSection, Measurement, EntryData):
     scan = SubSection(section_def=ScanTimeSeries)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(PotentiostatMeasurement, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         self.figures = []
 
@@ -269,7 +269,7 @@ class ElectrolyteSolution(Solution):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(ElectrolyteSolution, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
@@ -292,7 +292,7 @@ class WorkingElectrode(ThinFilmStack, EntryData):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(WorkingElectrode, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'

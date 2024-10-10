@@ -15,13 +15,11 @@ import numpy as np
 from nomad.config import config
 from nomad.datamodel.data import (
     EntryData,
-    EntryDataCategory,
 )
 
 #from nomad.metainfo.metainfo import (
 #    Category,
 #)
-
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import (
     CompositeSystem,
@@ -33,7 +31,6 @@ from nomad.metainfo import (
     SchemaPackage,
     Section,
     SubSection,
-    Category,
 )
 from nomad.units import ureg
 from nomad_material_processing.general import (
@@ -177,7 +174,7 @@ class SputteringTarget(CompositeSystem, EntryData):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(SputteringTarget, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         if self.lab_id is not None and self.target_id is None:
             new_target_ID = ReadableIdentifiers()
@@ -214,7 +211,7 @@ class SputteringTargetComponent(SystemComponent):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(SputteringTargetComponent, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         if self.system is not None:
             if self.system.target_id is not None:
@@ -327,7 +324,7 @@ class StarChamberEnvironment(ChamberEnvironment):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(StarChamberEnvironment, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         if self.pressure is not None:
             if self.pressure.value is not None:
@@ -408,7 +405,7 @@ class StarStep(VaporDepositionStep):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(StarStep, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         if self.chamber_pressure is not None:
             if self.environment is None:
@@ -483,7 +480,7 @@ class StarDCStep(StarStep):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(StarDCStep, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         if self.set_voltage is not None and self.set_current is not None:
             self.set_power = self.set_voltage * self.set_current
@@ -727,7 +724,7 @@ class StarThinFilm(ThinFilm):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(StarThinFilm, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         if self.geometry is None:
             thinfilm_geo = RectangleCuboid()
@@ -756,7 +753,7 @@ class StarSubstrate(Substrate, EntryData):
     geometry = SubSection(section_def=Geometry)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(StarSubstrate, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         if self.geometry is None:
             substrate_geo = RectangleCuboid()
@@ -783,7 +780,7 @@ class StarSubstrateReference(SubstrateReference):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(StarSubstrateReference, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         if self.reference is not None:
             if self.reference.name is not None:
@@ -876,7 +873,7 @@ class StarStackReference(ThinFilmStackReference):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(StarStackReference, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         if self.reference is not None:
             if self.reference.name is not None:
@@ -917,7 +914,7 @@ class StarSampleParameters(SampleParameters):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(StarSampleParameters, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         if self.depostion_rate is not None:
             if self.growth_rate is None:
@@ -953,7 +950,7 @@ class StarSputtering(SputterDeposition, EntryData):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(StarSputtering, self).normalize(archive, logger)
+        super().normalize(archive, logger)
         filetype = 'yaml'
         data_file = self.name
 
@@ -1088,9 +1085,9 @@ class StarSputtering(SputterDeposition, EntryData):
                 for sample in self.samples:
                     if step.sample_parameters is not None:
                         for sample_par in step.sample_parameters:
-                            logger.info(
-                                'sample = ', sample, 'sample_par = ', sample_par
-                            )
+                            logger.info(sample)
+                            #    'sample = ', sample, 'sample_par = ', sample_par
+                            #)
                             if sample_par.substrate.reference == sample.reference:
                                 sample.reference.layers.append(sample_par.layer)
 
@@ -1110,7 +1107,7 @@ class StarRFSputtering(StarSputtering):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(StarRFSputtering, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
@@ -1125,7 +1122,7 @@ class StarDCSputtering(StarSputtering):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(StarDCSputtering, self).normalize(archive, logger)
+        super().normalize(archive, logger)
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
