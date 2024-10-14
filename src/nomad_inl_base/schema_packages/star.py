@@ -28,11 +28,11 @@ from nomad.datamodel.metainfo.basesections import (
     SystemComponent,
 )
 from nomad.metainfo import (
+    Category,
     Quantity,
     SchemaPackage,
     Section,
     SubSection,
-    Category,
 )
 from nomad.units import ureg
 from nomad_material_processing.general import (
