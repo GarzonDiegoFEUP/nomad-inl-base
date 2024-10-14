@@ -26,6 +26,7 @@ from nomad.datamodel.metainfo.basesections import (
     CompositeSystem,
     ReadableIdentifiers,
     SystemComponent,
+    EntityReference,
 )
 from nomad.metainfo import (
     Category,
@@ -103,8 +104,67 @@ class STARCategory(EntryDataCategory):
     m_def = Category(label='STAR', categories=[EntryDataCategory])
 
 
-#classes regarding the Vapor Source
+#Classes regarding the calibration
+class StarCalibrationData(EntryData):
 
+    m_def = Section(
+        label='Calibration Data',
+        categories=[STARCategory],
+    )
+
+    calibration_date = Quantity(
+        type=Datetime,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.DateEditQuantity,
+        ),
+    )
+
+    deposition_rate = Quantity(
+        type=np.float64,
+        description="""The deposition rate of the thin film (length/time).""",
+        a_eln=ELNAnnotation(
+            component='NumberEditQuantity',
+            label='Deposition rate',
+            defaultDisplayUnit='nm/minute',
+        ),
+        unit='meter/second',
+    )
+
+    calibration_experiment = Quantity(
+        type=SputterDeposition,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.calibration_experiment is not None:
+            self.calibration_date = self.calibration_experiment.start_time
+            for step in self.calibration_experiment:
+                if step.creates_new_thin_film is not None:
+                    if step.sample_parameters is not None:
+                        if step.sample_parameters[0].deposition_rate is not None:
+                            self.deposition_rate = step.sample_parameters[0].deposition_rate
+
+        logger.info('NewSchema.normalize.StarCalibrationData', parameter=configuration.parameter)
+        # self.message = f'Hello {self.name}!'
+
+
+class StarCalibrationDataReference(EntityReference):
+
+    m_def = Section(hide=['name', 'lab_id'])
+
+    reference = Quantity(
+        type=StarCalibrationData,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+        ),
+    )
+
+
+#classes regarding the Vapor Source
 
 class Magnetron(PVDEvaporationSource):
     """
@@ -126,7 +186,6 @@ class Magnetron(PVDEvaporationSource):
             component='RichTextEditQuantity',
         ),
     )
-
 
 class SputteringTarget(CompositeSystem, EntryData):
     """
@@ -175,6 +234,21 @@ class SputteringTarget(CompositeSystem, EntryData):
         ),
     )
 
+    calibration_data = Quantity(
+        type=StarCalibrationDataReference,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+        ),
+    )
+
+    old_calibration_data = Quantity(
+        type=StarCalibrationDataReference,
+        shape = ['*'],
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+        ),
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
@@ -191,9 +265,13 @@ class SputteringTarget(CompositeSystem, EntryData):
 
             self.target_id = new_target_ID
 
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
-        # self.message = f'Hello {self.name}!'
+            if self.calibration_data is not None:
+                self.last_calibration_date = self.calibration_data.reference.calibration_date
+                if self.calibration_data not in self.old_calibration_data:
+                    self.old_calibration_data.append(self.calibration_data)
 
+        logger.info('NewSchema.normalize.SputteringTarget', parameter=configuration.parameter)
+        # self.message = f'Hello {self.name}!'
 
 class SputteringTargetComponent(SystemComponent):
     m_def = Section(a_eln={'hide': ['mass_fraction', 'mass']})
@@ -219,7 +297,7 @@ class SputteringTargetComponent(SystemComponent):
             if self.system.target_id is not None:
                 self.lab_id = self.system.target_id.lab_id
 
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        logger.info('NewSchema.normalize.SputteringTargetComponent', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
 
 
@@ -345,7 +423,7 @@ class StarChamberEnvironment(ChamberEnvironment):
 
         self.gasses = gasses_
 
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        logger.info('NewSchema.normalize.StarChamberEnvironment', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
 
 
@@ -424,7 +502,7 @@ class StarStep(VaporDepositionStep):
         # if self.start_time is not None and self.start_time.tzinfo is not ZoneInfo('Europe/Lisbon'):
         #    self.start_time = self.start_time.replace(tzinfo=ZoneInfo('Europe/Lisbon'))
 
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        logger.info('NewSchema.normalize.StarStep', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
 
 
@@ -490,7 +568,7 @@ class StarDCStep(StarStep):
         if self.voltage is not None and self.current is not None:
             self.power = self.voltage * self.current
 
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        logger.info('NewSchema.normalize.StarDCStep', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
 
 
@@ -738,7 +816,7 @@ class StarThinFilm(ThinFilm):
         if self.material is None and self.components[0] is not None:
             self.material = self.components[0].name
 
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        logger.info('NewSchema.normalize.StarThinFilm', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
 
 
@@ -764,7 +842,7 @@ class StarSubstrate(Substrate, EntryData):
             substrate_geo.length = 2.5 * ureg('cm')  # Quantity(2.5, unit='cm')
             self.geometry = substrate_geo
 
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        logger.info('NewSchema.normalize.StarSubstrate', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
 
 
@@ -805,15 +883,13 @@ class StarThinFilmReference(ThinFilmReference):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        # super(StarThinFilmReference, self).normalize(archive, logger)
+        super(StarThinFilmReference, self).normalize(archive, logger)
 
-        pass
-
-        """if self.reference is not None:
+        if self.reference is not None:
             if self.reference.name is not None:
                 self.name = self.reference.name
             if self.reference.lab_id is not None:
-                self.lab_id = self.reference.lab_id"""
+                self.lab_id = self.reference.lab_id
 
 
 class StarStack(ThinFilmStack, EntryData):
@@ -883,11 +959,13 @@ class StarStackReference(ThinFilmStackReference):
             if self.reference.lab_id is not None:
                 self.lab_id = self.reference.lab_id
 
+        logger.info('NewSchema.normalize.StarStackReference', parameter=configuration.parameter)
+
 
 class StarSampleParameters(SampleParameters):
     m_def = Section(label='Sample Parameters')
 
-    depostion_rate = Quantity(
+    deposition_rate = Quantity(
         type=np.float64,
         description="""The deposition rate of the thin film (length/time).""",
         a_eln=ELNAnnotation(
@@ -918,18 +996,23 @@ class StarSampleParameters(SampleParameters):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        if self.depostion_rate is not None:
+        if self.deposition_rate is not None:
+            logger.warn(self.deposition_rate)
             if self.growth_rate is None:
                 growth_rate_ = StarGrowthRate()
+                value_rate = []
+                value_rate.append(self.deposition_rate)
+                growth_rate_.value = value_rate
+                self.growth_rate = growth_rate_
+            else:
+                self.growth_rate.value = [self.deposition_rate]
 
-            growth_rate_.value.append(self.depostion_rate)
-            self.growth_rate = growth_rate_
-
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        logger.info('NewSchema.normalize.StarSampleParameters', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
 
 
 # Classes regarding the complete Sputtering Process
+
 class StarSputtering(SputterDeposition, EntryData):
     m_def = Section(label='General STAR Sputtering', categories=[STARCategory])
 
@@ -954,7 +1037,7 @@ class StarSputtering(SputterDeposition, EntryData):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
         filetype = 'yaml'
-        data_file = self.name
+        data_file = self.name.replace(' ', '_' )
 
         for idx, step in enumerate(self.steps):
             step.name = str(idx + 1) + '_' + step.m_def.label.replace(' ', '_')
@@ -986,7 +1069,7 @@ class StarSputtering(SputterDeposition, EntryData):
 
             film_index = 0
 
-            if step.creates_new_thin_film:
+            if step.creates_new_thin_film and self.sources is not None:
                 film_index += 1
 
                 deposited_system = self.sources[0].material[0].system.components
@@ -1016,7 +1099,7 @@ class StarSputtering(SputterDeposition, EntryData):
                         logger,
                     )
                 else:
-                    thinFilmRef = thinFilm_filename
+                    thinFilmRef = get_hash_ref(archive.m_context.upload_id, thinFilm_filename)
 
                 new_thinFilmReference = StarThinFilmReference(reference=thinFilmRef)
 
@@ -1079,7 +1162,8 @@ class StarSputtering(SputterDeposition, EntryData):
 
                     sample_parameters.append(new_sample_par)
 
-                step.sample_parameters = sample_parameters
+                if step.sample_parameters is None:
+                    step.sample_parameters = sample_parameters
 
                 if len(self.samples) == 0:
                     self.samples.append(new_StackReference)
@@ -1087,18 +1171,15 @@ class StarSputtering(SputterDeposition, EntryData):
                 for sample in self.samples:
                     if step.sample_parameters is not None:
                         for sample_par in step.sample_parameters:
-                            logger.info(sample)
-                            #    'sample = ', sample, 'sample_par = ', sample_par
-                            #)
                             if sample_par.substrate.reference == sample.reference:
+                                logger.info(sample_par.substrate.reference)
                                 sample.reference.layers.append(sample_par.layer)
 
         # if self.datetime is not None and self.datetime.tzinfo is not ZoneInfo('Europe/Lisbon'):
         #    self.datetime = self.datetime.replace(tzinfo=ZoneInfo('Europe/Lisbon'))
 
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
+        logger.info('NewSchema.normalize.StarSputtering', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
-
 
 class StarRFSputtering(StarSputtering):
     m_def = Section(label='STAR RF Sputtering', categories=[STARCategory])
@@ -1108,13 +1189,6 @@ class StarRFSputtering(StarSputtering):
         repeats=True,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
-        # self.message = f'Hello {self.name}!'
-
-
 class StarDCSputtering(StarSputtering):
     m_def = Section(label='STAR DC Sputtering', categories=[STARCategory])
 
@@ -1122,12 +1196,5 @@ class StarDCSputtering(StarSputtering):
         section_def=StarDCStep,
         repeats=True,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        logger.info('NewSchema.normalize', parameter=configuration.parameter)
-        # self.message = f'Hello {self.name}!'
-
 
 m_package.__init_metainfo__()
