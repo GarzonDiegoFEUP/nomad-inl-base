@@ -103,7 +103,7 @@ class STARCategory(EntryDataCategory):
     m_def = Category(label='STAR', categories=[EntryDataCategory])
 
 
-classes regarding the Vapor Source
+#classes regarding the Vapor Source
 
 
 class Magnetron(PVDEvaporationSource):
