@@ -34,6 +34,7 @@ from nomad.metainfo import (
     SchemaPackage,
     Section,
     SubSection,
+    EntityReference,
 )
 from nomad.units import ureg
 from nomad_material_processing.general import (
@@ -102,6 +103,58 @@ m_package = SchemaPackage()
 
 class STARCategory(EntryDataCategory):
     m_def = Category(label='STAR', categories=[EntryDataCategory])
+
+
+#Classes regarding the calibration
+class StarCalibrationData(EntryData):
+    m_def = Section(
+        label='Calibration Data',
+        categories=[STARCategory],
+    )
+    calibration_date = Quantity(
+        type=Datetime,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.DateEditQuantity,
+        ),
+    )
+
+    deposition_rate = Quantity(
+        type=np.float64,
+        description="""The deposition rate of the thin film (length/time).""",
+        a_eln=ELNAnnotation(
+            component='NumberEditQuantity',
+            label='Deposition rate',
+            defaultDisplayUnit='nm/minute',
+        ),
+        unit='meter/second',
+    )
+    calibration_experiment = Quantity(
+        type=SputterDeposition,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+        ),
+    )
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        if self.calibration_experiment is not None:
+            self.calibration_date = self.calibration_experiment.start_time
+            for step in self.calibration_experiment:
+                if step.creates_new_thin_film is not None:
+                    if step.sample_parameters is not None:
+                        if step.sample_parameters[0].deposition_rate is not None:
+                            self.deposition_rate = step.sample_parameters[0].deposition_rate
+        logger.info('NewSchema.normalize.StarCalibrationData', parameter=configuration.parameter)
+        # self.message = f'Hello {self.name}!'
+
+class StarCalibrationDataReference(EntityReference):
+    m_def = Section(hide=['name', 'lab_id'])
+    reference = Quantity(
+        type=StarCalibrationData,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+        ),
+    )
+
 
 
 # classes regarding the Vapor Source
@@ -211,6 +264,8 @@ class SputteringTarget(CompositeSystem, EntryData):
                 self.last_calibration_date = (
                     self.calibration_data.reference.calibration_date
                 )
+                if self.old_calibration_data is None:
+                    self.old_calibration_data = []
                 if self.calibration_data not in self.old_calibration_data:
                     self.old_calibration_data.append(self.calibration_data)
 
