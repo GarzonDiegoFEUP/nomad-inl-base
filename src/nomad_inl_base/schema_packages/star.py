@@ -30,11 +30,11 @@ from nomad.datamodel.metainfo.basesections import (
 from nomad.metainfo import (
     Category,
     Datetime,
+    EntityReference,
     Quantity,
     SchemaPackage,
     Section,
     SubSection,
-    EntityReference,
 )
 from nomad.units import ureg
 from nomad_material_processing.general import (
@@ -105,7 +105,7 @@ class STARCategory(EntryDataCategory):
     m_def = Category(label='STAR', categories=[EntryDataCategory])
 
 
-#Classes regarding the calibration
+# Classes regarding the calibration
 class StarCalibrationData(EntryData):
     m_def = Section(
         label='Calibration Data',
@@ -134,6 +134,7 @@ class StarCalibrationData(EntryData):
             component=ELNComponentEnum.ReferenceEditQuantity,
         ),
     )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
         if self.calibration_experiment is not None:
@@ -142,9 +143,14 @@ class StarCalibrationData(EntryData):
                 if step.creates_new_thin_film is not None:
                     if step.sample_parameters is not None:
                         if step.sample_parameters[0].deposition_rate is not None:
-                            self.deposition_rate = step.sample_parameters[0].deposition_rate
-        logger.info('NewSchema.normalize.StarCalibrationData', parameter=configuration.parameter)
+                            self.deposition_rate = step.sample_parameters[
+                                0
+                            ].deposition_rate
+        logger.info(
+            'NewSchema.normalize.StarCalibrationData', parameter=configuration.parameter
+        )
         # self.message = f'Hello {self.name}!'
+
 
 class StarCalibrationDataReference(EntityReference):
     m_def = Section(hide=['name', 'lab_id'])
@@ -154,7 +160,6 @@ class StarCalibrationDataReference(EntityReference):
             component=ELNComponentEnum.ReferenceEditQuantity,
         ),
     )
-
 
 
 # classes regarding the Vapor Source
