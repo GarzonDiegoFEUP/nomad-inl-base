@@ -24,12 +24,12 @@ from nomad.datamodel.data import (
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import (
     CompositeSystem,
-    EntityReference,
     ReadableIdentifiers,
     SystemComponent,
 )
 from nomad.metainfo import (
     Category,
+    Datetime,
     Quantity,
     SchemaPackage,
     Section,
@@ -102,68 +102,6 @@ m_package = SchemaPackage()
 
 class STARCategory(EntryDataCategory):
     m_def = Category(label='STAR', categories=[EntryDataCategory])
-
-
-# Classes regarding the calibration
-class StarCalibrationData(EntryData):
-    m_def = Section(
-        label='Calibration Data',
-        categories=[STARCategory],
-    )
-
-    calibration_date = Quantity(
-        type=Datetime,
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.DateEditQuantity,
-        ),
-    )
-
-    deposition_rate = Quantity(
-        type=np.float64,
-        description="""The deposition rate of the thin film (length/time).""",
-        a_eln=ELNAnnotation(
-            component='NumberEditQuantity',
-            label='Deposition rate',
-            defaultDisplayUnit='nm/minute',
-        ),
-        unit='meter/second',
-    )
-
-    calibration_experiment = Quantity(
-        type=SputterDeposition,
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.ReferenceEditQuantity,
-        ),
-    )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        if self.calibration_experiment is not None:
-            self.calibration_date = self.calibration_experiment.start_time
-            for step in self.calibration_experiment:
-                if step.creates_new_thin_film is not None:
-                    if step.sample_parameters is not None:
-                        if step.sample_parameters[0].deposition_rate is not None:
-                            self.deposition_rate = step.sample_parameters[
-                                0
-                            ].deposition_rate
-
-        logger.info(
-            'NewSchema.normalize.StarCalibrationData', parameter=configuration.parameter
-        )
-        # self.message = f'Hello {self.name}!'
-
-
-class StarCalibrationDataReference(EntityReference):
-    m_def = Section(hide=['name', 'lab_id'])
-
-    reference = Quantity(
-        type=StarCalibrationData,
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.ReferenceEditQuantity,
-        ),
-    )
 
 
 # classes regarding the Vapor Source
@@ -1035,6 +973,24 @@ class StarSampleParameters(SampleParameters):
         # self.message = f'Hello {self.name}!'
 
 
+class StarCalibrationSampleParameters(StarSampleParameters):
+    m_def = Section(
+        label='Calibration Parameters',
+        categories=[STARCategory],
+    )
+
+    film_thickness = Quantity(
+        type=np.float64,
+        description="""The thickness of the thin film (length).""",
+        a_eln=ELNAnnotation(
+            component='NumberEditQuantity',
+            label='Film thickness',
+            defaultDisplayUnit='nm',
+        ),
+        unit='meter',
+    )
+
+
 # Classes regarding the complete Sputtering Process
 
 
@@ -1050,6 +1006,15 @@ class StarSputtering(SputterDeposition, EntryData):
             defaultDisplayUnit='millibar',
         ),
         unit='pascal',
+    )
+
+    is_a_calibration_experiment = Quantity(
+        type=bool,
+        description="""A boolean to indicate if the experiment is a calibration.""",
+        a_eln=ELNAnnotation(
+            component='BooleanEditQuantity',
+            label='Calibration experiment',
+        ),
     )
 
     samples = SubSection(section_def=StarStackReference, repeats=True)
@@ -1183,11 +1148,21 @@ class StarSputtering(SputterDeposition, EntryData):
 
                     new_StackReference = StarStackReference(reference=stackRef)
 
-                    new_sample_par = StarSampleParameters()
+                    if self.is_a_calibration_experiment:
+                        new_sample_par = StarCalibrationSampleParameters()
+
+                    else:
+                        new_sample_par = StarSampleParameters()
+
                     new_sample_par.substrate = new_StackReference
                     new_sample_par.layer = new_thinFilmReference
 
                     sample_parameters.append(new_sample_par)
+
+                    if self.is_a_calibration_experiment:
+                        new_sample_par.deposition_rate = (
+                            new_sample_par.film_thickness / step.duration
+                        )
 
                 if step.sample_parameters is None:
                     step.sample_parameters = sample_parameters
@@ -1201,9 +1176,6 @@ class StarSputtering(SputterDeposition, EntryData):
                             if sample_par.substrate.reference == sample.reference:
                                 logger.info(sample_par.substrate.reference)
                                 sample.reference.layers.append(sample_par.layer)
-
-        # if self.datetime is not None and self.datetime.tzinfo is not ZoneInfo('Europe/Lisbon'):
-        #    self.datetime = self.datetime.replace(tzinfo=ZoneInfo('Europe/Lisbon'))
 
         logger.info(
             'NewSchema.normalize.StarSputtering', parameter=configuration.parameter
