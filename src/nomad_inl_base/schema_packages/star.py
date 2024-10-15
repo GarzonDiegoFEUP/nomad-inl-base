@@ -1072,7 +1072,7 @@ class StarSputtering(SputterDeposition, EntryData):
         type=bool,
         description="""A boolean to indicate if the experiment is a calibration.""",
         a_eln=ELNAnnotation(
-            component='BooleanEditQuantity',
+            component='BoolEditQuantity',
             label='Calibration experiment',
         ),
     )
