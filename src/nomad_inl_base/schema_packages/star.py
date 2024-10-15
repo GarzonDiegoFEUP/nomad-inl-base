@@ -24,9 +24,9 @@ from nomad.datamodel.data import (
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import (
     CompositeSystem,
+    EntityReference,
     ReadableIdentifiers,
     SystemComponent,
-    EntityReference,
 )
 from nomad.metainfo import (
     Category,
