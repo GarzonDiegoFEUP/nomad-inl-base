@@ -26,11 +26,11 @@ from nomad.datamodel.metainfo.basesections import (
     CompositeSystem,
     ReadableIdentifiers,
     SystemComponent,
+    EntityReference,
 )
 from nomad.metainfo import (
     Category,
     Datetime,
-    EntityReference,
     Quantity,
     SchemaPackage,
     Section,
