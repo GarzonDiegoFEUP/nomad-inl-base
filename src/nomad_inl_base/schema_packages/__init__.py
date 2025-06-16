@@ -45,3 +45,18 @@ star_entry_point = StarPackageEntryPoint(
     name='STAR processes',
     description='STAR processes entry point configuration.',
 )
+
+class CrystaLLMStructureEntryPoint(SchemaPackageEntryPoint):
+    parameter: int = Field(0, description='Custom configuration parameter')
+
+    def load(self):
+        from nomad_inl_base.schema_packages.crystallm_cif import m_package
+
+        return m_package
+
+
+crystaLLM_entry_point = CrystaLLMStructureEntryPoint(
+    name='CrystaLLM Structure',
+    description='CrystaLLM Structure entry point configuration.',
+)
+

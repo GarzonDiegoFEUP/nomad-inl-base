@@ -15,12 +15,14 @@ import numpy as np
 from nomad.config import config
 from nomad.datamodel.data import (
     EntryData,
+    EntryDataCategory,
 )
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.metainfo import (
     Quantity,
     SchemaPackage,
     Section,
+    Category,
 )
 
 from nomad_inl_base.utils import *
@@ -31,10 +33,13 @@ configuration = config.get_plugin_entry_point(
 
 m_package = SchemaPackage()
 
+class CrystaLLMCategory(EntryDataCategory):
+    m_def = Category(label='CrystaLLM', categories=[EntryDataCategory])
 
 class crystal_material(EntryData):
     m_def = Section(
-        label='crystal',
+        label='Structure from crystaLLM',
+        category=[CrystaLLMCategory],
     )
 
     input_formula = Quantity(
@@ -315,6 +320,5 @@ class crystal_material(EntryData):
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
         # self.message = f'Hello {self.name}!'
-
 
 m_package.__init_metainfo__()
