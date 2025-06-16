@@ -17,10 +17,6 @@ from nomad.datamodel.data import (
     EntryData,
     EntryDataCategory,
 )
-
-# from nomad.metainfo.metainfo import (
-#    Category,
-# )
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import (
     CompositeSystem,
