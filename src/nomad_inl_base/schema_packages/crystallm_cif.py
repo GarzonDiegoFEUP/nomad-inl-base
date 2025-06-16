@@ -28,7 +28,7 @@ from nomad.metainfo import (
 from nomad_inl_base.utils import *
 
 configuration = config.get_plugin_entry_point(
-    'nomad_inl_base.schema_packages:crystallm_cif_entry_point'
+    'nomad_inl_base.schema_packages:crystaLLM_entry_point'
 )
 
 m_package = SchemaPackage()
