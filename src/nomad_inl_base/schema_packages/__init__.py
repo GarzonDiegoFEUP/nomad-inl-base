@@ -50,7 +50,7 @@ class CrystaLLMStructureEntryPoint(SchemaPackageEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
     def load(self):
-        from nomad_inl_base.schema_packages.crystallm_cif import m_package
+        from nomad_inl_base.schema_packages.crystaLLM import m_package
 
         return m_package
 
