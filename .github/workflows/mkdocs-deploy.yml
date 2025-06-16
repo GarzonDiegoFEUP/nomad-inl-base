@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main # Triggers deployment on push to the main branch
- 
+
 permissions:
   contents: write
 
@@ -15,6 +15,14 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip libhdf5-dev
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          export PATH="$HOME/.cargo/bin:$PATH"
+          rustup update
 
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
