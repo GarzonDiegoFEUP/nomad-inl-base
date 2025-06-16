@@ -19,10 +19,10 @@ from nomad.datamodel.data import (
 )
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.metainfo import (
+    Category,
     Quantity,
     SchemaPackage,
     Section,
-    Category,
 )
 
 from nomad_inl_base.utils import *
