@@ -28,6 +28,7 @@ dependencies = [
     "nomad-lab>=1.4.1",
     "python-magic-bin; sys_platform == 'win32'",
     'nomad-material-processing',
+    "nomad-baseclasses @ git+https://github.com/nomad-hzb/nomad-baseclasses.git",
 ]
 
 [project.urls]
