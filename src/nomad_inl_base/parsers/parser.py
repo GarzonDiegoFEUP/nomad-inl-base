@@ -38,7 +38,7 @@ class RawFile_(EntryData):
 class EDParser(MatchingParser):
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
         filetype = 'yaml'
-        data_file = mainfile.split('/')[-1].split('.xlsx')[0].replace(' ', '_')
+        data_file = mainfile.rsplit('/', maxsplit=1)[-1].split('.xlsx', maxsplit=1)[0].replace(' ', '_')
         xlsx = pd.ExcelFile(mainfile)
 
         data = pd.read_excel(xlsx)
@@ -98,7 +98,7 @@ class EDParser(MatchingParser):
 class CVParser(MatchingParser):
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
         filetype = 'yaml'
-        data_file = mainfile.split('/')[-1].split('.xlsx')[0].replace(' ', '_')
+        data_file = mainfile.rsplit('/', maxsplit=1)[-1].split('.xlsx', maxsplit=1)[0].replace(' ', '_')
         xlsx = pd.ExcelFile(mainfile)
 
         data = pd.read_excel(xlsx)
@@ -126,8 +126,8 @@ class CVParser(MatchingParser):
             )
 
         rate = float(
-            mainfile.split('.xlsx')[0]
-            .split('-')[-1]
+            mainfile.split('.xlsx', maxsplit=1)[0]
+            .rsplit('-', maxsplit=1)[-1]
             .replace(' ', '')
             .replace('mVs', '')
         )
