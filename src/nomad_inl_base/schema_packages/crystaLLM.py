@@ -20,6 +20,7 @@ from nomad.datamodel.data import (
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.metainfo import (
     Category,
+    MEnum,
     Quantity,
     SchemaPackage,
     Section,
@@ -319,6 +320,6 @@ class crystal_material(EntryData):
         super().normalize(archive, logger)
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
-        # self.message = f'Hello {self.name}!'
+        self.message = f'Hello {self.name}!'
 
 m_package.__init_metainfo__()

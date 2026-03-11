@@ -17,7 +17,12 @@ from nomad.datamodel.data import (
     EntryData,
     EntryDataCategory,
 )
-from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
+from nomad.datamodel.metainfo.annotations import (
+    ELNAnnotation,
+    ELNComponentEnum,
+    Filter,
+    SectionProperties,
+)
 from nomad.datamodel.metainfo.basesections import (
     CompositeSystem,
     EntityReference,
@@ -27,6 +32,7 @@ from nomad.datamodel.metainfo.basesections import (
 from nomad.metainfo import (
     Category,
     Datetime,
+    MEnum,
     Quantity,
     SchemaPackage,
     Section,
