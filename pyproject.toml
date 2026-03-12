@@ -141,6 +141,7 @@ schema_package_entry_point = "nomad_inl_base.schema_packages:schema_package_entr
 cyclic_voltammetry_entry_point = "nomad_inl_base.schema_packages:cyclic_voltammetry_entry_point"
 star_entry_point = "nomad_inl_base.schema_packages:star_entry_point"
 crystaLLM_entry_point = "nomad_inl_base.schema_packages:crystaLLM_entry_point"
+wet_deposition_entry_point = "nomad_inl_base.schema_packages:wet_deposition_entry_point"
 
 
 

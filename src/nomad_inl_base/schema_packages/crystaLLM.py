@@ -40,7 +40,7 @@ class CrystaLLMCategory(EntryDataCategory):
 class crystal_material(EntryData):
     m_def = Section(
         label='Structure from crystaLLM',
-        category=[CrystaLLMCategory],
+        categories=[CrystaLLMCategory],
     )
 
     input_formula = Quantity(
@@ -280,7 +280,7 @@ class crystal_material(EntryData):
             'Cmme',
         ),
         description="""The space group of the crystal material.""",
-        a_eln=ELNAnnotation(component='StringEditQuantity', label='Space Group'),
+        a_eln=ELNAnnotation(component='AutocompleteEditQuantity', label='Space Group'),
     )
 
     raw_cif_file = Quantity(
@@ -313,7 +313,7 @@ class crystal_material(EntryData):
         type=bool,
         default=False,
         description="""Whether to run the CrystaLLM inference algorithm.""",
-        a_eln=ELNAnnotation(component='BooleanEditQuantity', label='Run Inference'),
+        a_eln=ELNAnnotation(component='BoolEditQuantity', label='Run Inference'),
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
