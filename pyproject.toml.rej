@@ -1,0 +1,79 @@
+diff a/pyproject.toml b/pyproject.toml	(rejected hunks)
+@@ -7,7 +7,6 @@ classifiers = [
+     "Intended Audience :: Developers",
+     "Operating System :: OS Independent",
+     "Programming Language :: Python",
+-    "Programming Language :: Python :: 3.9",
+     "Programming Language :: Python :: 3.10",
+     "Programming Language :: Python :: 3.11",
+     "Programming Language :: Python :: 3.12",
+@@ -17,7 +16,7 @@ name = "nomad-inl-base"
+ description = "A plugin to manage the data from LaNaSC"
+ version = "0.1.0"
+ readme = "README.md"
+-requires-python = ">=3.9"
++requires-python = ">=3.10"
+ authors = [
+     { name = "Diego Garzon", email = "diego.garzon@inl.int" },
+ ]
+@@ -26,16 +25,31 @@ maintainers = [
+ ]
+ license = { file = "LICENSE" }
+ dependencies = [
+-    "nomad-lab>=1.3.0",
+-    "python-magic-bin; sys_platform == 'win32'",
++    "nomad-lab>=1.4.1",
++    "pydantic",
++    "temporalio"
+ ]
+ 
+ [project.urls]
+ Repository = "https://github.com/GarzonDiegoFEUP/nomad-inl-base"
+ 
+ [project.optional-dependencies]
+-dev = ["ruff", "pytest", "structlog"]
++dev = [
++    "ruff",
++    "pytest",
++    "structlog",
++    "mkdocs",
++    "mkdocs-material==8.1.1",
++    "pymdown-extensions",
++    "mkdocs-click",
++    "pytest-asyncio",
++]
+ 
++[tool.uv]
++extra-index-url = [
++  "https://gitlab.mpcdf.mpg.de/api/v4/projects/2187/packages/pypi/simple",
++]
++    
+ [tool.ruff]
+ # Exclude a variety of commonly ignored directories.
+ exclude = [
+@@ -77,12 +91,14 @@ select = [
+     "UP",
+     # isort
+     "I",
+-    # pylint 
++    # pylint
+     "PL",
+ ]
+ 
+ ignore = [
+     "F403", # 'from module import *' used; unable to detect undefined names
++    "PLC0415", # `import` should be at the top-level of a file
++    "E501", # line too long
+ ]
+ 
+ fixable = ["ALL"]
+@@ -90,6 +106,9 @@ fixable = ["ALL"]
+ # Allow unused variables when underscore-prefixed.
+ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+ 
++[tool.ruff.lint.per-file-ignores]
++"__init__.py" = ["PLC0415"] # import-outside-top-level
++
+ # this is entirely optional, you can remove this if you wish to
+ [tool.ruff.format]
+ # use single quotes for strings.
