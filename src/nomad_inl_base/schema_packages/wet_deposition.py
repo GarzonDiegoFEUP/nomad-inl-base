@@ -39,8 +39,13 @@ from nomad.metainfo import (
 from nomad_material_processing.general import (
     SampleDeposition,
     SubstrateReference,
+    ThinFilm,
+    ThinFilmReference,
+    ThinFilmStack,
     ThinFilmStackReference,
 )
+
+from nomad_inl_base.utils import create_archive, create_filename, get_hash_ref
 
 m_package = SchemaPackage()
 
@@ -79,6 +84,13 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
 
     substrate = SubSection(section_def=SubstrateReference)
 
+    creates_new_thin_film = Quantity(
+        type=bool,
+        default=False,
+        description='If True, create a ThinFilm + ThinFilmStack entry via normalize.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.BoolEditQuantity),
+    )
+
     thin_film_stack = SubSection(section_def=ThinFilmStackReference)
 
     solution = SubSection(
@@ -90,10 +102,69 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
 
     quenching = SubSection(section_def=Quenching)
 
+    def _create_thin_film_stack(
+        self, archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> None:
+        """Auto-create ThinFilm + ThinFilmStack entries and set thin_film_stack."""
+
+        if (
+            self.thin_film_stack is not None
+            and self.thin_film_stack.reference is not None
+        ):
+            return
+
+        data_file = (self.name or 'wet_deposition').replace(' ', '_')
+
+        # Create ThinFilm entry
+        new_film = ThinFilm()
+        film_filename, film_archive = create_filename(
+            data_file + '_thin_film', new_film, 'ThinFilm', archive, logger
+        )
+
+        if not archive.m_context.raw_path_exists(film_filename):
+            film_ref = create_archive(
+                film_archive.m_to_dict(),
+                archive.m_context,
+                film_filename,
+                'yaml',
+                logger,
+            )
+        else:
+            film_ref = get_hash_ref(archive.m_context.upload_id, film_filename)
+
+        film_reference = ThinFilmReference(reference=film_ref)
+
+        # Create ThinFilmStack entry
+        stack = ThinFilmStack()
+        if self.substrate is not None:
+            stack.substrate = self.substrate
+        stack.layers = [film_reference]
+
+        stack_filename, stack_archive = create_filename(
+            data_file + '_thin_film_stack', stack, 'ThinFilmStack', archive, logger
+        )
+
+        if not archive.m_context.raw_path_exists(stack_filename):
+            stack_ref = create_archive(
+                stack_archive.m_to_dict(),
+                archive.m_context,
+                stack_filename,
+                'yaml',
+                logger,
+            )
+        else:
+            stack_ref = get_hash_ref(archive.m_context.upload_id, stack_filename)
+
+        self.thin_film_stack = ThinFilmStackReference(reference=stack_ref)
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         if not self.method:
             self.method = 'Wet Deposition'
         super().normalize(archive, logger)
+
+        if self.creates_new_thin_film:
+            self._create_thin_film_stack(archive, logger)
+            self.creates_new_thin_film = False
 
 
 class INLSpinCoating(INLThinFilmDeposition):
