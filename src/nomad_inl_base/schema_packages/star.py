@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 import numpy as np
 from nomad.config import config
 from nomad.datamodel.data import (
+    ArchiveSection,
     EntryData,
     EntryDataCategory,
 )
@@ -1056,6 +1057,30 @@ class StarCalibrationSampleParameters(StarSampleParameters):
 # Classes regarding the complete Sputtering Process
 
 
+class StarSputteringRecipe(ArchiveSection):
+    """A recipe template for STAR sputtering steps."""
+
+    m_def = Section(label='STAR Sputtering Recipe')
+
+    name = Quantity(
+        type=str,
+        description='Recipe name.',
+        a_eln=ELNAnnotation(component='StringEditQuantity', label='Recipe name'),
+    )
+
+    description = Quantity(
+        type=str,
+        description='Recipe description.',
+        a_eln=ELNAnnotation(component='RichTextEditQuantity', label='Description'),
+    )
+
+    steps = SubSection(
+        section_def=StarStep,
+        repeats=True,
+        description='The sequence of steps in the recipe.',
+    )
+
+
 class StarSputtering(SputterDeposition, EntryData):
     m_def = Section(label='General STAR Sputtering', categories=[STARCategory])
 
@@ -1086,8 +1111,47 @@ class StarSputtering(SputterDeposition, EntryData):
         repeats=True,
     )
 
+    recipe = SubSection(
+        section_def=StarSputteringRecipe,
+        description='A recipe to pre-populate the step set_* defaults.',
+    )
+
+    apply_recipe = Quantity(
+        type=bool,
+        default=False,
+        description='If True, apply the selected recipe once during normalize.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.BoolEditQuantity),
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+        # Apply recipe defaults (set_* values) once and only if no steps exist yet.
+        if (
+            self.apply_recipe
+            and self.recipe is not None
+            and (self.steps is None or len(self.steps) == 0)
+        ):
+            self.steps = []
+            for recipe_step in self.recipe.steps or []:
+                new_step = type(recipe_step)()
+
+                new_step.name = recipe_step.name
+                new_step.chamber_pressure = recipe_step.chamber_pressure
+                new_step.duration = recipe_step.duration
+                new_step.environment = recipe_step.environment
+
+                if hasattr(recipe_step, 'set_power'):
+                    new_step.set_power = recipe_step.set_power
+                if hasattr(recipe_step, 'set_voltage'):
+                    new_step.set_voltage = recipe_step.set_voltage
+                if hasattr(recipe_step, 'set_current'):
+                    new_step.set_current = recipe_step.set_current
+
+                self.steps.append(new_step)
+
+            self.apply_recipe = False
+
         filetype = 'yaml'
         data_file = self.name.replace(' ', '_')
 
