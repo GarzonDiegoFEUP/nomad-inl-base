@@ -17,21 +17,6 @@ schema_package_entry_point = NewSchemaPackageEntryPoint(
 )
 
 
-class CyclicVoltammetryPackageEntryPoint(SchemaPackageEntryPoint):
-    parameter: int = Field(0, description='Custom configuration parameter')
-
-    def load(self):
-        from nomad_inl_base.schema_packages.cyclic_voltammetry import m_package
-
-        return m_package
-
-
-cyclic_voltammetry_entry_point = CyclicVoltammetryPackageEntryPoint(
-    name='CyclicVoltammetry',
-    description='CyclicVoltammetry entry point configuration.',
-)
-
-
 class StarPackageEntryPoint(SchemaPackageEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 

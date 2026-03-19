@@ -1,33 +1,5 @@
-from typing import (
-    TYPE_CHECKING,
-)
-
-if TYPE_CHECKING:
-    from nomad.datamodel.datamodel import (
-        EntryArchive,
-    )
-    from structlog.stdlib import (
-        BoundLogger,
-    )
-
-import numpy as np
-import plotly.express as px
-from nomad.config import config
-from nomad.datamodel.data import EntryData
-from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
-from nomad.datamodel.metainfo.basesections import Measurement
-from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
-from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection
-from nomad_material_processing.general import (
-    ThinFilmStack,
-    TimeSeries,
-)
-from nomad_material_processing.solution.general import *
-from plotly.subplots import make_subplots
-
-configuration = config.get_plugin_entry_point(
-    'nomad_inl_base.schema_packages:cyclic_voltammetry_entry_point'
-)
+# Cyclic voltammetry classes have been moved to characterization.py.
+# This file is kept for reference only and is no longer loaded as a plugin entry point.
 
 m_package = SchemaPackage()
 
