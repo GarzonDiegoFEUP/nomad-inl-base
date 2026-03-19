@@ -199,7 +199,7 @@ class TargetDepositionRecord(ArchiveSection):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
             label='Deposition time',
-            defaultDisplayUnit='h',
+            defaultDisplayUnit='hour',
         ),
     )
 
@@ -210,7 +210,7 @@ class TargetDepositionRecord(ArchiveSection):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
             label='Deposition energy',
-            defaultDisplayUnit='kWh',
+            defaultDisplayUnit='kilowatt_hour',
         ),
     )
 
@@ -335,7 +335,7 @@ class SputteringTarget(CompositeSystem, EntryData):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
             label='Calibration interval (time)',
-            defaultDisplayUnit='h',
+            defaultDisplayUnit='hour',
         ),
     )
 
@@ -346,7 +346,7 @@ class SputteringTarget(CompositeSystem, EntryData):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
             label='Calibration interval (energy)',
-            defaultDisplayUnit='kWh',
+            defaultDisplayUnit='kilowatt_hour',
         ),
     )
 
@@ -357,7 +357,7 @@ class SputteringTarget(CompositeSystem, EntryData):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
             label='Total deposition time',
-            defaultDisplayUnit='h',
+            defaultDisplayUnit='hour',
         ),
     )
 
@@ -368,7 +368,7 @@ class SputteringTarget(CompositeSystem, EntryData):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
             label='Total deposition energy',
-            defaultDisplayUnit='kWh',
+            defaultDisplayUnit='kilowatt_hour',
         ),
     )
 
@@ -379,7 +379,7 @@ class SputteringTarget(CompositeSystem, EntryData):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
             label='Time since last calibration',
-            defaultDisplayUnit='h',
+            defaultDisplayUnit='hour',
         ),
     )
 
@@ -390,7 +390,7 @@ class SputteringTarget(CompositeSystem, EntryData):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
             label='Energy since last calibration',
-            defaultDisplayUnit='kWh',
+            defaultDisplayUnit='kilowatt_hour',
         ),
     )
 
