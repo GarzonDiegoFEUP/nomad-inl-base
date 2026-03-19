@@ -10,10 +10,18 @@ if TYPE_CHECKING:
 import pandas as pd
 from nomad.datamodel.data import EntryData
 from nomad.datamodel.datamodel import EntryArchive, EntryMetadata
+from nomad.datamodel.metainfo.annotations import ELNAnnotation
+from nomad.metainfo import Quantity, Section
 from nomad.parsing.parser import MatchingParser
 from nomad.units import ureg
 
-from nomad_inl_base.schema_packages.cyclic_voltammetry import *
+from nomad_inl_base.schema_packages.characterization import (
+    ChronoamperometryMeasurement,
+    CurrentTimeSeries,
+    PotentiostatMeasurement,
+    ScanTimeSeries,
+    VoltageTimeSeries,
+)
 from nomad_inl_base.utils import create_archive, fill_quantity, get_hash_ref
 
 
