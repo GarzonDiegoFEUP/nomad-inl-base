@@ -28,7 +28,7 @@ from nomad.datamodel.data import (
     EntryDataCategory,
 )
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
-from nomad.datamodel.metainfo.basesections import InstrumentReference
+from nomad.datamodel.metainfo.basesections import EntityReference, InstrumentReference
 from nomad.metainfo import (
     Category,
     Quantity,
@@ -52,6 +52,71 @@ m_package = SchemaPackage()
 
 class INLWetDepositionCategory(EntryDataCategory):
     m_def = Category(label='INL Wet Deposition', categories=[EntryDataCategory])
+
+
+class WetDepositionRecipe(EntryData):
+    """A re-usable recipe template for wet deposition methods."""
+
+    m_def = Section(
+        label='Wet Deposition Recipe', categories=[INLWetDepositionCategory]
+    )
+
+    name = Quantity(
+        type=str,
+        description='Recipe name.',
+        a_eln=ELNAnnotation(component='StringEditQuantity', label='Recipe name'),
+    )
+
+    description = Quantity(
+        type=str,
+        description='Recipe description.',
+        a_eln=ELNAnnotation(component='RichTextEditQuantity', label='Description'),
+    )
+
+    instrument = SubSection(
+        section_def=InstrumentReference,
+        description='Instrument template for the recipe.',
+    )
+
+    atmosphere = SubSection(
+        section_def=Atmosphere,
+        description='Atmosphere template for the recipe.',
+    )
+
+    substrate = SubSection(
+        section_def=SubstrateReference,
+        description='Substrate template for the recipe.',
+    )
+
+    solution = SubSection(
+        section_def=PrecursorSolution,
+        repeats=True,
+        description='Solution/precursor template for the recipe.',
+    )
+
+    annealing = SubSection(
+        section_def=Annealing,
+        description='Annealing template for the recipe.',
+    )
+
+    quenching = SubSection(
+        section_def=Quenching,
+        description='Quenching template for the recipe.',
+    )
+
+
+class WetDepositionRecipeReference(EntityReference):
+    """A reference to a WetDepositionRecipe entry."""
+
+    m_def = Section(hide=['name', 'lab_id'])
+
+    reference = Quantity(
+        type=WetDepositionRecipe,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Wet deposition recipe',
+        ),
+    )
 
 
 class INLThinFilmDeposition(SampleDeposition, EntryData):
@@ -88,6 +153,18 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         type=bool,
         default=False,
         description='If True, create a ThinFilm + ThinFilmStack entry via normalize.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.BoolEditQuantity),
+    )
+
+    recipe = SubSection(
+        section_def=WetDepositionRecipeReference,
+        description='Reference to a wet deposition recipe to apply.',
+    )
+
+    apply_recipe = Quantity(
+        type=bool,
+        default=False,
+        description='If True, apply the selected recipe (once) when normalizing.',
         a_eln=ELNAnnotation(component=ELNComponentEnum.BoolEditQuantity),
     )
 
@@ -161,6 +238,26 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         if not self.method:
             self.method = 'Wet Deposition'
         super().normalize(archive, logger)
+
+        if (
+            self.apply_recipe
+            and self.recipe is not None
+            and getattr(self.recipe, 'reference', None) is not None
+        ):
+            recipe = self.recipe.reference
+            if recipe.instrument is not None and self.instrument is None:
+                self.instrument = recipe.instrument
+            if recipe.atmosphere is not None and self.atmosphere is None:
+                self.atmosphere = recipe.atmosphere
+            if recipe.substrate is not None and self.substrate is None:
+                self.substrate = recipe.substrate
+            if recipe.solution is not None and not self.solution:
+                self.solution = recipe.solution
+            if recipe.annealing is not None and self.annealing is None:
+                self.annealing = recipe.annealing
+            if recipe.quenching is not None and self.quenching is None:
+                self.quenching = recipe.quenching
+            self.apply_recipe = False
 
         if self.creates_new_thin_film:
             self._create_thin_film_stack(archive, logger)

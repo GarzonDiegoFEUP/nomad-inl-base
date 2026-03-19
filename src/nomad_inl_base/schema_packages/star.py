@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 import numpy as np
 from nomad.config import config
 from nomad.datamodel.data import (
-    ArchiveSection,
     EntryData,
     EntryDataCategory,
 )
@@ -1057,10 +1056,10 @@ class StarCalibrationSampleParameters(StarSampleParameters):
 # Classes regarding the complete Sputtering Process
 
 
-class StarSputteringRecipe(ArchiveSection):
+class StarSputteringRecipe(EntryData):
     """A recipe template for STAR sputtering steps."""
 
-    m_def = Section(label='STAR Sputtering Recipe')
+    m_def = Section(label='STAR Sputtering Recipe', categories=[STARCategory])
 
     name = Quantity(
         type=str,
@@ -1078,6 +1077,23 @@ class StarSputteringRecipe(ArchiveSection):
         section_def=StarStep,
         repeats=True,
         description='The sequence of steps in the recipe.',
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+
+class StarSputteringRecipeReference(EntityReference):
+    """A reference to a StarSputteringRecipe entry."""
+
+    m_def = Section(hide=['name', 'lab_id'])
+
+    reference = Quantity(
+        type=StarSputteringRecipe,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='STAR sputtering recipe',
+        ),
     )
 
 
@@ -1112,8 +1128,8 @@ class StarSputtering(SputterDeposition, EntryData):
     )
 
     recipe = SubSection(
-        section_def=StarSputteringRecipe,
-        description='A recipe to pre-populate the step set_* defaults.',
+        section_def=StarSputteringRecipeReference,
+        description='Reference to a STAR sputtering recipe.',
     )
 
     apply_recipe = Quantity(
@@ -1130,10 +1146,12 @@ class StarSputtering(SputterDeposition, EntryData):
         if (
             self.apply_recipe
             and self.recipe is not None
+            and getattr(self.recipe, 'reference', None) is not None
             and (self.steps is None or len(self.steps) == 0)
         ):
+            recipe = self.recipe.reference
             self.steps = []
-            for recipe_step in self.recipe.steps or []:
+            for recipe_step in recipe.steps or []:
                 new_step = type(recipe_step)()
 
                 new_step.name = recipe_step.name
