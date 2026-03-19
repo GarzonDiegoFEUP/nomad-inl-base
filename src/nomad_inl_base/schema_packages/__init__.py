@@ -46,7 +46,6 @@ star_entry_point = StarPackageEntryPoint(
     description='STAR processes entry point configuration.',
 )
 
-
 class CrystaLLMStructureEntryPoint(SchemaPackageEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
@@ -61,7 +60,6 @@ crystaLLM_entry_point = CrystaLLMStructureEntryPoint(
     description='CrystaLLM Structure entry point configuration.',
 )
 
-
 class WetDepositionPackageEntryPoint(SchemaPackageEntryPoint):
     def load(self):
         from nomad_inl_base.schema_packages.wet_deposition import m_package
@@ -72,4 +70,17 @@ class WetDepositionPackageEntryPoint(SchemaPackageEntryPoint):
 wet_deposition_entry_point = WetDepositionPackageEntryPoint(
     name='INL Wet Deposition',
     description='ELN schemas for wet deposition methods (spin, slot-die, blade, inkjet, spray pyrolysis, dip coating).',
+)
+
+
+class INLCharacterizationPackageEntryPoint(SchemaPackageEntryPoint):
+    def load(self):
+        from nomad_inl_base.schema_packages.characterization import m_package
+
+        return m_package
+
+
+characterization_entry_point = INLCharacterizationPackageEntryPoint(
+    name='INL Characterization',
+    description='INL characterization measurement schemas (XRD, UV-Vis).',
 )
