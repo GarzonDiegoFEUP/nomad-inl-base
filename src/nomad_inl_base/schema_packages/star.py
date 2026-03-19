@@ -1301,6 +1301,11 @@ class StarSputteringRecipeReference(EntityReference):
         ),
     )
 
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # Skip EntityReference.normalize() — StarSputteringRecipe is not an Entity
+        # and does not have lab_id.
+        pass
+
 
 class StarSputtering(SputterDeposition, EntryData):
     m_def = Section(label='General STAR Sputtering', categories=[STARCategory])
@@ -1409,6 +1414,11 @@ class StarSputtering(SputterDeposition, EntryData):
             film_index = 0
 
             if step.creates_new_thin_film and self.sources is not None:
+                if not self.sources or not self.sources[0].material:
+                    logger.warning(
+                        'Skipping thin film creation: no material defined on the first source.'
+                    )
+                    continue
                 film_index += 1
 
                 deposited_system = self.sources[0].material[0].system.components

@@ -118,6 +118,11 @@ class WetDepositionRecipeReference(EntityReference):
         ),
     )
 
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # Skip EntityReference.normalize() — WetDepositionRecipe is not an Entity
+        # and does not have lab_id.
+        pass
+
 
 class INLThinFilmDeposition(SampleDeposition, EntryData):
     """Base ELN schema for all INL wet deposition processes."""
