@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 import numpy as np
 from nomad.config import config
 from nomad.datamodel.data import (
+    ArchiveSection,
     EntryData,
     EntryDataCategory,
 )
@@ -26,6 +27,7 @@ from nomad.datamodel.metainfo.annotations import (
 from nomad.datamodel.metainfo.basesections import (
     CompositeSystem,
     EntityReference,
+    PureSubstanceComponent,
     ReadableIdentifiers,
     SystemComponent,
 )
@@ -164,6 +166,55 @@ class StarCalibrationDataReference(EntityReference):
     )
 
 
+class TargetDepositionRecord(ArchiveSection):
+    """
+    Records a single deposition experiment's contribution to a sputtering
+    target's total usage time and energy.
+    """
+
+    m_def = Section(label='Target Deposition Record')
+
+    experiment = Quantity(
+        type=SputterDeposition,
+        description='Reference to the sputtering experiment that used this target.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Experiment',
+        ),
+    )
+
+    source_index = Quantity(
+        type=int,
+        description='Index of the source slot in the experiment that used this target.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Source index',
+        ),
+    )
+
+    deposition_time = Quantity(
+        type=np.float64,
+        description='Total duration of all powered steps in this experiment.',
+        unit='s',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Deposition time',
+            defaultDisplayUnit='h',
+        ),
+    )
+
+    deposition_energy = Quantity(
+        type=np.float64,
+        description='Total energy delivered to this target (sum of power × duration).',
+        unit='J',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Deposition energy',
+            defaultDisplayUnit='kWh',
+        ),
+    )
+
+
 # classes regarding the Vapor Source
 
 
@@ -251,8 +302,113 @@ class SputteringTarget(CompositeSystem, EntryData):
         ),
     )
 
+    supplier = Quantity(
+        type=str,
+        description='Supplier of the sputtering target.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity,
+            label='Supplier',
+        ),
+    )
+
+    components = SubSection(
+        section_def=PureSubstanceComponent,
+        repeats=True,
+        description='Chemical composition of the target material.',
+    )
+
+    target_raw_path = Quantity(
+        type=str,
+        description='Raw file path of this entry (set automatically during normalization).',
+    )
+
+    deposition_records = SubSection(
+        section_def=TargetDepositionRecord,
+        repeats=True,
+        description='Log of deposition experiments that have used this target.',
+    )
+
+    calibration_interval_time = Quantity(
+        type=np.float64,
+        description='Target usage time threshold before recalibration is needed.',
+        unit='s',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Calibration interval (time)',
+            defaultDisplayUnit='h',
+        ),
+    )
+
+    calibration_interval_energy = Quantity(
+        type=np.float64,
+        description='Target energy delivery threshold before recalibration is needed.',
+        unit='J',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Calibration interval (energy)',
+            defaultDisplayUnit='kWh',
+        ),
+    )
+
+    total_deposition_time = Quantity(
+        type=np.float64,
+        description='Total accumulated deposition time across all recorded experiments.',
+        unit='s',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Total deposition time',
+            defaultDisplayUnit='h',
+        ),
+    )
+
+    total_deposition_energy = Quantity(
+        type=np.float64,
+        description='Total accumulated deposition energy across all recorded experiments.',
+        unit='J',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Total deposition energy',
+            defaultDisplayUnit='kWh',
+        ),
+    )
+
+    time_since_last_calibration = Quantity(
+        type=np.float64,
+        description='Accumulated deposition time since the last calibration.',
+        unit='s',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Time since last calibration',
+            defaultDisplayUnit='h',
+        ),
+    )
+
+    energy_since_last_calibration = Quantity(
+        type=np.float64,
+        description='Accumulated deposition energy since the last calibration.',
+        unit='J',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Energy since last calibration',
+            defaultDisplayUnit='kWh',
+        ),
+    )
+
+    needs_calibration = Quantity(
+        type=bool,
+        description='True if any calibration threshold has been exceeded.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.BoolEditQuantity,
+            label='Needs calibration',
+        ),
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+        # Store own raw file path so StarSputtering.normalize() can write records back.
+        if archive.metadata and getattr(archive.metadata, 'mainfile', None):
+            self.target_raw_path = archive.metadata.mainfile
 
         if self.lab_id is not None and self.target_id is None:
             new_target_ID = ReadableIdentifiers()
@@ -275,6 +431,55 @@ class SputteringTarget(CompositeSystem, EntryData):
                     self.old_calibration_data = []
                 if self.calibration_data not in self.old_calibration_data:
                     self.old_calibration_data.append(self.calibration_data)
+
+        # Accumulate deposition time and energy from records.
+        if self.deposition_records:
+            total_time = sum(
+                r.deposition_time
+                for r in self.deposition_records
+                if r.deposition_time is not None
+            )
+            total_energy = sum(
+                r.deposition_energy
+                for r in self.deposition_records
+                if r.deposition_energy is not None
+            )
+            self.total_deposition_time = total_time
+            self.total_deposition_energy = total_energy
+
+            since_time = 0.0
+            since_energy = 0.0
+            for record in self.deposition_records:
+                exp_start = None
+                if record.experiment is not None:
+                    exp_start = getattr(record.experiment, 'start_time', None)
+                # Count record if no calibration date set, or experiment is after it.
+                if (
+                    self.last_calibration_date is None
+                    or exp_start is None
+                    or exp_start >= self.last_calibration_date
+                ):
+                    if record.deposition_time is not None:
+                        since_time += record.deposition_time
+                    if record.deposition_energy is not None:
+                        since_energy += record.deposition_energy
+
+            self.time_since_last_calibration = since_time
+            self.energy_since_last_calibration = since_energy
+
+            if (
+                self.calibration_interval_time is not None
+                or self.calibration_interval_energy is not None
+            ):
+                over_time = (
+                    self.calibration_interval_time is not None
+                    and since_time >= self.calibration_interval_time
+                )
+                over_energy = (
+                    self.calibration_interval_energy is not None
+                    and since_energy >= self.calibration_interval_energy
+                )
+                self.needs_calibration = over_time or over_energy
 
         logger.info(
             'NewSchema.normalize.SputteringTarget', parameter=configuration.parameter
@@ -1320,6 +1525,97 @@ class StarSputtering(SputterDeposition, EntryData):
                             if sample_par.substrate.reference == sample.reference:
                                 logger.info(sample_par.substrate.reference)
                                 sample.reference.layers.append(sample_par.layer)
+
+        # --- Update target deposition records ---
+        # Compute total powered time and energy across all steps.
+        _total_time = 0.0
+        _total_energy = 0.0
+        for _step in self.steps:
+            if _step.duration is None:
+                continue
+            _total_time += _step.duration
+            _step_power = _step.power
+            if _step_power is None:
+                _step_power = getattr(_step, 'set_power', None)
+                if _step_power is not None:
+                    logger.warning(
+                        f'StarSputtering.normalize: measured power unavailable for '
+                        f'step {_step.name!r}, using set_power as fallback for '
+                        f'energy calculation.'
+                    )
+            if _step_power is not None:
+                _total_energy += _step_power * _step.duration
+
+        _mainfile = (
+            getattr(archive.metadata, 'mainfile', None) if archive.metadata else None
+        )
+        for _src_idx, _source in enumerate(self.sources or []):
+            for _mat_comp in _source.material or []:
+                _target = getattr(_mat_comp, 'system', None)
+                if not isinstance(_target, SputteringTarget):
+                    continue
+
+                _target_path = getattr(_target, 'target_raw_path', None)
+                if not _target_path:
+                    logger.warning(
+                        f'StarSputtering.normalize: target for source {_src_idx} '
+                        'has no target_raw_path — normalize the target entry first. '
+                        'Skipping deposition record update.'
+                    )
+                    continue
+
+                if isinstance(archive.m_context, ClientContext):
+                    logger.warning(
+                        'StarSputtering.normalize: running in ClientContext, '
+                        'cannot update target deposition records.'
+                    )
+                    continue
+
+                if not archive.m_context.raw_path_exists(_target_path):
+                    logger.warning(
+                        f'StarSputtering.normalize: target file {_target_path!r} '
+                        'not found in upload. Skipping record update.'
+                    )
+                    continue
+
+                _this_ref = (
+                    get_hash_ref(archive.m_context.upload_id, _mainfile)
+                    if _mainfile
+                    else None
+                )
+
+                with archive.m_context.raw_file(_target_path, 'r') as _f:
+                    _target_dict = yaml.safe_load(_f) or {}
+
+                _data = _target_dict.setdefault('data', {})
+                _records = _data.get('deposition_records') or []
+
+                _already_recorded = any(
+                    rec.get('experiment') == _this_ref
+                    and rec.get('source_index') == _src_idx
+                    for rec in _records
+                )
+
+                if not _already_recorded:
+                    _records.append(
+                        {
+                            'experiment': _this_ref,
+                            'source_index': _src_idx,
+                            'deposition_time': _total_time,
+                            'deposition_energy': _total_energy,
+                        }
+                    )
+                    _data['deposition_records'] = _records
+
+                    with archive.m_context.raw_file(_target_path, 'w') as _f:
+                        yaml.dump(_target_dict, _f)
+                    archive.m_context.upload.process_updated_raw_file(
+                        _target_path, allow_modify=True
+                    )
+                    logger.info(
+                        f'StarSputtering.normalize: added deposition record to '
+                        f'target {_target_path!r} (source {_src_idx}).'
+                    )
 
         logger.info(
             'NewSchema.normalize.StarSputtering', parameter=configuration.parameter
