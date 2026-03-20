@@ -139,7 +139,15 @@ class INLThinFilmStack(ThinFilmStack, EntryData):
 
     substrate = SubSection(section_def=INLSubstrateReference)
 
+    raw_path = Quantity(
+        type=str,
+        description='Raw file path of this entry (set automatically during normalization).',
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        if archive.metadata and getattr(archive.metadata, 'mainfile', None):
+            self.raw_path = archive.metadata.mainfile
+
         self.components = []
         if self.layers:
             self.components = [
@@ -193,6 +201,12 @@ class INLInstrument(Instrument, EntryData):
         type=str,
         description='Manufacturer or supplier of the instrument.',
         a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity, label='Supplier'),
+    )
+
+    lab_id = Quantity(
+        type=str,
+        description='Lab identifier where the instrument is located.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity, label='Lab ID'),
     )
 
 

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
         BoundLogger,
     )
 
+import yaml
 from baseclasses.atmosphere import Atmosphere
 from baseclasses.material_processes_misc import Annealing, Quenching
 from baseclasses.wet_chemical_deposition.blade_coating import BladeCoatingProperties
@@ -23,6 +24,7 @@ from baseclasses.wet_chemical_deposition.spray_pyrolysis import SprayPyrolysisPr
 from baseclasses.wet_chemical_deposition.wet_chemical_deposition import (
     PrecursorSolution,
 )
+from nomad.datamodel.context import ClientContext
 from nomad.datamodel.data import (
     EntryData,
     EntryDataCategory,
@@ -334,13 +336,34 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
 
     atmosphere = SubSection(section_def=Atmosphere)
 
-    substrate = SubSection(section_def=INLSubstrateReference)
+    substrate = SubSection(
+        section_def=INLSubstrateReference,
+        description=(
+            'The substrate this layer is deposited on. Set this for the first layer '
+            'on a bare substrate — a new stack will be created automatically.'
+        ),
+    )
+
+    sample = SubSection(
+        section_def=INLThinFilmStackReference,
+        description=(
+            'The sample being built. For the first layer leave empty and set substrate. '
+            'For multi-layer deposition set this to the existing stack — a new layer '
+            'will be appended to it. After film creation this holds the resulting stack.'
+        ),
+    )
 
     creates_new_thin_film = Quantity(
         type=bool,
         default=False,
-        description='If True, create a ThinFilm + ThinFilmStack entry via normalize.',
-        a_eln=ELNAnnotation(component=ELNComponentEnum.BoolEditQuantity),
+        description=(
+            'If True, create a new ThinFilm entry and append it to the sample stack '
+            '(or create a new stack from the substrate if no sample is set yet).'
+        ),
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.BoolEditQuantity,
+            label='Create / append film',
+        ),
     )
 
     recipe = SubSection(
@@ -355,8 +378,6 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         a_eln=ELNAnnotation(component=ELNComponentEnum.BoolEditQuantity),
     )
 
-    thin_film_stack = SubSection(section_def=INLThinFilmStackReference)
-
     solution = SubSection(
         section_def=PrecursorSolution,
         repeats=True,
@@ -366,60 +387,130 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
 
     quenching = SubSection(section_def=Quenching)
 
-    def _create_thin_film_stack(
+    def _update_sample(
         self, archive: 'EntryArchive', logger: 'BoundLogger'
     ) -> None:
-        """Auto-create ThinFilm + ThinFilmStack entries and set thin_film_stack."""
+        """Create a new ThinFilm and register it with the sample stack.
 
-        if (
-            self.thin_film_stack is not None
-            and self.thin_film_stack.reference is not None
-        ):
-            return
-
+        Case B — sample is None, substrate is set:
+            Create INLThinFilm + new INLThinFilmStack (with that substrate),
+            set self.sample to the new stack.
+        Case A — sample already set:
+            Create INLThinFilm, write-back the new layer to the existing stack
+            yaml file so the change persists.
+        Case C — neither set:
+            Warn and return without creating anything.
+        """
         data_file = (self.name or 'wet_deposition').replace(' ', '_')
 
-        # Create INLThinFilm entry
-        new_film = INLThinFilm()
-        film_filename, film_archive = create_filename(
-            data_file + '_thin_film', new_film, 'ThinFilm', archive, logger
-        )
+        # --- Case A: append to existing stack ---
+        if self.sample is not None and self.sample.reference is not None:
+            if isinstance(archive.m_context, ClientContext):
+                logger.warning(
+                    'INLThinFilmDeposition: running in ClientContext — '
+                    'cannot write back to existing stack. Skipping film creation.'
+                )
+                return
 
-        if not archive.m_context.raw_path_exists(film_filename):
-            film_ref = create_archive(
-                film_archive.m_to_dict(),
-                archive.m_context,
-                film_filename,
-                'yaml',
-                logger,
+            stack_path = getattr(self.sample.reference, 'raw_path', None)
+            if not stack_path:
+                logger.warning(
+                    'INLThinFilmDeposition: existing sample stack has no raw_path — '
+                    'normalize the stack entry first, then retry.'
+                )
+                return
+
+            if not archive.m_context.raw_path_exists(stack_path):
+                logger.warning(
+                    f'INLThinFilmDeposition: stack file {stack_path!r} not found. '
+                    'Skipping film creation.'
+                )
+                return
+
+            # Create the new ThinFilm entry
+            new_film = INLThinFilm()
+            film_filename, film_archive = create_filename(
+                data_file + '_thin_film', new_film, 'ThinFilm', archive, logger
             )
-        else:
-            film_ref = get_hash_ref(archive.m_context.upload_id, film_filename)
+            if not archive.m_context.raw_path_exists(film_filename):
+                film_ref = create_archive(
+                    film_archive.m_to_dict(),
+                    archive.m_context,
+                    film_filename,
+                    'yaml',
+                    logger,
+                )
+            else:
+                film_ref = get_hash_ref(archive.m_context.upload_id, film_filename)
 
-        film_reference = INLThinFilmReference(reference=film_ref)
+            # Write-back: append new layer reference to the stack's raw yaml file
+            with archive.m_context.raw_file(stack_path, 'r') as _f:
+                stack_dict = yaml.safe_load(_f) or {}
 
-        # Create INLThinFilmStack entry
-        stack = INLThinFilmStack()
+            stack_data = stack_dict.setdefault('data', {})
+            layers = stack_data.get('layers') or []
+            layers.append({'reference': film_ref})
+            stack_data['layers'] = layers
+
+            with archive.m_context.raw_file(stack_path, 'w') as _f:
+                yaml.dump(stack_dict, _f)
+
+            archive.m_context.upload.process_updated_raw_file(
+                stack_path, allow_modify=True
+            )
+            logger.info(
+                f'INLThinFilmDeposition: appended new layer to existing stack {stack_path!r}.'
+            )
+            return
+
+        # --- Case B: first layer on bare substrate — create new stack ---
         if self.substrate is not None:
-            stack.substrate = self.substrate
-        stack.layers = [film_reference]
-
-        stack_filename, stack_archive = create_filename(
-            data_file + '_thin_film_stack', stack, 'ThinFilmStack', archive, logger
-        )
-
-        if not archive.m_context.raw_path_exists(stack_filename):
-            stack_ref = create_archive(
-                stack_archive.m_to_dict(),
-                archive.m_context,
-                stack_filename,
-                'yaml',
-                logger,
+            new_film = INLThinFilm()
+            film_filename, film_archive = create_filename(
+                data_file + '_thin_film', new_film, 'ThinFilm', archive, logger
             )
-        else:
-            stack_ref = get_hash_ref(archive.m_context.upload_id, stack_filename)
+            if not archive.m_context.raw_path_exists(film_filename):
+                film_ref = create_archive(
+                    film_archive.m_to_dict(),
+                    archive.m_context,
+                    film_filename,
+                    'yaml',
+                    logger,
+                )
+            else:
+                film_ref = get_hash_ref(archive.m_context.upload_id, film_filename)
 
-        self.thin_film_stack = INLThinFilmStackReference(reference=stack_ref)
+            film_reference = INLThinFilmReference(reference=film_ref)
+
+            stack = INLThinFilmStack()
+            stack.substrate = self.substrate
+            stack.layers = [film_reference]
+
+            stack_filename, stack_archive = create_filename(
+                data_file + '_thin_film_stack', stack, 'ThinFilmStack', archive, logger
+            )
+            if not archive.m_context.raw_path_exists(stack_filename):
+                stack_ref = create_archive(
+                    stack_archive.m_to_dict(),
+                    archive.m_context,
+                    stack_filename,
+                    'yaml',
+                    logger,
+                )
+            else:
+                stack_ref = get_hash_ref(archive.m_context.upload_id, stack_filename)
+
+            self.sample = INLThinFilmStackReference(reference=stack_ref)
+            logger.info(
+                'INLThinFilmDeposition: created new sample stack from substrate.'
+            )
+            return
+
+        # --- Case C: nothing set ---
+        logger.warning(
+            'INLThinFilmDeposition: cannot create film — '
+            'set either "substrate" (first layer) or "sample" (multi-layer append) first.'
+        )
 
     def _apply_recipe(
         self, recipe: 'WetDepositionRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
@@ -452,7 +543,7 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
             self.apply_recipe = False
 
         if self.creates_new_thin_film:
-            self._create_thin_film_stack(archive, logger)
+            self._update_sample(archive, logger)
             self.creates_new_thin_film = False
 
 

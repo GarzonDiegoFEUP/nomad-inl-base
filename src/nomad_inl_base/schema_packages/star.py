@@ -1164,6 +1164,15 @@ class StarSputtering(SputterDeposition, EntryData):
 
     samples = SubSection(section_def=StarStackReference, repeats=True)
 
+    substrate = SubSection(
+        section_def=INLSubstrateReference,
+        description=(
+            'Substrate to use when no samples are pre-set. '
+            'Set this to a cleaned or purchased substrate — the initial stack '
+            'will be created from it when the first film-creating step runs.'
+        ),
+    )
+
     sources = SubSection(
         section_def=SputteringSource,
         repeats=True,
@@ -1207,6 +1216,10 @@ class StarSputtering(SputterDeposition, EntryData):
                     new_step.set_voltage = recipe_step.set_voltage
                 if hasattr(recipe_step, 'set_current'):
                     new_step.set_current = recipe_step.set_current
+                if hasattr(recipe_step, 'Ct_value') and recipe_step.Ct_value is not None:
+                    new_step.Ct_value = recipe_step.Ct_value
+                if hasattr(recipe_step, 'Cl_value') and recipe_step.Cl_value is not None:
+                    new_step.Cl_value = recipe_step.Cl_value
 
                 self.steps.append(new_step)
 
@@ -1297,26 +1310,17 @@ class StarSputtering(SputterDeposition, EntryData):
 
                         sample_parameters.append(new_sample_par)
                 else:
-                    # new substrate
+                    if self.substrate is None:
+                        logger.warning(
+                            'StarSputtering: cannot create sample — no substrate set '
+                            'and no existing samples. Set the "substrate" field to a '
+                            'cleaned or purchased substrate first.'
+                        )
+                        continue
 
-                    new_substrate = StarSubstrate()
-                    substrate_filename, substrate_archive = create_filename(
-                        data_file + '_sub', new_substrate, 'substrate', archive, logger
-                    )
+                    new_substrateReference = self.substrate
 
-                    substrateRef = create_archive(
-                        substrate_archive.m_to_dict(),
-                        archive.m_context,
-                        substrate_filename,
-                        filetype,
-                        logger,
-                    )
-
-                    new_substrateReference = StarSubstrateReference(
-                        reference=substrateRef
-                    )
-
-                    # new stack
+                    # new stack built from the provided substrate
                     new_Stack = StarStack()
                     stack_filename, stack_archive = create_filename(
                         data_file + '_sample',
