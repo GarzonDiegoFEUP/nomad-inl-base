@@ -80,8 +80,7 @@ class INLCleaning(Cleaning):
     m_def = Section(
         label='INL Cleaning',
         categories=[INLCleaningCategory],
-        # Unhide steps so users can see and edit them directly on the entry
-        a_eln={'hide': []},
+        a_eln={'hide': ['samples']},
     )
 
     recipe = Quantity(
