@@ -846,7 +846,7 @@ class StabilizationRFStep(StarRFStep):
             defaultDisplayUnit='minute',
         ),
         unit='s',
-        default=2 * 60,
+        default=3 * 60,
     )
 
 
@@ -921,7 +921,7 @@ class StabilizationDCStep(StarDCStep):
             defaultDisplayUnit='minute',
         ),
         unit='s',
-        default=2 * 60,
+        default=3 * 60,
     )
 
 
