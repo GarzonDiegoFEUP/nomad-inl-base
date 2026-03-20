@@ -36,15 +36,15 @@ from nomad.metainfo import (
     Section,
     SubSection,
 )
-from nomad_material_processing.general import (
-    SampleDeposition,
-    SubstrateReference,
-    ThinFilm,
-    ThinFilmReference,
-    ThinFilmStack,
-    ThinFilmStackReference,
-)
+from nomad_material_processing.general import SampleDeposition
 
+from nomad_inl_base.schema_packages.entities import (
+    INLSubstrateReference,
+    INLThinFilm,
+    INLThinFilmReference,
+    INLThinFilmStack,
+    INLThinFilmStackReference,
+)
 from nomad_inl_base.utils import create_archive, create_filename, get_hash_ref
 
 m_package = SchemaPackage()
@@ -84,7 +84,7 @@ class WetDepositionRecipe(EntryData):
     )
 
     substrate = SubSection(
-        section_def=SubstrateReference,
+        section_def=INLSubstrateReference,
         description='Substrate template for the recipe.',
     )
 
@@ -152,7 +152,7 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
 
     atmosphere = SubSection(section_def=Atmosphere)
 
-    substrate = SubSection(section_def=SubstrateReference)
+    substrate = SubSection(section_def=INLSubstrateReference)
 
     creates_new_thin_film = Quantity(
         type=bool,
@@ -173,7 +173,7 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         a_eln=ELNAnnotation(component=ELNComponentEnum.BoolEditQuantity),
     )
 
-    thin_film_stack = SubSection(section_def=ThinFilmStackReference)
+    thin_film_stack = SubSection(section_def=INLThinFilmStackReference)
 
     solution = SubSection(
         section_def=PrecursorSolution,
@@ -197,8 +197,8 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
 
         data_file = (self.name or 'wet_deposition').replace(' ', '_')
 
-        # Create ThinFilm entry
-        new_film = ThinFilm()
+        # Create INLThinFilm entry
+        new_film = INLThinFilm()
         film_filename, film_archive = create_filename(
             data_file + '_thin_film', new_film, 'ThinFilm', archive, logger
         )
@@ -214,10 +214,10 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         else:
             film_ref = get_hash_ref(archive.m_context.upload_id, film_filename)
 
-        film_reference = ThinFilmReference(reference=film_ref)
+        film_reference = INLThinFilmReference(reference=film_ref)
 
-        # Create ThinFilmStack entry
-        stack = ThinFilmStack()
+        # Create INLThinFilmStack entry
+        stack = INLThinFilmStack()
         if self.substrate is not None:
             stack.substrate = self.substrate
         stack.layers = [film_reference]
@@ -237,7 +237,7 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         else:
             stack_ref = get_hash_ref(archive.m_context.upload_id, stack_filename)
 
-        self.thin_film_stack = ThinFilmStackReference(reference=stack_ref)
+        self.thin_film_stack = INLThinFilmStackReference(reference=stack_ref)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         if not self.method:

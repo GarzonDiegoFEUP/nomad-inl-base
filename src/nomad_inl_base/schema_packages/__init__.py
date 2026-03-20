@@ -69,3 +69,16 @@ characterization_entry_point = INLCharacterizationPackageEntryPoint(
     name='INL Characterization',
     description='INL characterization measurement schemas (XRD, UV-Vis).',
 )
+
+
+class INLEntitiesPackageEntryPoint(SchemaPackageEntryPoint):
+    def load(self):
+        from nomad_inl_base.schema_packages.entities import m_package
+
+        return m_package
+
+
+entities_entry_point = INLEntitiesPackageEntryPoint(
+    name='INL Entities',
+    description='Shared INL entity schemas (INLSubstrate, etc.) usable across all INL processes.',
+)

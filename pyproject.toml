@@ -142,6 +142,7 @@ star_entry_point = "nomad_inl_base.schema_packages:star_entry_point"
 crystaLLM_entry_point = "nomad_inl_base.schema_packages:crystaLLM_entry_point"
 wet_deposition_entry_point = "nomad_inl_base.schema_packages:wet_deposition_entry_point"
 characterization_entry_point = "nomad_inl_base.schema_packages:characterization_entry_point"
+entities_entry_point = "nomad_inl_base.schema_packages:entities_entry_point"
 
 
 

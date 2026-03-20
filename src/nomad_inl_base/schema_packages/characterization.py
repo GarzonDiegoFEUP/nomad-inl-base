@@ -11,11 +11,13 @@ from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import CompositeSystemReference, Measurement
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
 from nomad.metainfo import Category, Quantity, SchemaPackage, Section, SubSection
-from nomad_material_processing.general import ThinFilmStack, TimeSeries
+from nomad_material_processing.general import TimeSeries
 from nomad_material_processing.solution.general import Solution
 from nomad_measurements.transmission.schema import ELNUVVisNirTransmission
 from nomad_measurements.xrd.schema import ELNXRayDiffraction
 from plotly.subplots import make_subplots
+
+from nomad_inl_base.schema_packages.entities import INLThinFilmStack
 
 m_package = SchemaPackage()
 
@@ -27,7 +29,7 @@ class INLCharacterizationCategory(EntryDataCategory):
 class INLSampleReference(CompositeSystemReference):
     m_def = Section(hide=['name', 'lab_id'])
     reference = Quantity(
-        type=ThinFilmStack,
+        type=INLThinFilmStack,
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.ReferenceEditQuantity,
             label='Sample',
@@ -140,7 +142,7 @@ class ElectrolyteSolution(Solution):
     )
 
 
-class WorkingElectrode(ThinFilmStack, EntryData):
+class WorkingElectrode(INLThinFilmStack, EntryData):
     m_def = Section(
         links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
         categories=[INLCharacterizationCategory],
