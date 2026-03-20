@@ -4,10 +4,17 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
+import numpy as np
 from nomad.datamodel.data import EntryDataCategory
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.metainfo import Category, Quantity, SchemaPackage, Section, SubSection
-from nomad_material_processing.general import Cleaning, CleaningRecipe, CleaningStep
+from nomad.units import ureg
+from nomad_material_processing.general import (
+    Cleaning,
+    CleaningRecipe,
+    CleaningStep,
+    RectangleCuboid,
+)
 
 from nomad_inl_base.schema_packages.entities import INLSubstrate, INLSubstrateReference
 from nomad_inl_base.utils import create_archive, create_filename, get_hash_ref
@@ -59,6 +66,17 @@ class INLCleaningRecipe(CleaningRecipe):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.StringEditQuantity,
             label='Substrate material',
+        ),
+    )
+
+    substrate_side_length = Quantity(
+        type=np.float64,
+        description='Side length of the square substrate (thickness is always 1 mm).',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Substrate side length',
+            defaultDisplayUnit='mm',
         ),
     )
 
@@ -114,6 +132,17 @@ class INLCleaning(Cleaning):
         ),
     )
 
+    substrate_side_length = Quantity(
+        type=np.float64,
+        description='Side length of the square substrate (thickness is always 1 mm).',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Substrate side length',
+            defaultDisplayUnit='mm',
+        ),
+    )
+
     number_of_substrates = Quantity(
         type=int,
         description='Number of substrates to create when "Create substrates" is enabled.',
@@ -158,6 +187,8 @@ class INLCleaning(Cleaning):
             self.steps = recipe.steps
         if recipe.material is not None and self.substrate_material is None:
             self.substrate_material = recipe.material
+        if recipe.substrate_side_length is not None and self.substrate_side_length is None:
+            self.substrate_side_length = recipe.substrate_side_length
         self.apply_recipe = False
 
     def _sum_step_durations(self) -> None:
@@ -228,6 +259,12 @@ class INLCleaning(Cleaning):
                 substrate.name = substrate_name
                 if self.substrate_material is not None:
                     substrate.material = self.substrate_material
+                if self.substrate_side_length is not None:
+                    geo = RectangleCuboid()
+                    geo.height = 1 * ureg('mm')
+                    geo.width = self.substrate_side_length
+                    geo.length = self.substrate_side_length
+                    substrate.geometry = geo
 
                 _sub_filename, sub_archive = create_filename(
                     substrate_name, substrate, 'Substrate', archive, logger
