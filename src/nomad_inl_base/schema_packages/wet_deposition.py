@@ -124,6 +124,188 @@ class WetDepositionRecipeReference(EntityReference):
         pass
 
 
+class INLSpinCoatingRecipe(WetDepositionRecipe):
+    """Recipe template for INL spin coating."""
+
+    m_def = Section(label='INL Spin Coating Recipe', categories=[INLWetDepositionCategory])
+
+    recipe_steps = SubSection(
+        section_def=SpinCoatingRecipeSteps,
+        repeats=True,
+        description='Spin coating steps template.',
+    )
+
+
+class INLSpinCoatingRecipeReference(WetDepositionRecipeReference):
+    reference = Quantity(
+        type=INLSpinCoatingRecipe,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Spin coating recipe',
+        ),
+    )
+
+
+class INLSlotDieCoatingRecipe(WetDepositionRecipe):
+    """Recipe template for INL slot-die coating."""
+
+    m_def = Section(label='INL Slot-Die Coating Recipe', categories=[INLWetDepositionCategory])
+
+    properties = SubSection(
+        section_def=SlotDieCoatingProperties,
+        description='Slot-die coating properties template.',
+    )
+
+
+class INLSlotDieCoatingRecipeReference(WetDepositionRecipeReference):
+    reference = Quantity(
+        type=INLSlotDieCoatingRecipe,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Slot-die coating recipe',
+        ),
+    )
+
+
+class INLBladeCoatingRecipe(WetDepositionRecipe):
+    """Recipe template for INL blade coating."""
+
+    m_def = Section(label='INL Blade Coating Recipe', categories=[INLWetDepositionCategory])
+
+    properties = SubSection(
+        section_def=BladeCoatingProperties,
+        description='Blade coating properties template.',
+    )
+
+
+class INLBladeCoatingRecipeReference(WetDepositionRecipeReference):
+    reference = Quantity(
+        type=INLBladeCoatingRecipe,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Blade coating recipe',
+        ),
+    )
+
+
+class INLInkjetPrintingRecipe(WetDepositionRecipe):
+    """Recipe template for INL inkjet printing."""
+
+    m_def = Section(label='INL Inkjet Printing Recipe', categories=[INLWetDepositionCategory])
+
+    properties = SubSection(
+        section_def=InkjetPrintingProperties,
+        description='Inkjet printing properties template.',
+    )
+
+
+class INLInkjetPrintingRecipeReference(WetDepositionRecipeReference):
+    reference = Quantity(
+        type=INLInkjetPrintingRecipe,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Inkjet printing recipe',
+        ),
+    )
+
+
+class INLSprayPyrolysisRecipe(WetDepositionRecipe):
+    """Recipe template for INL spray pyrolysis."""
+
+    m_def = Section(label='INL Spray Pyrolysis Recipe', categories=[INLWetDepositionCategory])
+
+    properties = SubSection(
+        section_def=SprayPyrolysisProperties,
+        description='Spray pyrolysis properties template.',
+    )
+
+
+class INLSprayPyrolysisRecipeReference(WetDepositionRecipeReference):
+    reference = Quantity(
+        type=INLSprayPyrolysisRecipe,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Spray pyrolysis recipe',
+        ),
+    )
+
+
+class INLDipCoatingRecipe(WetDepositionRecipe):
+    """Recipe template for INL dip coating."""
+
+    m_def = Section(label='INL Dip Coating Recipe', categories=[INLWetDepositionCategory])
+
+    properties = SubSection(
+        section_def=DipCoatingProperties,
+        description='Dip coating properties template.',
+    )
+
+
+class INLDipCoatingRecipeReference(WetDepositionRecipeReference):
+    reference = Quantity(
+        type=INLDipCoatingRecipe,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Dip coating recipe',
+        ),
+    )
+
+
+class INLChemicalBathDepositionRecipe(WetDepositionRecipe):
+    """Recipe template for INL chemical bath deposition."""
+
+    m_def = Section(
+        label='INL Chemical Bath Deposition Recipe',
+        categories=[INLWetDepositionCategory],
+    )
+
+    bath_temperature = Quantity(
+        type=float,
+        unit='celsius',
+        description='Template bath temperature.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='celsius',
+        ),
+    )
+
+    duration = Quantity(
+        type=float,
+        unit='minute',
+        description='Template total duration.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='minute',
+        ),
+    )
+
+    ph = Quantity(
+        type=float,
+        description='Template pH of the chemical bath.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+    stirring_speed = Quantity(
+        type=float,
+        unit='rpm',
+        description='Template stirring speed.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='rpm',
+        ),
+    )
+
+
+class INLChemicalBathDepositionRecipeReference(WetDepositionRecipeReference):
+    reference = Quantity(
+        type=INLChemicalBathDepositionRecipe,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Chemical bath deposition recipe',
+        ),
+    )
+
+
 class INLThinFilmDeposition(SampleDeposition, EntryData):
     """Base ELN schema for all INL wet deposition processes."""
 
@@ -239,6 +421,23 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
 
         self.thin_film_stack = INLThinFilmStackReference(reference=stack_ref)
 
+    def _apply_recipe(
+        self, recipe: 'WetDepositionRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> None:
+        """Copy shared recipe fields. Override in subclasses to add technique-specific fields."""
+        if recipe.instrument is not None and self.instrument is None:
+            self.instrument = recipe.instrument
+        if recipe.atmosphere is not None and self.atmosphere is None:
+            self.atmosphere = recipe.atmosphere
+        if recipe.substrate is not None and self.substrate is None:
+            self.substrate = recipe.substrate
+        if recipe.solution is not None and not self.solution:
+            self.solution = recipe.solution
+        if recipe.annealing is not None and self.annealing is None:
+            self.annealing = recipe.annealing
+        if recipe.quenching is not None and self.quenching is None:
+            self.quenching = recipe.quenching
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         if not self.method:
             self.method = 'Wet Deposition'
@@ -249,19 +448,7 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
             and self.recipe is not None
             and getattr(self.recipe, 'reference', None) is not None
         ):
-            recipe = self.recipe.reference
-            if recipe.instrument is not None and self.instrument is None:
-                self.instrument = recipe.instrument
-            if recipe.atmosphere is not None and self.atmosphere is None:
-                self.atmosphere = recipe.atmosphere
-            if recipe.substrate is not None and self.substrate is None:
-                self.substrate = recipe.substrate
-            if recipe.solution is not None and not self.solution:
-                self.solution = recipe.solution
-            if recipe.annealing is not None and self.annealing is None:
-                self.annealing = recipe.annealing
-            if recipe.quenching is not None and self.quenching is None:
-                self.quenching = recipe.quenching
+            self._apply_recipe(self.recipe.reference, archive, logger)
             self.apply_recipe = False
 
         if self.creates_new_thin_film:
@@ -276,7 +463,19 @@ class INLSpinCoating(INLThinFilmDeposition):
         links=['http://purl.obolibrary.org/obo/CHMO_0001472'],
     )
 
+    recipe = SubSection(
+        section_def=INLSpinCoatingRecipeReference,
+        description='Reference to an INL spin coating recipe.',
+    )
+
     recipe_steps = SubSection(section_def=SpinCoatingRecipeSteps, repeats=True)
+
+    def _apply_recipe(
+        self, recipe: 'INLSpinCoatingRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> None:
+        super()._apply_recipe(recipe, archive, logger)
+        if recipe.recipe_steps and not self.recipe_steps:
+            self.recipe_steps = recipe.recipe_steps
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.method = 'Spin Coating'
@@ -290,7 +489,19 @@ class INLSlotDieCoating(INLThinFilmDeposition):
         links=['https://purl.archive.org/tfsco/TFSCO_00000075'],
     )
 
+    recipe = SubSection(
+        section_def=INLSlotDieCoatingRecipeReference,
+        description='Reference to an INL slot-die coating recipe.',
+    )
+
     properties = SubSection(section_def=SlotDieCoatingProperties)
+
+    def _apply_recipe(
+        self, recipe: 'INLSlotDieCoatingRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> None:
+        super()._apply_recipe(recipe, archive, logger)
+        if recipe.properties is not None and self.properties is None:
+            self.properties = recipe.properties
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.method = 'Slot-Die Coating'
@@ -304,7 +515,19 @@ class INLBladeCoating(INLThinFilmDeposition):
         links=['https://purl.archive.org/tfsco/TFSCO_00002060'],
     )
 
+    recipe = SubSection(
+        section_def=INLBladeCoatingRecipeReference,
+        description='Reference to an INL blade coating recipe.',
+    )
+
     properties = SubSection(section_def=BladeCoatingProperties)
+
+    def _apply_recipe(
+        self, recipe: 'INLBladeCoatingRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> None:
+        super()._apply_recipe(recipe, archive, logger)
+        if recipe.properties is not None and self.properties is None:
+            self.properties = recipe.properties
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.method = 'Blade Coating'
@@ -318,7 +541,19 @@ class INLInkjetPrinting(INLThinFilmDeposition):
         links=['https://purl.archive.org/tfsco/TFSCO_00002053'],
     )
 
+    recipe = SubSection(
+        section_def=INLInkjetPrintingRecipeReference,
+        description='Reference to an INL inkjet printing recipe.',
+    )
+
     properties = SubSection(section_def=InkjetPrintingProperties)
+
+    def _apply_recipe(
+        self, recipe: 'INLInkjetPrintingRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> None:
+        super()._apply_recipe(recipe, archive, logger)
+        if recipe.properties is not None and self.properties is None:
+            self.properties = recipe.properties
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.method = 'Inkjet Printing'
@@ -332,7 +567,19 @@ class INLSprayPyrolysis(INLThinFilmDeposition):
         links=['http://purl.obolibrary.org/obo/CHMO_0001516'],
     )
 
+    recipe = SubSection(
+        section_def=INLSprayPyrolysisRecipeReference,
+        description='Reference to an INL spray pyrolysis recipe.',
+    )
+
     properties = SubSection(section_def=SprayPyrolysisProperties)
+
+    def _apply_recipe(
+        self, recipe: 'INLSprayPyrolysisRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> None:
+        super()._apply_recipe(recipe, archive, logger)
+        if recipe.properties is not None and self.properties is None:
+            self.properties = recipe.properties
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.method = 'Spray Pyrolysis'
@@ -346,7 +593,19 @@ class INLDipCoating(INLThinFilmDeposition):
         links=['http://purl.obolibrary.org/obo/CHMO_0001471'],
     )
 
+    recipe = SubSection(
+        section_def=INLDipCoatingRecipeReference,
+        description='Reference to an INL dip coating recipe.',
+    )
+
     properties = SubSection(section_def=DipCoatingProperties)
+
+    def _apply_recipe(
+        self, recipe: 'INLDipCoatingRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> None:
+        super()._apply_recipe(recipe, archive, logger)
+        if recipe.properties is not None and self.properties is None:
+            self.properties = recipe.properties
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.method = 'Dip Coating'
@@ -358,6 +617,11 @@ class INLChemicalBathDeposition(INLThinFilmDeposition):
 
     m_def = Section(
         links=['http://purl.obolibrary.org/obo/CHMO_0001465'],
+    )
+
+    recipe = SubSection(
+        section_def=INLChemicalBathDepositionRecipeReference,
+        description='Reference to an INL chemical bath deposition recipe.',
     )
 
     bath_temperature = Quantity(
@@ -395,6 +659,19 @@ class INLChemicalBathDeposition(INLThinFilmDeposition):
             defaultDisplayUnit='rpm',
         ),
     )
+
+    def _apply_recipe(
+        self, recipe: 'INLChemicalBathDepositionRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> None:
+        super()._apply_recipe(recipe, archive, logger)
+        if recipe.bath_temperature is not None and self.bath_temperature is None:
+            self.bath_temperature = recipe.bath_temperature
+        if recipe.duration is not None and self.duration is None:
+            self.duration = recipe.duration
+        if recipe.ph is not None and self.ph is None:
+            self.ph = recipe.ph
+        if recipe.stirring_speed is not None and self.stirring_speed is None:
+            self.stirring_speed = recipe.stirring_speed
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.method = 'Chemical Bath Deposition'
