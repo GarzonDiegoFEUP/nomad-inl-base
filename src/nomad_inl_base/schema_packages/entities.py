@@ -7,7 +7,11 @@ if TYPE_CHECKING:
 import numpy as np
 from nomad.datamodel.data import EntryData, EntryDataCategory
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
-from nomad.datamodel.metainfo.basesections import SystemComponent
+from nomad.datamodel.metainfo.basesections import (
+    Instrument,
+    InstrumentReference,
+    SystemComponent,
+)
 from nomad.metainfo import Category, Quantity, SchemaPackage, Section, SubSection
 from nomad.units import ureg
 from nomad_material_processing.general import (
@@ -167,6 +171,39 @@ class INLThinFilmStackReference(ThinFilmStackReference):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.ReferenceEditQuantity,
             label='Thin Film Stack',
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.reference is not None:
+            if self.reference.name is not None:
+                self.name = self.reference.name
+            if self.reference.lab_id is not None:
+                self.lab_id = self.reference.lab_id
+
+
+class INLInstrument(Instrument, EntryData):
+    """INL instrument entity with supplier information."""
+
+    m_def = Section(label='INL Instrument', categories=[INLEntityCategory])
+
+    supplier = Quantity(
+        type=str,
+        description='Manufacturer or supplier of the instrument.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity, label='Supplier'),
+    )
+
+
+class INLInstrumentReference(InstrumentReference):
+    """Reference to an INLInstrument entry."""
+
+    reference = Quantity(
+        type=INLInstrument,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Instrument',
         ),
     )
 
