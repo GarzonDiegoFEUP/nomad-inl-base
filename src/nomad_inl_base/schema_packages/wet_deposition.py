@@ -297,6 +297,18 @@ class INLChemicalBathDepositionRecipe(WetDepositionRecipe):
         ),
     )
 
+    deposited_material = Quantity(
+        type=str,
+        description=(
+            'Material obtained after the chemical bath reaction (e.g. CdS, ZnS). '
+            'Cannot be inferred from the solution reagents since a reaction occurs.'
+        ),
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity,
+            label='Deposited material',
+        ),
+    )
+
 
 class INLChemicalBathDepositionRecipeReference(WetDepositionRecipeReference):
     reference = Quantity(
@@ -387,6 +399,18 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
 
     quenching = SubSection(section_def=Quenching)
 
+    deposited_material = Quantity(
+        type=str,
+        description=(
+            'Material of the deposited thin film. Auto-filled from the solution '
+            'solute name if not set explicitly.'
+        ),
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity,
+            label='Deposited material',
+        ),
+    )
+
     def _update_sample(
         self, archive: 'EntryArchive', logger: 'BoundLogger'
     ) -> None:
@@ -429,6 +453,8 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
 
             # Create the new ThinFilm entry
             new_film = INLThinFilm()
+            if self.deposited_material:
+                new_film.material = self.deposited_material
             film_filename, film_archive = create_filename(
                 data_file + '_thin_film', new_film, 'ThinFilm', archive, logger
             )
@@ -466,6 +492,8 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         # --- Case B: first layer on bare substrate — create new stack ---
         if self.substrate is not None:
             new_film = INLThinFilm()
+            if self.deposited_material:
+                new_film.material = self.deposited_material
             film_filename, film_archive = create_filename(
                 data_file + '_thin_film', new_film, 'ThinFilm', archive, logger
             )
@@ -543,6 +571,18 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
             self.apply_recipe = False
 
         if self.creates_new_thin_film:
+            # Auto-fill deposited_material from solution solute name if not explicitly set
+            if not self.deposited_material and self.solution:
+                sol = self.solution[0]
+                details = getattr(sol, 'solution_details', None)
+                if details is not None:
+                    solutes = getattr(details, 'solute', None)
+                    if solutes:
+                        name = getattr(solutes[0], 'name', None) or getattr(
+                            getattr(solutes[0], 'chemical', None), 'name', None
+                        )
+                        if name:
+                            self.deposited_material = name
             self._update_sample(archive, logger)
             self.creates_new_thin_film = False
 
@@ -763,6 +803,8 @@ class INLChemicalBathDeposition(INLThinFilmDeposition):
             self.ph = recipe.ph
         if recipe.stirring_speed is not None and self.stirring_speed is None:
             self.stirring_speed = recipe.stirring_speed
+        if recipe.deposited_material and not self.deposited_material:
+            self.deposited_material = recipe.deposited_material
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.method = 'Chemical Bath Deposition'
