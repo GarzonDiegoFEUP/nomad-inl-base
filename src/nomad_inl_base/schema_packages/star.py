@@ -1116,8 +1116,21 @@ class StarSputteringRecipe(EntryData):
         description='The sequence of steps in the recipe.',
     )
 
+    sources = SubSection(
+        section_def=SputteringSource,
+        repeats=True,
+        description='Sputtering sources (targets) template for this recipe.',
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+        for step in self.steps or []:
+            if step.environment is not None:
+                step.environment.step_name = step.name
+            elif step.name:
+                environment_ = StarChamberEnvironment()
+                environment_.step_name = step.name
+                step.environment = environment_
 
 
 class StarSputteringRecipeReference(EntityReference):
@@ -1201,6 +1214,8 @@ class StarSputtering(SputterDeposition, EntryData):
             and (self.steps is None or len(self.steps) == 0)
         ):
             recipe = self.recipe.reference
+            if recipe.sources and not self.sources:
+                self.sources = recipe.sources
             self.steps = []
             for recipe_step in recipe.steps or []:
                 new_step = type(recipe_step)()
