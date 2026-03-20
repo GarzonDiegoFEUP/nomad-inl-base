@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     )
 
 
+from datetime import date as _date
+
 import numpy as np
 from nomad.config import config
 from nomad.datamodel.data import (
@@ -1242,6 +1244,11 @@ class StarSputtering(SputterDeposition, EntryData):
 
         filetype = 'yaml'
         data_file = self.name.replace(' ', '_')
+        date_str = (
+            self.start_time.strftime('%y%m%d')
+            if self.start_time is not None
+            else _date.today().strftime('%y%m%d')
+        )
 
         for idx, step in enumerate(self.steps):
             step.name = str(idx + 1) + '_' + step.m_def.label.replace(' ', '_')
@@ -1288,11 +1295,20 @@ class StarSputtering(SputterDeposition, EntryData):
                 # new thin film
                 new_thinFilm = StarThinFilm()
 
-                new_thinFilm.material = deposited_system[0].pure_substance.name
+                material_parts = [
+                    c.pure_substance.name
+                    for c in deposited_system
+                    if getattr(c, 'pure_substance', None) and c.pure_substance.name
+                ]
+                material_formula = '_'.join(material_parts) if material_parts else 'film'
+                film_label = f'{date_str}_{material_formula}'
+
+                new_thinFilm.name = film_label
+                new_thinFilm.material = material_parts[0] if material_parts else None
                 new_thinFilm.components = deposited_system
 
                 thinFilm_filename, thinFilm_archive = create_filename(
-                    data_file + '_' + new_thinFilm.material + str(film_index),
+                    f'{film_label}_{data_file}',
                     new_thinFilm,
                     'thinFilm',
                     archive,

@@ -1,3 +1,4 @@
+from datetime import date as _date
 from typing import (
     TYPE_CHECKING,
 )
@@ -426,6 +427,13 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
             Warn and return without creating anything.
         """
         data_file = (self.name or 'wet_deposition').replace(' ', '_')
+        date_str = (
+            self.start_time.strftime('%y%m%d')
+            if self.start_time is not None
+            else _date.today().strftime('%y%m%d')
+        )
+        material = self.deposited_material or 'film'
+        film_label = f'{date_str}_{material}'
 
         # --- Case A: append to existing stack ---
         if self.sample is not None and self.sample.reference is not None:
@@ -453,10 +461,11 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
 
             # Create the new ThinFilm entry
             new_film = INLThinFilm()
+            new_film.name = film_label
             if self.deposited_material:
                 new_film.material = self.deposited_material
             film_filename, film_archive = create_filename(
-                data_file + '_thin_film', new_film, 'ThinFilm', archive, logger
+                f'{film_label}_{data_file}', new_film, 'ThinFilm', archive, logger
             )
             if not archive.m_context.raw_path_exists(film_filename):
                 film_ref = create_archive(
@@ -492,10 +501,11 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         # --- Case B: first layer on bare substrate — create new stack ---
         if self.substrate is not None:
             new_film = INLThinFilm()
+            new_film.name = film_label
             if self.deposited_material:
                 new_film.material = self.deposited_material
             film_filename, film_archive = create_filename(
-                data_file + '_thin_film', new_film, 'ThinFilm', archive, logger
+                f'{film_label}_{data_file}', new_film, 'ThinFilm', archive, logger
             )
             if not archive.m_context.raw_path_exists(film_filename):
                 film_ref = create_archive(
