@@ -82,3 +82,16 @@ entities_entry_point = INLEntitiesPackageEntryPoint(
     name='INL Entities',
     description='Shared INL entity schemas (INLSubstrate, etc.) usable across all INL processes.',
 )
+
+
+class INLCleaningPackageEntryPoint(SchemaPackageEntryPoint):
+    def load(self):
+        from nomad_inl_base.schema_packages.cleaning import m_package
+
+        return m_package
+
+
+cleaning_entry_point = INLCleaningPackageEntryPoint(
+    name='INL Cleaning',
+    description='ELN schemas for substrate cleaning (INLCleaning, INLCleaningRecipe).',
+)
