@@ -6,8 +6,10 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 import numpy as np
+import plotly.graph_objects as go
 from nomad.datamodel.data import ArchiveSection, EntryData
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
+from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
 from nomad.metainfo import Datetime, MEnum, Quantity, SchemaPackage, Section, SubSection
 from nomad_material_processing.vapor_deposition.general import (
     ChamberEnvironment,
@@ -15,6 +17,7 @@ from nomad_material_processing.vapor_deposition.general import (
     Pressure,
     VolumetricFlowRate,
 )
+from plotly.subplots import make_subplots
 
 from nomad_inl_base.schema_packages.entities import (
     INLSubstrateReference,
@@ -276,7 +279,7 @@ class PC03DCPowerSupply(ArchiveSection):
     )
 
 
-class PC03CathodeChamberDeposition(EntryData):
+class PC03CathodeChamberDeposition(PlotSection, EntryData):
     """
     Parsed log entry from the PC03 CathodeChamber sputtering system.
 
@@ -307,6 +310,12 @@ class PC03CathodeChamberDeposition(EntryData):
         unit='pascal',
         description='Minimum ion gauge pressure recorded during this log (used as base pressure estimate).',
         a_eln=ELNAnnotation(component='NumberEditQuantity', defaultDisplayUnit='mbar'),
+    )
+    deposition_time = Quantity(
+        type=np.float64,
+        unit='s',
+        description='Total elapsed time with substrate shutter open (computed from log data).',
+        a_eln=ELNAnnotation(component='NumberEditQuantity', defaultDisplayUnit='s'),
     )
     substrate_type = Quantity(
         type=str,
@@ -480,7 +489,197 @@ class PC03CathodeChamberDeposition(EntryData):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+        self._trim_inactive()
+        self._compute_scalars()
+        self._build_figures()
         self._create_thin_film(archive, logger)
+
+    def _trim_inactive(self) -> None:
+        """Remove time steps where all sources are inactive (silently, no logging)."""
+        if not self.sources:
+            return
+
+        # Build mask: True at each timestep where at least one source is active
+        n = len(self.timestamps) if self.timestamps is not None else 0
+        if n == 0:
+            return
+
+        mask = np.zeros(n, dtype=bool)
+        for src in self.sources:
+            if src.active is not None and len(src.active) == n:
+                mask |= src.active.astype(bool)
+
+        # If nothing is active at all, skip trimming
+        if not np.any(mask):
+            return
+
+        def trim(arr):
+            if arr is None:
+                return None
+            if isinstance(arr, np.ndarray) and len(arr) == n:
+                return arr[mask]
+            return arr
+
+        # --- Top-level arrays ---
+        self.timestamps = trim(self.timestamps)
+        self.process_time = trim(self.process_time)
+        self.substrate_shutter_open = trim(self.substrate_shutter_open)
+        self.substrate_temperature = trim(self.substrate_temperature)
+        self.substrate_temperature_2 = trim(self.substrate_temperature_2)
+        self.substrate_temperature_setpoint = trim(self.substrate_temperature_setpoint)
+        self.substrate_heater_current = trim(self.substrate_heater_current)
+        self.substrate_rotation_speed = trim(self.substrate_rotation_speed)
+        self.substrate_bias_active = trim(self.substrate_bias_active)
+        self.substrate_bias_voltage = trim(self.substrate_bias_voltage)
+        self.substrate_bias_current = trim(self.substrate_bias_current)
+        self.substrate_bias_power = trim(self.substrate_bias_power)
+        for i in range(1, 7):
+            attr = f'tc{i}_temperature'
+            setattr(self, attr, trim(getattr(self, attr)))
+        # process_phase is a string array — trim manually
+        if self.process_phase is not None and len(self.process_phase) == n:
+            self.process_phase = self.process_phase[mask]
+
+        # --- Chamber environment ---
+        env = self.chamber_environment
+        if env is not None:
+            for p_attr in ('pressure', 'ion_gauge_pressure', 'wide_range_gauge_pressure', 'roughing_pressure'):
+                p = getattr(env, p_attr, None)
+                if p is not None:
+                    p.value = trim(p.value)
+                    p.set_value = trim(p.set_value)
+            for gf in (env.gas_flow or []):
+                if gf.flow_rate is not None:
+                    gf.flow_rate.value = trim(gf.flow_rate.value)
+                    gf.flow_rate.set_value = trim(gf.flow_rate.set_value)
+
+        # --- Sources ---
+        for src in (self.sources or []):
+            src.active = trim(src.active)
+            src.shutter_open = trim(src.shutter_open)
+            src.deposition_rate = trim(src.deposition_rate)
+            src.thickness = trim(src.thickness)
+            src.accumulated_thickness = trim(src.accumulated_thickness)
+
+        # --- RF power supplies ---
+        for ps in (self.rf_power_supplies or []):
+            ps.forward_power = trim(ps.forward_power)
+            ps.reflected_power = trim(ps.reflected_power)
+            ps.dc_bias = trim(ps.dc_bias)
+            ps.output_setpoint = trim(ps.output_setpoint)
+            ps.load_cap_position = trim(ps.load_cap_position)
+            ps.tune_cap_position = trim(ps.tune_cap_position)
+
+        # --- DC power supply ---
+        ps4 = self.dc_power_supply
+        if ps4 is not None:
+            ps4.current = trim(ps4.current)
+            ps4.voltage = trim(ps4.voltage)
+            ps4.power = trim(ps4.power)
+            ps4.output_setpoint = trim(ps4.output_setpoint)
+            ps4.current_setpoint = trim(ps4.current_setpoint)
+            ps4.voltage_setpoint = trim(ps4.voltage_setpoint)
+            ps4.pulse_frequency = trim(ps4.pulse_frequency)
+            ps4.arc_count = trim(ps4.arc_count)
+            ps4.spark_count = trim(ps4.spark_count)
+
+    def _compute_scalars(self) -> None:
+        """Recompute base_pressure from trimmed ion gauge data and compute deposition_time."""
+        env = self.chamber_environment
+        if env is not None and env.ion_gauge_pressure is not None:
+            arr = env.ion_gauge_pressure.value
+            if arr is not None and len(arr) > 0:
+                valid = arr[~np.isnan(arr)]
+                if len(valid) > 0:
+                    self.base_pressure = float(np.min(valid))
+
+        ts = self.timestamps
+        shutter = self.substrate_shutter_open
+        if ts is not None and shutter is not None and len(ts) > 1 and len(shutter) == len(ts):
+            dt = np.diff(ts)
+            self.deposition_time = float(np.sum(dt[shutter[:-1].astype(bool)]))
+
+    def _build_figures(self) -> None:
+        """Build Plotly figures: Pressure, RF Power, DC Power, Temperatures."""
+        self.figures = []
+        ts = self.timestamps
+        if ts is None or len(ts) == 0:
+            return
+
+        _KELVIN_TO_C = 273.15
+        _PA_TO_MBAR = 1e-2  # 1 Pa = 0.01 mbar
+
+        env = self.chamber_environment
+
+        # ── Figure 1: Pressure ─────────────────────────────────────────────
+        capman = env.pressure.value if (env and env.pressure) else None
+        ion = env.ion_gauge_pressure.value if (env and env.ion_gauge_pressure) else None
+        if capman is not None or ion is not None:
+            rows = sum(x is not None for x in [capman, ion])
+            fig = make_subplots(
+                rows=rows, cols=1, shared_xaxes=True,
+                subplot_titles=[t for t, x in [('Capman (mbar)', capman), ('Ion Gauge (mbar)', ion)] if x is not None],
+            )
+            row = 1
+            if capman is not None:
+                fig.add_trace(go.Scatter(x=ts, y=capman * _PA_TO_MBAR, name='Capman', line=dict(color='steelblue')), row=row, col=1)
+                row += 1
+            if ion is not None:
+                fig.add_trace(go.Scatter(x=ts, y=ion * _PA_TO_MBAR, name='Ion Gauge', line=dict(color='darkorange')), row=row, col=1)
+                fig.update_yaxes(type='log', row=row, col=1)
+            fig.update_layout(template='plotly_white', height=400, xaxis_title='Time (s)', showlegend=True)
+            self.figures.append(PlotlyFigure(label='Pressure', figure=fig.to_plotly_json()))
+
+        # ── Figure 2: RF Power ─────────────────────────────────────────────
+        rf_traces = []
+        colours = ['#1f77b4', '#ff7f0e', '#2ca02c']
+        for idx, ps in enumerate(self.rf_power_supplies or []):
+            c = colours[idx % len(colours)]
+            if ps.forward_power is not None and len(ps.forward_power) == len(ts):
+                rf_traces.append(go.Scatter(x=ts, y=ps.forward_power, name=f'PS{ps.supply_index} Fwd', line=dict(color=c)))
+            if ps.reflected_power is not None and len(ps.reflected_power) == len(ts):
+                rf_traces.append(go.Scatter(x=ts, y=ps.reflected_power, name=f'PS{ps.supply_index} Rfl', line=dict(color=c, dash='dash')))
+        if rf_traces:
+            fig = go.Figure(data=rf_traces)
+            fig.update_layout(template='plotly_white', height=350, xaxis_title='Time (s)', yaxis_title='Power (W)', showlegend=True)
+            self.figures.append(PlotlyFigure(label='RF Power', figure=fig.to_plotly_json()))
+
+        # ── Figure 3: DC Power Supply ──────────────────────────────────────
+        ps4 = self.dc_power_supply
+        if ps4 is not None and any(
+            x is not None and len(x) == len(ts) for x in [ps4.power, ps4.voltage, ps4.current]
+        ):
+            dc_rows = [(ps4.power, 'Power (W)'), (ps4.voltage, 'Voltage (V)'), (ps4.current, 'Current (A)')]
+            dc_rows = [(arr, lbl) for arr, lbl in dc_rows if arr is not None and len(arr) == len(ts)]
+            fig = make_subplots(rows=len(dc_rows), cols=1, shared_xaxes=True,
+                                subplot_titles=[lbl for _, lbl in dc_rows])
+            for row_i, (arr, lbl) in enumerate(dc_rows, start=1):
+                fig.add_trace(go.Scatter(x=ts, y=arr, name=lbl, showlegend=False), row=row_i, col=1)
+            fig.update_layout(template='plotly_white', height=500, xaxis_title='Time (s)')
+            self.figures.append(PlotlyFigure(label='DC Power Supply', figure=fig.to_plotly_json()))
+
+        # ── Figure 4: Temperatures ─────────────────────────────────────────
+        temp_traces = []
+        temp_series = [
+            (self.substrate_temperature, 'Substrate T', True),
+            (self.substrate_temperature_2, 'Substrate T2', 'legendonly'),
+            (self.substrate_temperature_setpoint, 'Substrate T setpoint', 'legendonly'),
+        ] + [
+            (getattr(self, f'tc{i}_temperature'), f'TC{i}', 'legendonly') for i in range(1, 7)
+        ]
+        for arr, label, visible in temp_series:
+            if arr is not None and len(arr) == len(ts):
+                temp_traces.append(go.Scatter(
+                    x=ts, y=arr - _KELVIN_TO_C, name=label, visible=visible,
+                ))
+        if temp_traces:
+            fig = go.Figure(data=temp_traces)
+            fig.update_layout(
+                template='plotly_white', height=350,
+                xaxis_title='Time (s)', yaxis_title='Temperature (°C)',
+                showlegend=True,
+            )
+            self.figures.append(PlotlyFigure(label='Temperatures', figure=fig.to_plotly_json()))
 
     def _create_thin_film(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         if not self.sources:
