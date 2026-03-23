@@ -589,14 +589,16 @@ class PC03CathodeChamberDeposition(PlotSection, EntryData):
         if env is not None and env.ion_gauge_pressure is not None:
             arr = env.ion_gauge_pressure.value
             if arr is not None and len(arr) > 0:
-                valid = arr[~np.isnan(arr)]
+                raw = arr.magnitude if hasattr(arr, 'magnitude') else np.asarray(arr)
+                valid = raw[~np.isnan(raw)]
                 if len(valid) > 0:
                     self.base_pressure = float(np.min(valid))
 
         ts = self.timestamps
         shutter = self.substrate_shutter_open
         if ts is not None and shutter is not None and len(ts) > 1 and len(shutter) == len(ts):
-            dt = np.diff(ts)
+            ts_raw = ts.magnitude if hasattr(ts, 'magnitude') else np.asarray(ts)
+            dt = np.diff(ts_raw)
             self.deposition_time = float(np.sum(dt[shutter[:-1].astype(bool)]))
 
     def _build_figures(self) -> None:
@@ -609,11 +611,18 @@ class PC03CathodeChamberDeposition(PlotSection, EntryData):
         _KELVIN_TO_C = 273.15
         _PA_TO_MBAR = 1e-2  # 1 Pa = 0.01 mbar
 
+        def mag(arr):
+            """Return plain numpy array, stripping pint units if present."""
+            if arr is None:
+                return None
+            return arr.magnitude if hasattr(arr, 'magnitude') else np.asarray(arr)
+
+        ts_raw = mag(ts)
         env = self.chamber_environment
 
         # ── Figure 1: Pressure ─────────────────────────────────────────────
-        capman = env.pressure.value if (env and env.pressure) else None
-        ion = env.ion_gauge_pressure.value if (env and env.ion_gauge_pressure) else None
+        capman = mag(env.pressure.value if (env and env.pressure) else None)
+        ion = mag(env.ion_gauge_pressure.value if (env and env.ion_gauge_pressure) else None)
         if capman is not None or ion is not None:
             rows = sum(x is not None for x in [capman, ion])
             fig = make_subplots(
@@ -622,10 +631,10 @@ class PC03CathodeChamberDeposition(PlotSection, EntryData):
             )
             row = 1
             if capman is not None:
-                fig.add_trace(go.Scatter(x=ts, y=capman * _PA_TO_MBAR, name='Capman', line=dict(color='steelblue')), row=row, col=1)
+                fig.add_trace(go.Scatter(x=ts_raw, y=capman * _PA_TO_MBAR, name='Capman', line=dict(color='steelblue')), row=row, col=1)
                 row += 1
             if ion is not None:
-                fig.add_trace(go.Scatter(x=ts, y=ion * _PA_TO_MBAR, name='Ion Gauge', line=dict(color='darkorange')), row=row, col=1)
+                fig.add_trace(go.Scatter(x=ts_raw, y=ion * _PA_TO_MBAR, name='Ion Gauge', line=dict(color='darkorange')), row=row, col=1)
                 fig.update_yaxes(type='log', row=row, col=1)
             fig.update_layout(template='plotly_white', height=400, xaxis_title='Time (s)', showlegend=True)
             self.figures.append(PlotlyFigure(label='Pressure', figure=fig.to_plotly_json()))
@@ -635,10 +644,12 @@ class PC03CathodeChamberDeposition(PlotSection, EntryData):
         colours = ['#1f77b4', '#ff7f0e', '#2ca02c']
         for idx, ps in enumerate(self.rf_power_supplies or []):
             c = colours[idx % len(colours)]
-            if ps.forward_power is not None and len(ps.forward_power) == len(ts):
-                rf_traces.append(go.Scatter(x=ts, y=ps.forward_power, name=f'PS{ps.supply_index} Fwd', line=dict(color=c)))
-            if ps.reflected_power is not None and len(ps.reflected_power) == len(ts):
-                rf_traces.append(go.Scatter(x=ts, y=ps.reflected_power, name=f'PS{ps.supply_index} Rfl', line=dict(color=c, dash='dash')))
+            fwd = mag(ps.forward_power)
+            rfl = mag(ps.reflected_power)
+            if fwd is not None and len(fwd) == len(ts_raw):
+                rf_traces.append(go.Scatter(x=ts_raw, y=fwd, name=f'PS{ps.supply_index} Fwd', line=dict(color=c)))
+            if rfl is not None and len(rfl) == len(ts_raw):
+                rf_traces.append(go.Scatter(x=ts_raw, y=rfl, name=f'PS{ps.supply_index} Rfl', line=dict(color=c, dash='dash')))
         if rf_traces:
             fig = go.Figure(data=rf_traces)
             fig.update_layout(template='plotly_white', height=350, xaxis_title='Time (s)', yaxis_title='Power (W)', showlegend=True)
@@ -646,17 +657,20 @@ class PC03CathodeChamberDeposition(PlotSection, EntryData):
 
         # ── Figure 3: DC Power Supply ──────────────────────────────────────
         ps4 = self.dc_power_supply
-        if ps4 is not None and any(
-            x is not None and len(x) == len(ts) for x in [ps4.power, ps4.voltage, ps4.current]
-        ):
-            dc_rows = [(ps4.power, 'Power (W)'), (ps4.voltage, 'Voltage (V)'), (ps4.current, 'Current (A)')]
-            dc_rows = [(arr, lbl) for arr, lbl in dc_rows if arr is not None and len(arr) == len(ts)]
-            fig = make_subplots(rows=len(dc_rows), cols=1, shared_xaxes=True,
-                                subplot_titles=[lbl for _, lbl in dc_rows])
-            for row_i, (arr, lbl) in enumerate(dc_rows, start=1):
-                fig.add_trace(go.Scatter(x=ts, y=arr, name=lbl, showlegend=False), row=row_i, col=1)
-            fig.update_layout(template='plotly_white', height=500, xaxis_title='Time (s)')
-            self.figures.append(PlotlyFigure(label='DC Power Supply', figure=fig.to_plotly_json()))
+        if ps4 is not None:
+            dc_rows = [
+                (mag(ps4.power), 'Power (W)'),
+                (mag(ps4.voltage), 'Voltage (V)'),
+                (mag(ps4.current), 'Current (A)'),
+            ]
+            dc_rows = [(arr, lbl) for arr, lbl in dc_rows if arr is not None and len(arr) == len(ts_raw)]
+            if dc_rows:
+                fig = make_subplots(rows=len(dc_rows), cols=1, shared_xaxes=True,
+                                    subplot_titles=[lbl for _, lbl in dc_rows])
+                for row_i, (arr, lbl) in enumerate(dc_rows, start=1):
+                    fig.add_trace(go.Scatter(x=ts_raw, y=arr, name=lbl, showlegend=False), row=row_i, col=1)
+                fig.update_layout(template='plotly_white', height=500, xaxis_title='Time (s)')
+                self.figures.append(PlotlyFigure(label='DC Power Supply', figure=fig.to_plotly_json()))
 
         # ── Figure 4: Temperatures ─────────────────────────────────────────
         temp_traces = []
@@ -668,9 +682,10 @@ class PC03CathodeChamberDeposition(PlotSection, EntryData):
             (getattr(self, f'tc{i}_temperature'), f'TC{i}', 'legendonly') for i in range(1, 7)
         ]
         for arr, label, visible in temp_series:
-            if arr is not None and len(arr) == len(ts):
+            raw = mag(arr)
+            if raw is not None and len(raw) == len(ts_raw):
                 temp_traces.append(go.Scatter(
-                    x=ts, y=arr - _KELVIN_TO_C, name=label, visible=visible,
+                    x=ts_raw, y=raw - _KELVIN_TO_C, name=label, visible=visible,
                 ))
         if temp_traces:
             fig = go.Figure(data=temp_traces)
