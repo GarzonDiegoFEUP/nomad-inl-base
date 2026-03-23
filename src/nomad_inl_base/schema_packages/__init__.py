@@ -95,3 +95,16 @@ cleaning_entry_point = INLCleaningPackageEntryPoint(
     name='INL Cleaning',
     description='ELN schemas for substrate cleaning (INLCleaning, INLCleaningRecipe).',
 )
+
+
+class BatteriesPackageEntryPoint(SchemaPackageEntryPoint):
+    def load(self):
+        from nomad_inl_base.schema_packages.batteries import m_package
+
+        return m_package
+
+
+batteries_entry_point = BatteriesPackageEntryPoint(
+    name='INL Batteries',
+    description='ELN schemas and CSV parser for the PC03 CathodeChamber sputtering system (battery materials).',
+)

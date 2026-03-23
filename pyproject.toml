@@ -144,6 +144,8 @@ wet_deposition_entry_point = "nomad_inl_base.schema_packages:wet_deposition_entr
 characterization_entry_point = "nomad_inl_base.schema_packages:characterization_entry_point"
 entities_entry_point = "nomad_inl_base.schema_packages:entities_entry_point"
 cleaning_entry_point = "nomad_inl_base.schema_packages:cleaning_entry_point"
+batteries_entry_point = "nomad_inl_base.schema_packages:batteries_entry_point"
+pc03_parser_entry_point = "nomad_inl_base.parsers:pc03_parser_entry_point"
 
 
 
