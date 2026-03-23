@@ -22,13 +22,15 @@ from nomad_inl_base.schema_packages.batteries import (
     _SCCM_TO_M3S,
     _TORR_TO_PA,
     PC03CathodeChamberDeposition,
-    PC03ChamberEnvironment,
-    PC03DCPowerSupply,
-    PC03GasFlow,
-    PC03Pressure,
-    PC03RFPowerSupply,
-    PC03Source,
-    PC03VolumetricFlowRate,
+    PC04ElectrolyteChamberDeposition,
+    PC04SubstrateAnnealing,
+    SputteringChamberEnvironment,
+    SputteringDCPowerSupply,
+    SputteringGasFlow,
+    SputteringPressure,
+    SputteringRFPowerSupply,
+    SputteringSource,
+    SputteringVolumetricFlowRate,
 )
 from nomad_inl_base.schema_packages.characterization import (
     ChronoamperometryMeasurement,
@@ -208,19 +210,23 @@ class CVParser(MatchingParser):
         archive.metadata.entry_name = data_file.replace('.xlsx', '')
 
 
-class PC03CathodeChamberParser(MatchingParser):
+class _BaseSputteringChamberParser(MatchingParser):
     """
-    Parser for PC03 CathodeChamber sputtering system CSV log files.
+    Shared parser for INL Battery Chamber sputtering system CSV log files (PC03, PC04, …).
 
-    CSV format:
+    Subclasses set ``_ENTRY_CLASS`` to the concrete ``BatteryChamberSputteringDeposition``
+    subclass that should be created for their instrument.
+
+    CSV format (identical across chambers):
       Line 1: meta-column names  (Recording Name, Date Started, User)
       Line 2: meta-values        (All Signals, YYYY-M-D HH-MM-SS, OperatorName)
       Line 3: empty
       Line 4: data column headers (~460 columns)
       Lines 5+: data rows at ~1 Hz
-
-    Files are matched by filename starting with 'PC03'.
     """
+
+    # Subclasses override this with their specific entry class.
+    _ENTRY_CLASS = None
 
     # Offset used to convert Celsius (from CSV) to Kelvin (stored in schema)
     _KELVIN_OFFSET = 273.15
@@ -290,7 +296,7 @@ class PC03CathodeChamberParser(MatchingParser):
             timestamps = np.arange(len(df), dtype=np.float64)
 
         # --- Build entry ---
-        entry = PC03CathodeChamberDeposition()
+        entry = self._ENTRY_CLASS()
         entry.recording_name = recording_name
         entry.operator = operator
         if start_datetime:
@@ -307,13 +313,13 @@ class PC03CathodeChamberParser(MatchingParser):
             entry.process_time = arr
 
         # --- Chamber environment (gas flows + pressures) ---
-        env = PC03ChamberEnvironment()
+        env = SputteringChamberEnvironment()
 
         # Main process pressure: Capman value [Pa] + setpoint [Pa]
         capman_arr = col('PC Capman Pressure')
         capman_sp_arr = col('PC Capman Pressure Setpoint')
         if capman_arr is not None or capman_sp_arr is not None:
-            p = PC03Pressure()
+            p = SputteringPressure()
             if capman_arr is not None:
                 p.value = capman_arr * _TORR_TO_PA
             if capman_sp_arr is not None:
@@ -328,7 +334,7 @@ class PC03CathodeChamberParser(MatchingParser):
         ]:
             arr = col(csv_col)
             if arr is not None:
-                p = PC03Pressure()
+                p = SputteringPressure()
                 p.value = arr * _TORR_TO_PA
                 setattr(env, attr, p)
 
@@ -389,7 +395,7 @@ class PC03CathodeChamberParser(MatchingParser):
 
         # Gas flows: MFC 1–3 [m³/s]
         for mfc_idx in [1, 2, 3]:
-            gf = PC03GasFlow()
+            gf = SputteringGasFlow()
             gf.mfc_index = mfc_idx
 
             gas_col = f'PC MFC {mfc_idx} Gas'
@@ -403,7 +409,7 @@ class PC03CathodeChamberParser(MatchingParser):
             arr = col(f'PC MFC {mfc_idx} Flow')
             arr_sp = col(f'PC MFC {mfc_idx} Setpoint')
             if arr is not None or arr_sp is not None:
-                gf.flow_rate = PC03VolumetricFlowRate()
+                gf.flow_rate = SputteringVolumetricFlowRate()
                 if arr is not None:
                     gf.flow_rate.value = arr * _SCCM_TO_M3S
                 if arr_sp is not None:
@@ -423,7 +429,7 @@ class PC03CathodeChamberParser(MatchingParser):
         }
 
         for src_idx in [1, 2, 3, 4]:
-            src = PC03Source()
+            src = SputteringSource()
             src.source_index = src_idx
 
             # Scalar identity fields (read first non-empty value)
@@ -479,7 +485,7 @@ class PC03CathodeChamberParser(MatchingParser):
 
         # --- RF Power Supplies PS1, PS3, PS5 ---
         for ps_idx in [1, 3, 5]:
-            ps = PC03RFPowerSupply()
+            ps = SputteringRFPowerSupply()
             ps.supply_index = ps_idx
             for attr, csv_col in [
                 ('forward_power', f'Power Supply {ps_idx} Fwd Power'),
@@ -495,7 +501,7 @@ class PC03CathodeChamberParser(MatchingParser):
             entry.rf_power_supplies.append(ps)
 
         # --- DC Pulsed Power Supply PS4 ---
-        ps4 = PC03DCPowerSupply()
+        ps4 = SputteringDCPowerSupply()
         for attr, csv_col in [
             ('current', 'Power Supply 4 Current'),
             ('voltage', 'Power Supply 4 Voltage'),
@@ -516,6 +522,139 @@ class PC03CathodeChamberParser(MatchingParser):
             if arr is not None:
                 setattr(ps4, attr, arr)
         entry.dc_power_supply = ps4
+
+        archive.data = entry
+        data_file = mainfile.rsplit('/', maxsplit=1)[-1].rsplit('.', maxsplit=1)[0]
+        archive.metadata.entry_name = data_file
+
+
+class PC03CathodeChamberParser(_BaseSputteringChamberParser):
+    """Parser for PC03 CathodeChamber CSV log files."""
+
+    _ENTRY_CLASS = PC03CathodeChamberDeposition
+
+
+class PC04ElectrolyteChamberParser(_BaseSputteringChamberParser):
+    """Parser for PC04 ElectrolyteChamber CSV log files (sputtering path only)."""
+
+    _ENTRY_CLASS = PC04ElectrolyteChamberDeposition
+
+
+class PC04ChamberParser(_BaseSputteringChamberParser):
+    """
+    Smart dispatcher for PC04 ElectrolyteChamber CSV log files.
+
+    Detects the recording type from the column headers at parse time:
+    - If sputtering source columns are present → :class:`PC04ElectrolyteChamberDeposition`
+    - Otherwise (heater-only log) → :class:`PC04SubstrateAnnealing`
+    """
+
+    _ENTRY_CLASS = PC04ElectrolyteChamberDeposition  # fallback for base class super() call
+    _KELVIN_OFFSET = 273.15
+
+    # Column that unambiguously identifies a sputtering log
+    _SPUTTERING_MARKER = 'PC Source 1 Active'
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        # Peek at column headers only (nrows=0 is fast)
+        df_head = pd.read_csv(mainfile, skiprows=3, nrows=0, low_memory=False)
+        if self._SPUTTERING_MARKER in df_head.columns:
+            self._ENTRY_CLASS = PC04ElectrolyteChamberDeposition
+            super().parse(mainfile, archive, logger)
+        else:
+            self._parse_annealing(mainfile, archive, logger)
+
+    def _parse_annealing(
+        self, mainfile: str, archive: EntryArchive, logger
+    ) -> None:
+        """Parse a heater-only PC04 CSV into a :class:`PC04SubstrateAnnealing` entry."""
+        from datetime import datetime
+
+        # --- Read preamble (recording metadata) ---
+        with open(mainfile, encoding='utf-8', errors='replace') as fh:
+            meta_keys = [k.strip() for k in fh.readline().rstrip('\n').split(',')]
+            meta_values = [v.strip() for v in fh.readline().rstrip('\n').split(',')]
+        meta = dict(zip(meta_keys, meta_values))
+
+        start_datetime = None
+        date_str = meta.get('Date Started', '')
+        for fmt in ('%Y-%m-%d %H-%M-%S', '%Y-%m-%d %H:%M:%S'):
+            try:
+                start_datetime = datetime.strptime(date_str, fmt)
+                break
+            except ValueError:
+                continue
+
+        # --- Read time-series data ---
+        df = pd.read_csv(mainfile, skiprows=3, low_memory=False)
+
+        def col(name):
+            if name not in df.columns:
+                return None
+            arr = pd.to_numeric(df[name], errors='coerce').to_numpy(dtype=np.float64)
+            return arr if not np.all(np.isnan(arr)) else None
+
+        def col_temp(name):
+            arr = col(name)
+            return arr + self._KELVIN_OFFSET if arr is not None else None
+
+        def col_str(name):
+            if name not in df.columns:
+                return None
+            arr = df[name].fillna('').astype(str).to_numpy(dtype=str)
+            return arr if not np.all(arr == '') else None
+
+        # --- Timestamps ---
+        ts_fmt = '%b-%d-%Y %I:%M:%S.%f %p'
+        try:
+            ts = pd.to_datetime(df['Time Stamp'], format=ts_fmt)
+            t0 = ts.iloc[0]
+            timestamps = (ts - t0).dt.total_seconds().to_numpy(dtype=np.float64)
+        except Exception:
+            timestamps = np.arange(len(df), dtype=np.float64)
+
+        # --- Build entry ---
+        entry = PC04SubstrateAnnealing()
+        entry.recording_name = meta.get('Recording Name', '')
+        entry.operator = meta.get('User', '')
+        if start_datetime:
+            entry.start_datetime = start_datetime
+        entry.timestamps = timestamps
+
+        ph = col_str('Process Phase')
+        if ph is not None:
+            entry.process_phase = ph
+
+        # Substrate type (last non-empty value)
+        if 'Substrate Type' in df.columns:
+            vals = df['Substrate Type'].dropna()
+            if len(vals) > 0:
+                entry.substrate_type = str(vals.iloc[-1])
+
+        # Pressure
+        arr = col('PC Wide Range Gauge')
+        if arr is not None:
+            entry.wide_range_pressure = arr * _TORR_TO_PA
+
+        # Heater temperatures
+        for attr, csv_col in [
+            ('substrate_temperature', 'Substrate Heater Temperature'),
+            ('substrate_temperature_2', 'Substrate Heater Temperature 2'),
+            ('substrate_temperature_setpoint', 'Substrate Heater Temperature Setpoint'),
+        ]:
+            arr = col_temp(csv_col)
+            if arr is not None:
+                setattr(entry, attr, arr)
+
+        arr = col('Substrate Heater Current')
+        if arr is not None:
+            entry.substrate_heater_current = arr
+
+        # Thermocouples TC1–6
+        for i in range(1, 7):
+            arr = col_temp(f'TC{i} Temperature')
+            if arr is not None:
+                setattr(entry, f'tc{i}_temperature', arr)
 
         archive.data = entry
         data_file = mainfile.rsplit('/', maxsplit=1)[-1].rsplit('.', maxsplit=1)[0]

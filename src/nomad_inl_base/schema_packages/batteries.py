@@ -11,6 +11,7 @@ from nomad.datamodel.data import ArchiveSection, EntryData
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
 from nomad.metainfo import Datetime, MEnum, Quantity, SchemaPackage, Section, SubSection
+from nomad_material_processing.general import Annealing
 from nomad_material_processing.vapor_deposition.general import (
     ChamberEnvironment,
     GasFlow,
@@ -24,6 +25,7 @@ from nomad_inl_base.schema_packages.entities import (
     INLThinFilm,
     INLThinFilmReference,
     INLThinFilmStack,
+    INLThinFilmStackReference,
 )
 from nomad_inl_base.utils import create_archive, create_filename, get_hash_ref
 
@@ -34,7 +36,7 @@ _TORR_TO_PA = 133.322368  # 1 torr = 133.322368 Pa
 _SCCM_TO_M3S = 1.66667e-8  # 1 sccm = 1 cm³(STP)/min = 1e-6 m³ / 60 s
 
 
-class PC03VolumetricFlowRate(VolumetricFlowRate):
+class SputteringVolumetricFlowRate(VolumetricFlowRate):
     """
     MFC flow rate inheriting VolumetricFlowRate.
     value [m³/s array] → measured flow; set_value [m³/s array] → setpoint.
@@ -48,7 +50,7 @@ class PC03VolumetricFlowRate(VolumetricFlowRate):
     )
 
 
-class PC03GasFlow(GasFlow):
+class SputteringGasFlow(GasFlow):
     """
     Gas flow channel inheriting from GasFlow.
     gas.name holds the species string; flow_rate stores the time-series arrays.
@@ -67,10 +69,10 @@ class PC03GasFlow(GasFlow):
         a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
-    flow_rate = SubSection(section_def=PC03VolumetricFlowRate)
+    flow_rate = SubSection(section_def=SputteringVolumetricFlowRate)
 
 
-class PC03Pressure(Pressure):
+class SputteringPressure(Pressure):
     """
     Pressure sensor time series inheriting Pressure.
     value [Pa array] → measured; set_value [Pa array] → setpoint (where applicable).
@@ -79,38 +81,36 @@ class PC03Pressure(Pressure):
     m_def = Section(a_eln={'hide': ['time', 'set_time']})
 
 
-class PC03ChamberEnvironment(ChamberEnvironment):
+class SputteringChamberEnvironment(ChamberEnvironment):
     """
-    Chamber environment for a continuous PC03 deposition log.
+    Chamber environment for a continuous sputtering deposition log.
     Holds the main process pressure (Capman), additional gauges, and MFC gas flows.
     """
 
     m_def = Section(label='Chamber Environment')
 
-    # Override base gas_flow to use PC03GasFlow
-    gas_flow = SubSection(section_def=PC03GasFlow, repeats=True)
+    gas_flow = SubSection(section_def=SputteringGasFlow, repeats=True)
 
-    # Override base pressure to use PC03Pressure (Capman = main process pressure).
-    # pressure.value = measured [Pa]; pressure.set_value = setpoint [Pa].
-    pressure = SubSection(section_def=PC03Pressure)
+    # Capman = main process pressure. value [Pa] = measured; set_value [Pa] = setpoint.
+    pressure = SubSection(section_def=SputteringPressure)
 
     # Additional pressure sensors
     ion_gauge_pressure = SubSection(
-        section_def=PC03Pressure,
+        section_def=SputteringPressure,
         description='Ion gauge (high vacuum) pressure time series.',
     )
     wide_range_gauge_pressure = SubSection(
-        section_def=PC03Pressure,
+        section_def=SputteringPressure,
         description='Wide-range gauge pressure time series.',
     )
     roughing_pressure = SubSection(
-        section_def=PC03Pressure,
+        section_def=SputteringPressure,
         description='Roughing pump backing pressure time series.',
     )
 
 
-class PC03Source(ArchiveSection):
-    """Sputtering source (target + magnetron) data from the PC03 CathodeChamber."""
+class SputteringSource(ArchiveSection):
+    """Sputtering source (target + magnetron) time-series data."""
 
     m_def = Section(label='Sputtering Source')
 
@@ -174,7 +174,7 @@ class PC03Source(ArchiveSection):
     )
 
 
-class PC03RFPowerSupply(ArchiveSection):
+class SputteringRFPowerSupply(ArchiveSection):
     """RF power supply (PS1, PS3, or PS5) time-series data."""
 
     m_def = Section(label='RF Power Supply')
@@ -220,7 +220,7 @@ class PC03RFPowerSupply(ArchiveSection):
     )
 
 
-class PC03DCPowerSupply(ArchiveSection):
+class SputteringDCPowerSupply(ArchiveSection):
     """DC pulsed power supply (PS4) time-series data."""
 
     m_def = Section(label='DC Pulsed Power Supply')
@@ -279,15 +279,15 @@ class PC03DCPowerSupply(ArchiveSection):
     )
 
 
-class PC03CathodeChamberDeposition(PlotSection, EntryData):
+class BatteryChamberSputteringDeposition(PlotSection, EntryData):
     """
-    Parsed log entry from the PC03 CathodeChamber sputtering system.
+    Base class for parsed log entries from INL Battery Chamber sputtering systems
+    (PC03 CathodeChamber, PC04 ElectrolyteChamber, …).
 
-    Populated automatically by uploading a CSV file whose filename starts with 'PC03'.
+    Subclasses override only ``m_def`` to supply the correct label; all quantities,
+    subsections, and normalisation logic are inherited from here.
     All time-series columns are stored as NumPy arrays sampled at ~1 Hz.
     """
-
-    m_def = Section(label='PC03 Cathode Chamber Deposition')
 
     # --- Metadata (scalar, auto-populated from file header) ---
     recording_name = Quantity(
@@ -469,21 +469,21 @@ class PC03CathodeChamberDeposition(PlotSection, EntryData):
 
     # --- Subsections ---
     chamber_environment = SubSection(
-        section_def=PC03ChamberEnvironment,
+        section_def=SputteringChamberEnvironment,
         description='Chamber gas flows and pressure readings for this deposition.',
     )
     sources = SubSection(
-        section_def=PC03Source,
+        section_def=SputteringSource,
         repeats=True,
         description='Sputtering sources 1–4.',
     )
     rf_power_supplies = SubSection(
-        section_def=PC03RFPowerSupply,
+        section_def=SputteringRFPowerSupply,
         repeats=True,
         description='RF power supplies (PS1, PS3, PS5).',
     )
     dc_power_supply = SubSection(
-        section_def=PC03DCPowerSupply,
+        section_def=SputteringDCPowerSupply,
         description='DC pulsed power supply (PS4).',
     )
 
@@ -723,7 +723,7 @@ class PC03CathodeChamberDeposition(PlotSection, EntryData):
 
         if not active_materials:
             logger.warning(
-                'PC03CathodeChamberDeposition: no source materials found, '
+                'BatteryChamberSputteringDeposition: no source materials found, '
                 'skipping thin film creation.'
             )
             return
@@ -767,7 +767,7 @@ class PC03CathodeChamberDeposition(PlotSection, EntryData):
 
         if self.substrate is None:
             logger.info(
-                'PC03CathodeChamberDeposition: thin film created without a stack '
+                'BatteryChamberSputteringDeposition: thin film created without a stack '
                 '(no substrate set). Set the substrate field to auto-create a stack.'
             )
             return
@@ -794,6 +794,263 @@ class PC03CathodeChamberDeposition(PlotSection, EntryData):
                 filetype,
                 logger,
             )
+
+
+class PC03CathodeChamberDeposition(BatteryChamberSputteringDeposition):
+    """
+    Parsed log entry from the PC03 CathodeChamber sputtering system.
+
+    Populated automatically by uploading a CSV file whose filename starts with 'PC03'.
+    """
+
+    m_def = Section(label='PC03 Cathode Chamber Deposition')
+
+
+class PC04ElectrolyteChamberDeposition(BatteryChamberSputteringDeposition):
+    """
+    Parsed log entry from the PC04 ElectrolyteChamber sputtering system.
+
+    Populated automatically by uploading a CSV file whose filename starts with 'PC04'.
+    """
+
+    m_def = Section(label='PC04 Electrolyte Chamber Deposition')
+
+
+class PC04SubstrateAnnealing(PlotSection, Annealing):
+    """
+    Parsed log entry for a PC04 ElectrolyteChamber substrate annealing/heating run.
+
+    Populated automatically when a PC04 CSV log contains only heater channels
+    and no sputtering source columns.
+
+    Inherits ``duration``, ``steps``, and ``samples`` from
+    :class:`nomad_material_processing.general.Annealing`.
+
+    No sample is created automatically. Use ``thin_film`` or ``thin_film_stack``
+    to link the run to an existing :class:`~nomad_inl_base.schema_packages.entities.INLThinFilm`
+    or :class:`~nomad_inl_base.schema_packages.entities.INLThinFilmStack`.
+    """
+
+    m_def = Section(label='PC04 Substrate Annealing')
+
+    # --- Metadata (scalar, auto-populated from file header) ---
+    recording_name = Quantity(
+        type=str,
+        description='Recording name as stored in the CSV header.',
+        a_eln=ELNAnnotation(component='StringEditQuantity'),
+    )
+    operator = Quantity(
+        type=str,
+        description='Operator name as stored in the CSV header.',
+        a_eln=ELNAnnotation(component='StringEditQuantity'),
+    )
+    start_datetime = Quantity(
+        type=Datetime,
+        description='Date and time when the recording was started.',
+        a_eln=ELNAnnotation(component='DateTimeEditQuantity'),
+    )
+    substrate_type = Quantity(
+        type=str,
+        description='Substrate type as identified by the system (e.g. "Bare Wafer").',
+        a_eln=ELNAnnotation(component='StringEditQuantity'),
+    )
+    peak_temperature = Quantity(
+        type=np.float64,
+        unit='kelvin',
+        description='Maximum substrate heater temperature reached during the run.',
+        a_eln=ELNAnnotation(component='NumberEditQuantity', defaultDisplayUnit='celsius'),
+    )
+
+    # --- Sample references (user-set) ---
+    thin_film = SubSection(
+        section_def=INLThinFilmReference,
+        description=(
+            'Reference to an INLThinFilm sample that was annealed in this run.'
+        ),
+    )
+    thin_film_stack = SubSection(
+        section_def=INLThinFilmStackReference,
+        description=(
+            'Reference to an INLThinFilmStack sample that was annealed in this run.'
+        ),
+    )
+
+    # --- Time axis ---
+    timestamps = Quantity(
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='s',
+        description='Elapsed time from the first recorded row (seconds).',
+    )
+
+    # --- Process tracking ---
+    process_phase = Quantity(
+        type=str,
+        shape=['*'],
+        description='Process phase name (string label) at each time step.',
+    )
+
+    # --- Pressure ---
+    wide_range_pressure = Quantity(
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='pascal',
+        description='Wide-range gauge pressure time series.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='mbar'),
+    )
+
+    # --- Substrate heater ---
+    substrate_temperature = Quantity(
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='kelvin',
+        description='Primary substrate heater thermocouple temperature as a time series.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
+    )
+    substrate_temperature_2 = Quantity(
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='kelvin',
+        description='Secondary substrate heater thermocouple temperature as a time series.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
+    )
+    substrate_temperature_setpoint = Quantity(
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='kelvin',
+        description='Substrate heater temperature setpoint as a time series.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
+    )
+    substrate_heater_current = Quantity(
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='A',
+        description='Substrate heater current as a time series.',
+    )
+
+    # --- Thermocouples TC1–6 ---
+    tc1_temperature = Quantity(
+        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        description='TC1 temperature as a time series.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
+    )
+    tc2_temperature = Quantity(
+        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        description='TC2 temperature as a time series.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
+    )
+    tc3_temperature = Quantity(
+        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        description='TC3 temperature as a time series.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
+    )
+    tc4_temperature = Quantity(
+        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        description='TC4 temperature as a time series.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
+    )
+    tc5_temperature = Quantity(
+        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        description='TC5 temperature as a time series.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
+    )
+    tc6_temperature = Quantity(
+        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        description='TC6 temperature as a time series.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self._compute_scalars()
+        self._build_figures()
+
+    def _compute_scalars(self) -> None:
+        """Derive peak_temperature and fill the inherited duration quantity."""
+        ts = self.timestamps
+        if ts is not None and len(ts) > 1:
+            ts_raw = ts.magnitude if hasattr(ts, 'magnitude') else np.asarray(ts)
+            self.duration = float(ts_raw[-1] - ts_raw[0])
+
+        temp = self.substrate_temperature
+        if temp is not None and len(temp) > 0:
+            raw = temp.magnitude if hasattr(temp, 'magnitude') else np.asarray(temp)
+            valid = raw[~np.isnan(raw)]
+            if len(valid) > 0:
+                self.peak_temperature = float(np.max(valid))
+
+    def _build_figures(self) -> None:
+        """Build Plotly figures: Temperatures, Pressure, Heater Current."""
+        self.figures = []
+        ts = self.timestamps
+        if ts is None or len(ts) == 0:
+            return
+
+        _KELVIN_TO_C = 273.15
+        _PA_TO_MBAR = 1e-2
+
+        def mag(arr):
+            if arr is None:
+                return None
+            return arr.magnitude if hasattr(arr, 'magnitude') else np.asarray(arr)
+
+        ts_raw = mag(ts)
+
+        # ── Figure 1: Temperatures ──────────────────────────────────────────────────────
+        temp_traces = []
+        temp_series = [
+            (self.substrate_temperature, 'Substrate T', True),
+            (self.substrate_temperature_2, 'Substrate T2', 'legendonly'),
+            (self.substrate_temperature_setpoint, 'Substrate T setpoint', 'legendonly'),
+        ] + [
+            (getattr(self, f'tc{i}_temperature'), f'TC{i}', 'legendonly')
+            for i in range(1, 7)
+        ]
+        for arr, label, visible in temp_series:
+            raw = mag(arr)
+            if raw is not None and len(raw) == len(ts_raw):
+                temp_traces.append(go.Scatter(
+                    x=ts_raw, y=raw - _KELVIN_TO_C, name=label, visible=visible,
+                ))
+        if temp_traces:
+            fig = go.Figure(data=temp_traces)
+            fig.update_layout(
+                template='plotly_white', height=400,
+                xaxis_title='Time (s)', yaxis_title='Temperature (°C)',
+                showlegend=True,
+            )
+            self.figures.append(PlotlyFigure(label='Temperatures', figure=fig.to_plotly_json()))
+
+        # ── Figure 2: Pressure ────────────────────────────────────────────────────────
+        p_raw = mag(self.wide_range_pressure)
+        if p_raw is not None and len(p_raw) == len(ts_raw):
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=ts_raw, y=p_raw * _PA_TO_MBAR, name='Wide Range Gauge',
+                line=dict(color='darkorange'),
+            ))
+            fig.update_yaxes(type='log')
+            fig.update_layout(
+                template='plotly_white', height=300,
+                xaxis_title='Time (s)', yaxis_title='Pressure (mbar)',
+                showlegend=False,
+            )
+            self.figures.append(PlotlyFigure(label='Pressure', figure=fig.to_plotly_json()))
+
+        # ── Figure 3: Heater Current ────────────────────────────────────────────────
+        i_raw = mag(self.substrate_heater_current)
+        if i_raw is not None and len(i_raw) == len(ts_raw):
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=ts_raw, y=i_raw, name='Heater Current',
+                line=dict(color='crimson'),
+            ))
+            fig.update_layout(
+                template='plotly_white', height=280,
+                xaxis_title='Time (s)', yaxis_title='Current (A)',
+                showlegend=False,
+            )
+            self.figures.append(PlotlyFigure(label='Heater Current', figure=fig.to_plotly_json()))
 
 
 m_package.__init_metainfo__()

@@ -46,3 +46,18 @@ pc03_parser_entry_point = PC03ParserEntryPoint(
     mainfile_name_re=r'.*PC03.*\.[cC][sS][vV]$',
     mainfile_mime_re=r'(text/csv|text/plain|application/csv|application/octet-stream)',
 )
+
+
+class PC04ParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import PC04ChamberParser
+
+        return PC04ChamberParser(**self.dict())
+
+
+pc04_parser_entry_point = PC04ParserEntryPoint(
+    name='PC04ElectrolyteChamberParser',
+    description='Parser for PC04 ElectrolyteChamber sputtering system CSV log files.',
+    mainfile_name_re=r'.*PC04.*\.[cC][sS][vV]$',
+    mainfile_mime_re=r'(text/csv|text/plain|application/csv|application/octet-stream)',
+)
