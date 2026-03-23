@@ -267,7 +267,8 @@ class PC03CathodeChamberParser(MatchingParser):
         def col_str(name):
             if name not in df.columns:
                 return None
-            return df[name].astype(str).to_numpy()
+            arr = df[name].fillna('').astype(str).to_numpy(dtype=str)
+            return arr if not np.all(arr == '') else None
 
         def col_temp(name):
             """Return Kelvin array from a Celsius column."""
