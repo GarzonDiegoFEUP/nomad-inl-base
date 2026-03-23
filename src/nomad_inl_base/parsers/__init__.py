@@ -43,6 +43,6 @@ class PC03ParserEntryPoint(ParserEntryPoint):
 pc03_parser_entry_point = PC03ParserEntryPoint(
     name='PC03CathodeChamberParser',
     description='Parser for PC03 CathodeChamber sputtering system CSV log files.',
-    mainfile_name_re=r'^PC03.*\.csv$',
+    mainfile_name_re=r'.*PC03.*\.csv$',
     mainfile_mime_re=r'(text/csv|text/plain|application/csv|application/octet-stream)',
 )
