@@ -5,14 +5,21 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 import numpy as np
-from nomad.datamodel.data import EntryData, EntryDataCategory
+from nomad.datamodel.data import ArchiveSection, EntryData, EntryDataCategory
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import (
     Instrument,
     InstrumentReference,
     SystemComponent,
 )
-from nomad.metainfo import Category, Quantity, SchemaPackage, Section, SubSection
+from nomad.metainfo import (
+    Category,
+    Datetime,
+    Quantity,
+    SchemaPackage,
+    Section,
+    SubSection,
+)
 from nomad.units import ureg
 from nomad_material_processing.general import (
     Geometry,
@@ -192,6 +199,39 @@ class INLThinFilmStackReference(ThinFilmStackReference):
                 self.lab_id = self.reference.lab_id
 
 
+class INLMaintenanceLog(ArchiveSection):
+    """A single maintenance event for an instrument."""
+
+    m_def = Section(label='Maintenance Log Entry')
+
+    date = Quantity(
+        type=Datetime,
+        description='Date and time of the maintenance event.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.DateTimeEditQuantity,
+            label='Date',
+        ),
+    )
+
+    performed_by = Quantity(
+        type=str,
+        description='Name of the person who performed the maintenance.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity,
+            label='Performed by',
+        ),
+    )
+
+    description = Quantity(
+        type=str,
+        description='Description of the maintenance performed.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.RichTextEditQuantity,
+            label='Description',
+        ),
+    )
+
+
 class INLInstrument(Instrument, EntryData):
     """INL instrument entity with supplier information."""
 
@@ -207,6 +247,12 @@ class INLInstrument(Instrument, EntryData):
         type=str,
         description='Lab identifier where the instrument is located.',
         a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity, label='Lab ID'),
+    )
+
+    maintenance_log = SubSection(
+        section_def=INLMaintenanceLog,
+        repeats=True,
+        description='Chronological log of maintenance events for this instrument.',
     )
 
 
