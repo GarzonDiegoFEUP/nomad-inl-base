@@ -13,16 +13,22 @@ import pandas as pd
 from nomad.datamodel.data import EntryData
 from nomad.datamodel.datamodel import EntryArchive, EntryMetadata
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
+from nomad.datamodel.metainfo.basesections import PureSubstanceSection
 from nomad.metainfo import Quantity, Section
 from nomad.parsing.parser import MatchingParser
 from nomad.units import ureg
 
 from nomad_inl_base.schema_packages.batteries import (
+    _SCCM_TO_M3S,
+    _TORR_TO_PA,
     PC03CathodeChamberDeposition,
+    PC03ChamberEnvironment,
     PC03DCPowerSupply,
     PC03GasFlow,
+    PC03Pressure,
     PC03RFPowerSupply,
     PC03Source,
+    PC03VolumetricFlowRate,
 )
 from nomad_inl_base.schema_packages.characterization import (
     ChronoamperometryMeasurement,
@@ -299,24 +305,38 @@ class PC03CathodeChamberParser(MatchingParser):
         if arr is not None:
             entry.process_time = arr
 
-        # Pressures
+        # --- Chamber environment (gas flows + pressures) ---
+        env = PC03ChamberEnvironment()
+
+        # Main process pressure: Capman value [Pa] + setpoint [Pa]
+        capman_arr = col('PC Capman Pressure')
+        capman_sp_arr = col('PC Capman Pressure Setpoint')
+        if capman_arr is not None or capman_sp_arr is not None:
+            p = PC03Pressure()
+            if capman_arr is not None:
+                p.value = capman_arr * _TORR_TO_PA
+            if capman_sp_arr is not None:
+                p.set_value = capman_sp_arr * _TORR_TO_PA
+            env.pressure = p
+
+        # Additional pressure gauges [Pa]
         for attr, csv_col in [
             ('ion_gauge_pressure', 'PC Ion Gauge Pressure'),
-            ('capman_pressure', 'PC Capman Pressure'),
-            ('capman_pressure_setpoint', 'PC Capman Pressure Setpoint'),
             ('wide_range_gauge_pressure', 'PC Wide Range Gauge'),
             ('roughing_pressure', 'PC Roughing Pressure'),
         ]:
             arr = col(csv_col)
             if arr is not None:
-                setattr(entry, attr, arr)
+                p = PC03Pressure()
+                p.value = arr * _TORR_TO_PA
+                setattr(env, attr, p)
 
-        # Base pressure (minimum ion gauge reading)
+        # Base pressure (minimum ion gauge reading, stored in Pa)
         arr = col('PC Ion Gauge Pressure')
         if arr is not None:
             valid = arr[~np.isnan(arr)]
             if len(valid) > 0:
-                entry.base_pressure = float(np.min(valid))
+                entry.base_pressure = float(np.min(valid)) * _TORR_TO_PA
 
         # Substrate shutter
         arr = col_bool('PC Substrate Shutter Open')
@@ -366,7 +386,7 @@ class PC03CathodeChamberParser(MatchingParser):
             if len(vals) > 0:
                 entry.substrate_type = str(vals.iloc[-1])
 
-        # --- Gas flows (MFC 1, 2, 3) ---
+        # Gas flows: MFC 1–3 [m³/s]
         for mfc_idx in [1, 2, 3]:
             gf = PC03GasFlow()
             gf.mfc_index = mfc_idx
@@ -375,17 +395,22 @@ class PC03CathodeChamberParser(MatchingParser):
             if gas_col in df.columns:
                 names = df[gas_col].dropna()
                 if len(names) > 0:
-                    gf.gas_name = str(names.iloc[0])
+                    gas_name = str(names.iloc[0])
+                    gf.name = gas_name
+                    gf.gas = PureSubstanceSection(name=gas_name)
 
             arr = col(f'PC MFC {mfc_idx} Flow')
-            if arr is not None:
-                gf.flow = arr
+            arr_sp = col(f'PC MFC {mfc_idx} Setpoint')
+            if arr is not None or arr_sp is not None:
+                gf.flow_rate = PC03VolumetricFlowRate()
+                if arr is not None:
+                    gf.flow_rate.value = arr * _SCCM_TO_M3S
+                if arr_sp is not None:
+                    gf.flow_rate.set_value = arr_sp * _SCCM_TO_M3S
 
-            arr = col(f'PC MFC {mfc_idx} Setpoint')
-            if arr is not None:
-                gf.flow_setpoint = arr
+            env.gas_flow.append(gf)
 
-            entry.gas_flows.append(gf)
+        entry.chamber_environment = env
 
         # --- Sources 1–4 ---
         # Columns that reveal which power supply type is wired to each source

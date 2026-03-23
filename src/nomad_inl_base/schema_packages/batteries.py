@@ -8,7 +8,13 @@ if TYPE_CHECKING:
 import numpy as np
 from nomad.datamodel.data import ArchiveSection, EntryData
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
-from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection
+from nomad.metainfo import Datetime, MEnum, Quantity, SchemaPackage, Section, SubSection
+from nomad_material_processing.vapor_deposition.general import (
+    ChamberEnvironment,
+    GasFlow,
+    Pressure,
+    VolumetricFlowRate,
+)
 
 from nomad_inl_base.schema_packages.entities import (
     INLSubstrateReference,
@@ -20,15 +26,36 @@ from nomad_inl_base.utils import create_archive, create_filename, get_hash_ref
 
 m_package = SchemaPackage()
 
+# Unit conversion constants
+_TORR_TO_PA = 133.322368  # 1 torr = 133.322368 Pa
+_SCCM_TO_M3S = 1.66667e-8  # 1 sccm = 1 cm³(STP)/min = 1e-6 m³ / 60 s
 
-class PC03GasFlow(ArchiveSection):
-    """Gas flow channel (MFC) time-series data from the PC03 CathodeChamber."""
+
+class PC03VolumetricFlowRate(VolumetricFlowRate):
+    """
+    MFC flow rate inheriting VolumetricFlowRate.
+    value [m³/s array] → measured flow; set_value [m³/s array] → setpoint.
+    """
+
+    m_def = Section(a_eln={'hide': ['measurement_type']})
+
+    measurement_type = Quantity(
+        type=MEnum('Mass Flow Controller', 'Flow Meter', 'Other'),
+        default='Mass Flow Controller',
+    )
+
+
+class PC03GasFlow(GasFlow):
+    """
+    Gas flow channel inheriting from GasFlow.
+    gas.name holds the species string; flow_rate stores the time-series arrays.
+    """
 
     m_def = Section(label='Gas Flow')
 
-    gas_name = Quantity(
+    name = Quantity(
         type=str,
-        description='Gas species flowing through this MFC channel.',
+        description='Human-readable gas channel label (e.g. Ar, O2, N2).',
         a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
     mfc_index = Quantity(
@@ -36,19 +63,46 @@ class PC03GasFlow(ArchiveSection):
         description='MFC channel index (1, 2, or 3).',
         a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
-    flow = Quantity(
-        type=np.dtype(np.float64),
-        shape=['*'],
-        unit='cm**3/minute',
-        description='Measured gas flow rate (sccm) as a time series.',
-        a_eln=ELNAnnotation(defaultDisplayUnit='cm**3/minute'),
+
+    flow_rate = SubSection(section_def=PC03VolumetricFlowRate)
+
+
+class PC03Pressure(Pressure):
+    """
+    Pressure sensor time series inheriting Pressure.
+    value [Pa array] → measured; set_value [Pa array] → setpoint (where applicable).
+    """
+
+    m_def = Section(a_eln={'hide': ['time', 'set_time']})
+
+
+class PC03ChamberEnvironment(ChamberEnvironment):
+    """
+    Chamber environment for a continuous PC03 deposition log.
+    Holds the main process pressure (Capman), additional gauges, and MFC gas flows.
+    """
+
+    m_def = Section(label='Chamber Environment')
+
+    # Override base gas_flow to use PC03GasFlow
+    gas_flow = SubSection(section_def=PC03GasFlow, repeats=True)
+
+    # Override base pressure to use PC03Pressure (Capman = main process pressure).
+    # pressure.value = measured [Pa]; pressure.set_value = setpoint [Pa].
+    pressure = SubSection(section_def=PC03Pressure)
+
+    # Additional pressure sensors
+    ion_gauge_pressure = SubSection(
+        section_def=PC03Pressure,
+        description='Ion gauge (high vacuum) pressure time series.',
     )
-    flow_setpoint = Quantity(
-        type=np.dtype(np.float64),
-        shape=['*'],
-        unit='cm**3/minute',
-        description='Requested gas flow setpoint (sccm) as a time series.',
-        a_eln=ELNAnnotation(defaultDisplayUnit='cm**3/minute'),
+    wide_range_gauge_pressure = SubSection(
+        section_def=PC03Pressure,
+        description='Wide-range gauge pressure time series.',
+    )
+    roughing_pressure = SubSection(
+        section_def=PC03Pressure,
+        description='Roughing pump backing pressure time series.',
     )
 
 
@@ -250,9 +304,9 @@ class PC03CathodeChamberDeposition(EntryData):
     )
     base_pressure = Quantity(
         type=np.float64,
-        unit='torr',
+        unit='pascal',
         description='Minimum ion gauge pressure recorded during this log (used as base pressure estimate).',
-        a_eln=ELNAnnotation(component='NumberEditQuantity', defaultDisplayUnit='torr'),
+        a_eln=ELNAnnotation(component='NumberEditQuantity', defaultDisplayUnit='mbar'),
     )
     substrate_type = Quantity(
         type=str,
@@ -288,43 +342,6 @@ class PC03CathodeChamberDeposition(EntryData):
         shape=['*'],
         unit='s',
         description='Process phase elapsed time as a time series.',
-    )
-
-    # --- Pressures ---
-    ion_gauge_pressure = Quantity(
-        type=np.dtype(np.float64),
-        shape=['*'],
-        unit='torr',
-        description='Ion gauge pressure (high vacuum) as a time series.',
-        a_eln=ELNAnnotation(defaultDisplayUnit='torr'),
-    )
-    capman_pressure = Quantity(
-        type=np.dtype(np.float64),
-        shape=['*'],
-        unit='torr',
-        description='Capacitance manometer (Capman) pressure as a time series.',
-        a_eln=ELNAnnotation(defaultDisplayUnit='torr'),
-    )
-    capman_pressure_setpoint = Quantity(
-        type=np.dtype(np.float64),
-        shape=['*'],
-        unit='torr',
-        description='Capacitance manometer pressure setpoint as a time series.',
-        a_eln=ELNAnnotation(defaultDisplayUnit='torr'),
-    )
-    wide_range_gauge_pressure = Quantity(
-        type=np.dtype(np.float64),
-        shape=['*'],
-        unit='torr',
-        description='Wide-range gauge pressure as a time series.',
-        a_eln=ELNAnnotation(defaultDisplayUnit='torr'),
-    )
-    roughing_pressure = Quantity(
-        type=np.dtype(np.float64),
-        shape=['*'],
-        unit='torr',
-        description='Roughing pump backing pressure as a time series.',
-        a_eln=ELNAnnotation(defaultDisplayUnit='torr'),
     )
 
     # --- Substrate shutter ---
@@ -442,10 +459,9 @@ class PC03CathodeChamberDeposition(EntryData):
     )
 
     # --- Subsections ---
-    gas_flows = SubSection(
-        section_def=PC03GasFlow,
-        repeats=True,
-        description='MFC gas flow channels (3 channels: Ar, O2, N2).',
+    chamber_environment = SubSection(
+        section_def=PC03ChamberEnvironment,
+        description='Chamber gas flows and pressure readings for this deposition.',
     )
     sources = SubSection(
         section_def=PC03Source,
