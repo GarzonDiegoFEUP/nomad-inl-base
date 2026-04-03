@@ -277,4 +277,27 @@ class INLInstrumentReference(InstrumentReference):
                 self.lab_id = self.reference.lab_id
 
 
+class INLGraphiteBox(INLInstrument):
+    """A graphite box used in tube furnace annealing processes."""
+
+    m_def = Section(label='INL Graphite Box', categories=[INLEntityCategory])
+
+    geometry = SubSection(
+        section_def=RectangleCuboid,
+        description='Dimensions of the graphite box (length × width × height).',
+    )
+
+
+class INLGraphiteBoxReference(INLInstrumentReference):
+    """Reference to an INLGraphiteBox entry."""
+
+    reference = Quantity(
+        type=INLGraphiteBox,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Graphite Box',
+        ),
+    )
+
+
 m_package.__init_metainfo__()

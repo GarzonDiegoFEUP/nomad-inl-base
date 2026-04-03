@@ -108,3 +108,16 @@ batteries_entry_point = BatteriesPackageEntryPoint(
     name='INL Batteries',
     description='ELN schemas and CSV parser for the PC03 CathodeChamber sputtering system (battery materials).',
 )
+
+
+class INLAnnealingPackageEntryPoint(SchemaPackageEntryPoint):
+    def load(self):
+        from nomad_inl_base.schema_packages.annealing import m_package
+
+        return m_package
+
+
+annealing_entry_point = INLAnnealingPackageEntryPoint(
+    name='INL Annealing',
+    description='ELN schemas for tube furnace annealing (selenization / sulfurization).',
+)

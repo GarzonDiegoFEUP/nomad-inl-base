@@ -40,6 +40,7 @@ from nomad.metainfo import (
     SubSection,
 )
 from nomad_material_processing.general import SampleDeposition
+from nomad_material_processing.solution.general import Solution as NMPSolution
 
 from nomad_inl_base.schema_packages.entities import (
     INLSubstrateReference,
@@ -53,6 +54,20 @@ from nomad_inl_base.utils import create_archive, create_filename, get_hash_ref
 m_package = SchemaPackage()
 
 
+class INLPrecursorSolution(PrecursorSolution):
+    """PrecursorSolution that references a nomad-material-processing Solution entry."""
+
+    m_def = Section(a_eln=dict(hide=['solution_details', 'reload_referenced_solution']))
+
+    solution = Quantity(
+        type=NMPSolution,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Solution Reference',
+        ),
+    )
+
+
 class INLWetDepositionCategory(EntryDataCategory):
     m_def = Category(label='INL Wet Deposition', categories=[EntryDataCategory])
 
@@ -61,7 +76,9 @@ class WetDepositionRecipe(EntryData):
     """A re-usable recipe template for wet deposition methods."""
 
     m_def = Section(
-        label='Wet Deposition Recipe', categories=[INLWetDepositionCategory]
+        label='Wet Deposition Recipe',
+        categories=[INLWetDepositionCategory],
+        a_eln=dict(hide=['lab_id']),
     )
 
     name = Quantity(
@@ -86,13 +103,8 @@ class WetDepositionRecipe(EntryData):
         description='Atmosphere template for the recipe.',
     )
 
-    substrate = SubSection(
-        section_def=INLSubstrateReference,
-        description='Substrate template for the recipe.',
-    )
-
     solution = SubSection(
-        section_def=PrecursorSolution,
+        section_def=INLPrecursorSolution,
         repeats=True,
         description='Solution/precursor template for the recipe.',
     )
@@ -260,6 +272,7 @@ class INLChemicalBathDepositionRecipe(WetDepositionRecipe):
     m_def = Section(
         label='INL Chemical Bath Deposition Recipe',
         categories=[INLWetDepositionCategory],
+        a_eln=dict(hide=['lab_id', 'annealing', 'quenching']),
     )
 
     bath_temperature = Quantity(
@@ -327,6 +340,7 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
     m_def = Section(
         links=['https://purl.archive.org/tfsco/TFSCO_00002051'],
         categories=[INLWetDepositionCategory],
+        a_eln=dict(hide=['steps', 'instruments', 'lab_id', 'location', 'tags']),
     )
 
     tags = Quantity(
@@ -392,7 +406,7 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
     )
 
     solution = SubSection(
-        section_def=PrecursorSolution,
+        section_def=INLPrecursorSolution,
         repeats=True,
     )
 
@@ -558,8 +572,6 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
             self.instrument = recipe.instrument
         if recipe.atmosphere is not None and self.atmosphere is None:
             self.atmosphere = recipe.atmosphere
-        if recipe.substrate is not None and self.substrate is None:
-            self.substrate = recipe.substrate
         if recipe.solution is not None and not self.solution:
             self.solution = recipe.solution
         if recipe.annealing is not None and self.annealing is None:
@@ -584,15 +596,18 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
             # Auto-fill deposited_material from solution solute name if not explicitly set
             if not self.deposited_material and self.solution:
                 sol = self.solution[0]
-                details = getattr(sol, 'solution_details', None)
-                if details is not None:
-                    solutes = getattr(details, 'solute', None)
+                name = None
+                # Try NMP Solution reference path first
+                nmp_sol = getattr(sol, 'solution', None)
+                if nmp_sol is not None:
+                    solutes = getattr(nmp_sol, 'solutes', None)
                     if solutes:
-                        name = getattr(solutes[0], 'name', None) or getattr(
-                            getattr(solutes[0], 'chemical', None), 'name', None
+                        pure = getattr(solutes[0], 'pure_substance', None)
+                        name = getattr(pure, 'name', None) or getattr(
+                            solutes[0], 'name', None
                         )
-                        if name:
-                            self.deposited_material = name
+                if name:
+                    self.deposited_material = name
             self._update_sample(archive, logger)
             self.creates_new_thin_film = False
 
@@ -602,6 +617,7 @@ class INLSpinCoating(INLThinFilmDeposition):
 
     m_def = Section(
         links=['http://purl.obolibrary.org/obo/CHMO_0001472'],
+        a_eln=dict(hide=['sample', 'tags', 'operator']),
     )
 
     recipe = SubSection(
@@ -758,6 +774,7 @@ class INLChemicalBathDeposition(INLThinFilmDeposition):
 
     m_def = Section(
         links=['http://purl.obolibrary.org/obo/CHMO_0001465'],
+        a_eln=dict(hide=['annealing', 'quenching']),
     )
 
     recipe = SubSection(
@@ -789,6 +806,20 @@ class INLChemicalBathDeposition(INLThinFilmDeposition):
         type=float,
         description='pH of the chemical bath.',
         a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+    color_change_time = Quantity(
+        type=float,
+        unit='minute',
+        description=(
+            'Time at which a color change was observed in the solution, if any. '
+            'This can be an indication of the reaction progress and film formation.'
+        ),
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='minute',
+            label='Color change time',
+        ),
     )
 
     stirring_speed = Quantity(

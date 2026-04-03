@@ -37,28 +37,39 @@ class INLSampleReference(CompositeSystemReference):
     )
 
 
-class INLXRayDiffraction(ELNXRayDiffraction, EntryData):
+class INLCharacterization(Measurement, EntryData):
+    """Base class for all INL characterization measurements."""
+
+    m_def = Section(
+        categories=[INLCharacterizationCategory],
+        a_eln=dict(hide=['lab_id', 'location']),
+    )
+
+    operator = Quantity(
+        type=str,
+        description='Name of the person who performed this measurement.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    samples = SubSection(
+        section_def=INLSampleReference,
+        repeats=True,
+        description='Sample(s) measured in this characterization.',
+    )
+
+
+class INLXRayDiffraction(INLCharacterization, ELNXRayDiffraction):
     m_def = Section(
         label='INL XRD',
         categories=[INLCharacterizationCategory],
     )
-    operator = Quantity(
-        type=str,
-        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
-    )
-    samples = SubSection(section_def=INLSampleReference, repeats=True)
 
 
-class INLUVVisTransmission(ELNUVVisNirTransmission, EntryData):
+class INLUVVisTransmission(INLCharacterization, ELNUVVisNirTransmission):
     m_def = Section(
         label='INL UV-Vis Transmission',
         categories=[INLCharacterizationCategory],
     )
-    operator = Quantity(
-        type=str,
-        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
-    )
-    samples = SubSection(section_def=INLSampleReference, repeats=True)
 
 
 # ---------------------------------------------------------------------------
@@ -159,7 +170,7 @@ class WorkingElectrode(INLThinFilmStack, EntryData):
     )
 
 
-class ChronoamperometryMeasurement(PlotSection, Measurement, EntryData):
+class ChronoamperometryMeasurement(INLCharacterization, PlotSection):
     m_def = Section(
         links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
         categories=[INLCharacterizationCategory],
@@ -207,7 +218,7 @@ class ChronoamperometryMeasurement(PlotSection, Measurement, EntryData):
         )
 
 
-class PotentiostatMeasurement(PlotSection, Measurement, EntryData):
+class PotentiostatMeasurement(INLCharacterization, PlotSection):
     m_def = Section(
         links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
         categories=[INLCharacterizationCategory],
