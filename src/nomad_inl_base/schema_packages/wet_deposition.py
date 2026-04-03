@@ -43,6 +43,7 @@ from nomad_material_processing.general import SampleDeposition
 from nomad_material_processing.solution.general import Solution as NMPSolution
 
 from nomad_inl_base.schema_packages.entities import (
+    INLSampleReference,
     INLSubstrateReference,
     INLThinFilm,
     INLThinFilmReference,
@@ -378,6 +379,12 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
             'For multi-layer deposition set this to the existing stack — a new layer '
             'will be appended to it. After film creation this holds the resulting stack.'
         ),
+    )
+
+    samples = SubSection(
+        section_def=INLSampleReference,
+        repeats=True,
+        description='References to INL samples (substrate, thin film, or stack) associated with this deposition.',
     )
 
     creates_new_thin_film = Quantity(

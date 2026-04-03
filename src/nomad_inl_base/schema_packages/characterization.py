@@ -8,7 +8,7 @@ import numpy as np
 import plotly.express as px
 from nomad.datamodel.data import EntryData, EntryDataCategory
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
-from nomad.datamodel.metainfo.basesections import CompositeSystemReference, Measurement
+from nomad.datamodel.metainfo.basesections import Measurement
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
 from nomad.metainfo import Category, Quantity, SchemaPackage, Section, SubSection
 from nomad_material_processing.general import TimeSeries
@@ -17,24 +17,13 @@ from nomad_measurements.transmission.schema import ELNUVVisNirTransmission
 from nomad_measurements.xrd.schema import ELNXRayDiffraction
 from plotly.subplots import make_subplots
 
-from nomad_inl_base.schema_packages.entities import INLSample, INLThinFilmStack
+from nomad_inl_base.schema_packages.entities import INLSampleReference, INLThinFilmStack
 
 m_package = SchemaPackage()
 
 
 class INLCharacterizationCategory(EntryDataCategory):
     m_def = Category(label='INL Characterization', categories=[EntryDataCategory])
-
-
-class INLSampleReference(CompositeSystemReference):
-    m_def = Section(hide=['name', 'lab_id'])
-    reference = Quantity(
-        type=INLSample,
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.ReferenceEditQuantity,
-            label='Sample',
-        ),
-    )
 
 
 class INLCharacterization(Measurement, EntryData):

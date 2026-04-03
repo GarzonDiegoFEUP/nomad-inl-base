@@ -28,6 +28,7 @@ from nomad_material_processing.vapor_deposition.general import (
 from nomad_inl_base.schema_packages.entities import (
     INLGraphiteBoxReference,
     INLInstrumentReference,
+    INLSampleReference,
 )
 
 _DEFAULT_TUBE_PRESSURE_MBAR = 1013.25
@@ -46,18 +47,9 @@ class INLChalcogenSource(ArchiveSection):
         label='Chalcogen Source',
     )
 
-    label = Quantity(
-        type=str,
-        description='Human-readable label shown in the GUI list (e.g. "Se source").',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.StringEditQuantity,
-            label='Label',
-        ),
-    )
-
     name = Quantity(
         type=str,
-        description='Substance name used for PubChem lookup (e.g. "Selenium").',
+        description='Substance name — auto-populated from material after PubChem lookup.',
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.StringEditQuantity,
             label='Name',
@@ -100,11 +92,10 @@ class INLChalcogenSource(ArchiveSection):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-        if self.name:
-            if self.material is None:
-                self.material = PureSubstanceSection()
-            self.material.name = self.name
+        if self.material is not None:
             self.material.normalize(archive, logger)
+            if not self.name and self.material.name:
+                self.name = self.material.name
 
 
 class INLVolumetricFlowRate(VolumetricFlowRate):
@@ -196,6 +187,12 @@ class INLTubeFurnaceAnnealing(Process, EntryData):
     graphite_box = SubSection(
         section_def=INLGraphiteBoxReference,
         description='The graphite box used in this annealing run.',
+    )
+
+    samples = SubSection(
+        section_def=INLSampleReference,
+        repeats=True,
+        description='Sample(s) processed in this annealing run.',
     )
 
     tube_diameter = Quantity(
@@ -312,7 +309,7 @@ class INLTubeFurnaceAnnealingRecipe(INLTubeFurnaceAnnealing, EntryData):
         a_eln=dict(hide=[
             'instruments', 'lab_id', 'location',
             'samples', 'datetime', 'end_time', 'apply_recipe',
-            'recipe', 'instrument',
+            'recipe',
         ]),
     )
 

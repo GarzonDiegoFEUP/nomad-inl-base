@@ -21,6 +21,7 @@ from nomad_material_processing.vapor_deposition.general import (
 from plotly.subplots import make_subplots
 
 from nomad_inl_base.schema_packages.entities import (
+    INLSampleReference,
     INLSubstrateReference,
     INLThinFilm,
     INLThinFilmReference,
@@ -330,6 +331,12 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
             'Reference to the substrate used in this deposition. '
             'Set this field to auto-create an INLThinFilm (and stack) on re-processing.'
         ),
+    )
+
+    samples = SubSection(
+        section_def=INLSampleReference,
+        repeats=True,
+        description='References to INL samples (substrate, thin film, or stack) associated with this deposition.',
     )
 
     # --- Time axis ---

@@ -63,6 +63,7 @@ from nomad_material_processing.vapor_deposition.pvd.general import (
 from nomad_material_processing.vapor_deposition.pvd.sputtering import SputterDeposition
 
 from nomad_inl_base.schema_packages.entities import (
+    INLSampleReference,
     INLSubstrate,
     INLSubstrateReference,
     INLThinFilm,
@@ -1177,7 +1178,7 @@ class StarSputtering(SputterDeposition, EntryData):
         ),
     )
 
-    samples = SubSection(section_def=StarStackReference, repeats=True)
+    samples = SubSection(section_def=INLSampleReference, repeats=True)
 
     substrate = SubSection(
         section_def=INLSubstrateReference,
@@ -1373,6 +1374,7 @@ class StarSputtering(SputterDeposition, EntryData):
                     )
 
                     new_StackReference = StarStackReference(reference=stackRef)
+                    new_StackSampleRef = INLSampleReference(reference=stackRef)
 
                     if self.is_a_calibration_experiment:
                         new_sample_par = StarCalibrationSampleParameters()
@@ -1394,7 +1396,7 @@ class StarSputtering(SputterDeposition, EntryData):
                     step.sample_parameters = sample_parameters
 
                 if len(self.samples) == 0:
-                    self.samples.append(new_StackReference)
+                    self.samples.append(new_StackSampleRef)
 
                 for sample in self.samples:
                     if step.sample_parameters is not None:

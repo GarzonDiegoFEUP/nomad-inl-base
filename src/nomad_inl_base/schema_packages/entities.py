@@ -9,6 +9,7 @@ from nomad.datamodel.data import ArchiveSection, EntryData, EntryDataCategory
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import (
     CompositeSystem,
+    CompositeSystemReference,
     Instrument,
     InstrumentReference,
     SystemComponent,
@@ -44,6 +45,20 @@ class INLSample(CompositeSystem):
     """Marker base class for all INL sample entities (substrate, thin film, stack)."""
 
     m_def = Section(label='INL Sample')
+
+
+class INLSampleReference(CompositeSystemReference):
+    """Reference to any INL sample entity (substrate, thin film, or stack)."""
+
+    m_def = Section(hide=['name', 'lab_id'])
+
+    reference = Quantity(
+        type=INLSample,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Sample',
+        ),
+    )
 
 
 class INLSubstrate(Substrate, INLSample, EntryData):
