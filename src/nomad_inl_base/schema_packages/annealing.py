@@ -20,9 +20,15 @@ from nomad.metainfo import (
     SubSection,
 )
 from nomad_material_processing.general import AnnealingStep
-from nomad_material_processing.vapor_deposition.general import GasFlow
+from nomad_material_processing.vapor_deposition.general import (
+    GasFlow,
+    VolumetricFlowRate,
+)
 
-from nomad_inl_base.schema_packages.entities import INLGraphiteBoxReference
+from nomad_inl_base.schema_packages.entities import (
+    INLGraphiteBoxReference,
+    INLInstrumentReference,
+)
 
 _DEFAULT_TUBE_PRESSURE_MBAR = 1013.25
 
@@ -40,9 +46,27 @@ class INLChalcogenSource(ArchiveSection):
         label='Chalcogen Source',
     )
 
+    label = Quantity(
+        type=str,
+        description='Human-readable label shown in the GUI list (e.g. "Se source").',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity,
+            label='Label',
+        ),
+    )
+
+    name = Quantity(
+        type=str,
+        description='Substance name used for PubChem lookup (e.g. "Selenium").',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity,
+            label='Name',
+        ),
+    )
+
     material = SubSection(
         section_def=PureSubstanceSection,
-        description='The source material (e.g. Se, S, Na2Se). Looked up via PubChem.',
+        description='The source material (e.g. Se, S, Na2Se). Auto-filled via PubChem when name is set.',
     )
 
     amount = Quantity(
@@ -74,6 +98,46 @@ class INLChalcogenSource(ArchiveSection):
         ),
     )
 
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        if self.name:
+            if self.material is None:
+                self.material = PureSubstanceSection()
+            self.material.name = self.name
+            self.material.normalize(archive, logger)
+
+
+class INLVolumetricFlowRate(VolumetricFlowRate):
+    """Flow rate section for INL tube furnace gas lines."""
+
+    m_def = Section(a_eln={'hide': ['value', 'set_time']})
+
+    measurement_type = Quantity(
+        type=MEnum('Mass Flow Controller', 'Rotameter', 'Other'),
+        description='Method used to measure or control the flow rate.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.RadioEnumEditQuantity,
+            label='Measurement type',
+        ),
+    )
+
+
+class INLGasFlow(GasFlow):
+    """Gas flow for INL tube furnace processes."""
+
+    m_def = Section(label='Gas Flow')
+
+    name = Quantity(
+        type=str,
+        description='Name of the gas (e.g. "N2", "H2Se").',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity,
+            label='Gas name',
+        ),
+    )
+
+    flow_rate = SubSection(section_def=INLVolumetricFlowRate)
+
 
 class INLAnnealingStep(AnnealingStep):
     """A single step of an INL tube furnace annealing temperature profile."""
@@ -92,10 +156,27 @@ class INLAnnealingStep(AnnealingStep):
     )
 
     gas_flow = SubSection(
-        section_def=GasFlow,
+        section_def=INLGasFlow,
         repeats=True,
         description='Gas flow(s) active during this step.',
     )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        if (
+            self.duration is None
+            and self.starting_temperature is not None
+            and self.ending_temperature is not None
+            and self.heating_rate is not None
+        ):
+            t_start = self.starting_temperature
+            t_end = self.ending_temperature
+            rate = self.heating_rate
+            t_start = t_start.magnitude if hasattr(t_start, 'magnitude') else float(t_start)
+            t_end = t_end.magnitude if hasattr(t_end, 'magnitude') else float(t_end)
+            rate = rate.magnitude if hasattr(rate, 'magnitude') else float(rate)
+            if rate != 0 and t_start != t_end:
+                self.duration = abs(t_end - t_start) / rate * 60.0
 
 
 class INLTubeFurnaceAnnealing(Process, EntryData):
@@ -105,6 +186,11 @@ class INLTubeFurnaceAnnealing(Process, EntryData):
         links=['http://purl.obolibrary.org/obo/CHMO_0001465'],
         categories=[INLAnnealingCategory],
         a_eln=dict(hide=['instruments', 'lab_id', 'location']),
+    )
+
+    instrument = SubSection(
+        section_def=INLInstrumentReference,
+        description='The furnace or instrument used for this annealing run.',
     )
 
     graphite_box = SubSection(
@@ -154,7 +240,7 @@ class INLTubeFurnaceAnnealing(Process, EntryData):
     )
 
     gas_flow = SubSection(
-        section_def=GasFlow,
+        section_def=INLGasFlow,
         repeats=True,
         description='Global baseline gas flow(s) for the run (can be overridden per step).',
     )
@@ -187,6 +273,8 @@ class INLTubeFurnaceAnnealing(Process, EntryData):
         logger: 'BoundLogger',
     ) -> None:
         """Copy recipe fields into this run (only if not already set)."""
+        if recipe.instrument is not None and self.instrument is None:
+            self.instrument = recipe.instrument
         if recipe.graphite_box is not None and self.graphite_box is None:
             self.graphite_box = recipe.graphite_box
         if recipe.tube_diameter is not None and self.tube_diameter is None:
@@ -224,6 +312,7 @@ class INLTubeFurnaceAnnealingRecipe(INLTubeFurnaceAnnealing, EntryData):
         a_eln=dict(hide=[
             'instruments', 'lab_id', 'location',
             'samples', 'datetime', 'end_time', 'apply_recipe',
+            'recipe', 'instrument',
         ]),
     )
 

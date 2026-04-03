@@ -17,7 +17,7 @@ from nomad_measurements.transmission.schema import ELNUVVisNirTransmission
 from nomad_measurements.xrd.schema import ELNXRayDiffraction
 from plotly.subplots import make_subplots
 
-from nomad_inl_base.schema_packages.entities import INLThinFilmStack
+from nomad_inl_base.schema_packages.entities import INLSample, INLThinFilmStack
 
 m_package = SchemaPackage()
 
@@ -29,7 +29,7 @@ class INLCharacterizationCategory(EntryDataCategory):
 class INLSampleReference(CompositeSystemReference):
     m_def = Section(hide=['name', 'lab_id'])
     reference = Quantity(
-        type=INLThinFilmStack,
+        type=INLSample,
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.ReferenceEditQuantity,
             label='Sample',
@@ -42,7 +42,7 @@ class INLCharacterization(Measurement, EntryData):
 
     m_def = Section(
         categories=[INLCharacterizationCategory],
-        a_eln=dict(hide=['lab_id', 'location']),
+        a_eln=dict(hide=['lab_id', 'location', 'steps', 'instruments']),
     )
 
     operator = Quantity(

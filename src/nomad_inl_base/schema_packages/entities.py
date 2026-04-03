@@ -8,6 +8,7 @@ import numpy as np
 from nomad.datamodel.data import ArchiveSection, EntryData, EntryDataCategory
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import (
+    CompositeSystem,
     Instrument,
     InstrumentReference,
     SystemComponent,
@@ -39,7 +40,13 @@ class INLEntityCategory(EntryDataCategory):
     m_def = Category(label='INL Entities', categories=[EntryDataCategory])
 
 
-class INLSubstrate(Substrate, EntryData):
+class INLSample(CompositeSystem):
+    """Marker base class for all INL sample entities (substrate, thin film, stack)."""
+
+    m_def = Section(label='INL Sample')
+
+
+class INLSubstrate(Substrate, INLSample, EntryData):
     m_def = Section(label='INL Substrate', categories=[INLEntityCategory])
 
     material = Quantity(
@@ -81,7 +88,7 @@ class INLSubstrateReference(SubstrateReference):
                 self.lab_id = self.reference.lab_id
 
 
-class INLThinFilm(ThinFilm, EntryData):
+class INLThinFilm(ThinFilm, INLSample, EntryData):
     """Shared thin film entity for all INL deposition methods."""
 
     m_def = Section(label='INL Thin Film', categories=[INLEntityCategory])
@@ -137,7 +144,7 @@ class INLThinFilmReference(ThinFilmReference):
                 self.lab_id = self.reference.lab_id
 
 
-class INLThinFilmStack(ThinFilmStack, EntryData):
+class INLThinFilmStack(ThinFilmStack, INLSample, EntryData):
     """Shared thin film stack entity for all INL deposition methods."""
 
     m_def = Section(label='INL Thin Film Stack', categories=[INLEntityCategory])
