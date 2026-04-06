@@ -11,7 +11,7 @@
       "module_name": "nomad_inl_base",
       "short_description": "A plugin to manage the data from LaNaSC",
       "version": "0.1.0",
-      "license": "BSD-3",
+      "license": "BSD-3-Clause",
       "include_schema_package": true,
       "include_normalizer": false,
       "include_parser": true,
