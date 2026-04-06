@@ -189,8 +189,8 @@ class INLCleaning(Cleaning):
             self.substrate_material = recipe.material
         if recipe.substrate_side_length is not None and self.substrate_side_length is None:
             self.substrate_side_length = recipe.substrate_side_length
-        if recipe.instrument is not None and self.instrument is None:
-            self.instrument = recipe.instrument
+        if recipe.instruments is not None and self.instruments is None:
+            self.instruments = recipe.instruments
         self.apply_recipe = False
 
     def _sum_step_durations(self) -> None:
