@@ -72,10 +72,9 @@ class FourPointProbeParserEntryPoint(ParserEntryPoint):
 
 four_point_probe_parser_entry_point = FourPointProbeParserEntryPoint(
     name='FourPointProbeParser',
-    description='Parser for 4-point probe sheet resistance Excel files (.xls/.xlsx).',
-    mainfile_name_re=r'.*\.[xX][lL][sS][xX]?$',
+    description='Parser for 4-point probe sheet resistance Excel files (*4pp.xls / *4pp.xlsx).',
+    mainfile_name_re=r'.*4[pP][pP]\.[xX][lL][sS][xX]?$',
     mainfile_mime_re=r'(application/vnd\.ms-excel|application/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|application/octet-stream)',
-    mainfile_contents_re=r'Lot ID',
 )
 
 
