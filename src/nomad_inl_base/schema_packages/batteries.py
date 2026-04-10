@@ -280,6 +280,57 @@ class SputteringDCPowerSupply(ArchiveSection):
     )
 
 
+class PlotConfig(ArchiveSection):
+    """User-configurable settings for which figures to generate during normalization.
+
+    Set ``plot_mode`` to ``'Deposition'`` (default) or ``'Thermal Treatment'`` for
+    preset figure selections, or ``'Custom'`` to control each toggle individually.
+    """
+
+    m_def = Section(label='Plot Configuration')
+
+    plot_mode = Quantity(
+        type=MEnum('Deposition', 'Thermal Treatment', 'Custom'),
+        default='Deposition',
+        description=(
+            'Preset plot mode. "Deposition" shows all figures; '
+            '"Thermal Treatment" shows only temperatures and pressure; '
+            '"Custom" uses the individual show_* toggles.'
+        ),
+        a_eln=ELNAnnotation(component='EnumEditQuantity'),
+    )
+    show_pressure = Quantity(
+        type=bool,
+        default=True,
+        description='Include the Pressure (+ MFC flows) figure.',
+        a_eln=ELNAnnotation(component='BoolEditQuantity'),
+    )
+    show_sources = Quantity(
+        type=bool,
+        default=True,
+        description='Include one power-supply figure per active sputtering source.',
+        a_eln=ELNAnnotation(component='BoolEditQuantity'),
+    )
+    show_temperatures = Quantity(
+        type=bool,
+        default=True,
+        description='Include the Temperatures figure.',
+        a_eln=ELNAnnotation(component='BoolEditQuantity'),
+    )
+    show_substrate_bias = Quantity(
+        type=bool,
+        default=True,
+        description='Include the Substrate Bias figure (only rendered if bias was active).',
+        a_eln=ELNAnnotation(component='BoolEditQuantity'),
+    )
+    show_mfc_flows = Quantity(
+        type=bool,
+        default=True,
+        description='Add MFC gas-flow rows to the Pressure figure.',
+        a_eln=ELNAnnotation(component='BoolEditQuantity'),
+    )
+
+
 class BatteryChamberSputteringDeposition(PlotSection, EntryData):
     """
     Base class for parsed log entries from INL Battery Chamber sputtering systems
@@ -309,13 +360,13 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
     base_pressure = Quantity(
         type=np.float64,
         unit='pascal',
-        description='Minimum ion gauge pressure recorded during this log (used as base pressure estimate).',
+        description='Minimum ion gauge pressure recorded during this log (used as base pressure estimate). Auto-computed during file import.',
         a_eln=ELNAnnotation(component='NumberEditQuantity', defaultDisplayUnit='mbar'),
     )
     deposition_time = Quantity(
         type=np.float64,
         unit='s',
-        description='Total elapsed time with substrate shutter open (computed from log data).',
+        description='Total elapsed time with substrate shutter open (computed from log data). Auto-computed during file import.',
         a_eln=ELNAnnotation(component='NumberEditQuantity', defaultDisplayUnit='s'),
     )
     substrate_type = Quantity(
@@ -324,12 +375,23 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
         a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
-    # --- User-set reference field ---
+    # --- User-set reference fields ---
     substrate = SubSection(
         section_def=INLSubstrateReference,
         description=(
-            'Reference to the substrate used in this deposition. '
-            'Set this field to auto-create an INLThinFilm (and stack) on re-processing.'
+            'Single substrate reference (fallback). '
+            'Prefer using ``substrates`` to list all individual pieces loaded in the run.'
+        ),
+    )
+
+    substrates = SubSection(
+        section_def=INLSubstrateReference,
+        repeats=True,
+        description=(
+            'Individual substrate entries loaded in this deposition run '
+            '(e.g. LCO-17-S01, LCO-17-S02, …). '
+            'One INLThinFilmStack is created per entry on normalisation. '
+            'Falls back to the single ``substrate`` field if empty.'
         ),
     )
 
@@ -494,6 +556,11 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
         description='DC pulsed power supply (PS4).',
     )
 
+    plot_config = SubSection(
+        section_def=PlotConfig,
+        description='Controls which figures are generated during normalization.',
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
         self._trim_inactive()
@@ -590,6 +657,11 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
             ps4.arc_count = trim(ps4.arc_count)
             ps4.spark_count = trim(ps4.spark_count)
 
+        # Re-zero timestamps so x-axis always starts at 0 after trimming
+        if self.timestamps is not None and len(self.timestamps) > 0:
+            t0 = self.timestamps[0]
+            self.timestamps = self.timestamps - t0
+
     def _compute_scalars(self) -> None:
         """Recompute base_pressure from trimmed ion gauge data and compute deposition_time."""
         env = self.chamber_environment
@@ -609,14 +681,28 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
             self.deposition_time = float(np.sum(dt[shutter[:-1].astype(bool)]))
 
     def _build_figures(self) -> None:
-        """Build Plotly figures: Pressure, RF Power, DC Power, Temperatures."""
+        """Build Plotly figures controlled by plot_config settings."""
         self.figures = []
         ts = self.timestamps
         if ts is None or len(ts) == 0:
             return
 
+        # Resolve config - use stored config or create a default one
+        cfg = self.plot_config if self.plot_config is not None else PlotConfig()
+
+        # Apply mode presets
+        show_pressure = cfg.show_pressure
+        show_sources = cfg.show_sources
+        show_temperatures = cfg.show_temperatures
+        show_substrate_bias = cfg.show_substrate_bias
+        show_mfc_flows = cfg.show_mfc_flows
+        if cfg.plot_mode == 'Thermal Treatment':
+            show_sources = False
+            show_substrate_bias = False
+
         _KELVIN_TO_C = 273.15
-        _PA_TO_MBAR = 1e-2  # 1 Pa = 0.01 mbar
+        _PA_TO_MBAR = 1e-2
+        _M3S_TO_SCCM = 1.0 / _SCCM_TO_M3S
 
         def mag(arr):
             """Return plain numpy array, stripping pint units if present."""
@@ -627,81 +713,168 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
         ts_raw = mag(ts)
         env = self.chamber_environment
 
-        # ── Figure 1: Pressure ─────────────────────────────────────────────
-        capman = mag(env.pressure.value if (env and env.pressure) else None)
-        ion = mag(env.ion_gauge_pressure.value if (env and env.ion_gauge_pressure) else None)
-        if capman is not None or ion is not None:
-            rows = sum(x is not None for x in [capman, ion])
-            fig = make_subplots(
-                rows=rows, cols=1, shared_xaxes=True,
-                subplot_titles=[t for t, x in [('Capman (mbar)', capman), ('Ion Gauge (mbar)', ion)] if x is not None],
-            )
-            row = 1
+        # ── Figure: Pressure [+ MFC flows] ────────────────────────────────────────────
+        if show_pressure:
+            capman = mag(env.pressure.value if (env and env.pressure) else None)
+            ion = mag(env.ion_gauge_pressure.value if (env and env.ion_gauge_pressure) else None)
+
+            mfc_rows = []
+            if show_mfc_flows and env:
+                for gf in (env.gas_flow or []):
+                    if gf.flow_rate is not None:
+                        fv = mag(gf.flow_rate.value)
+                        if fv is not None and len(fv) == len(ts_raw):
+                            lbl = gf.name or f'MFC {gf.mfc_index}'
+                            mfc_rows.append((fv * _M3S_TO_SCCM, lbl))
+
+            pressure_rows = []
             if capman is not None:
-                fig.add_trace(go.Scatter(x=ts_raw, y=capman * _PA_TO_MBAR, name='Capman', line=dict(color='steelblue')), row=row, col=1)
-                row += 1
+                pressure_rows.append((capman * _PA_TO_MBAR, 'Capman (mbar)', False))
             if ion is not None:
-                fig.add_trace(go.Scatter(x=ts_raw, y=ion * _PA_TO_MBAR, name='Ion Gauge', line=dict(color='darkorange')), row=row, col=1)
-                fig.update_yaxes(type='log', row=row, col=1)
-            fig.update_layout(template='plotly_white', height=400, xaxis_title='Time (s)', showlegend=True)
-            self.figures.append(PlotlyFigure(label='Pressure', figure=fig.to_plotly_json()))
+                pressure_rows.append((ion * _PA_TO_MBAR, 'Ion Gauge (mbar)', True))
+            for fv, lbl in mfc_rows:
+                pressure_rows.append((fv, f'{lbl} (sccm)', False))
 
-        # ── Figure 2: RF Power ─────────────────────────────────────────────
-        rf_traces = []
-        colours = ['#1f77b4', '#ff7f0e', '#2ca02c']
-        for idx, ps in enumerate(self.rf_power_supplies or []):
-            c = colours[idx % len(colours)]
-            fwd = mag(ps.forward_power)
-            rfl = mag(ps.reflected_power)
-            if fwd is not None and len(fwd) == len(ts_raw):
-                rf_traces.append(go.Scatter(x=ts_raw, y=fwd, name=f'PS{ps.supply_index} Fwd', line=dict(color=c)))
-            if rfl is not None and len(rfl) == len(ts_raw):
-                rf_traces.append(go.Scatter(x=ts_raw, y=rfl, name=f'PS{ps.supply_index} Rfl', line=dict(color=c, dash='dash')))
-        if rf_traces:
-            fig = go.Figure(data=rf_traces)
-            fig.update_layout(template='plotly_white', height=350, xaxis_title='Time (s)', yaxis_title='Power (W)', showlegend=True)
-            self.figures.append(PlotlyFigure(label='RF Power', figure=fig.to_plotly_json()))
+            if pressure_rows:
+                n_rows = len(pressure_rows)
+                colours = ['steelblue', 'darkorange', '#2ca02c', '#9467bd', '#8c564b']
+                fig = make_subplots(rows=n_rows, cols=1, shared_xaxes=True)
+                for r_i, (arr, lbl, log_scale) in enumerate(pressure_rows, start=1):
+                    fig.add_trace(
+                        go.Scatter(x=ts_raw, y=arr, name=lbl, showlegend=False,
+                                   line=dict(color=colours[(r_i - 1) % len(colours)])),
+                        row=r_i, col=1,
+                    )
+                    fig.update_yaxes(title_text=lbl, row=r_i, col=1)
+                    if log_scale:
+                        fig.update_yaxes(type='log', row=r_i, col=1)
+                fig.update_xaxes(title_text='Time (s)', row=n_rows, col=1)
+                fig.update_layout(
+                    template='plotly_white', height=max(300, 200 * n_rows), showlegend=False,
+                )
+                self.figures.append(PlotlyFigure(label='Pressure', figure=fig.to_plotly_json()))
 
-        # ── Figure 3: DC Power Supply ──────────────────────────────────────
-        ps4 = self.dc_power_supply
-        if ps4 is not None:
-            dc_rows = [
-                (mag(ps4.power), 'Power (W)'),
-                (mag(ps4.voltage), 'Voltage (V)'),
-                (mag(ps4.current), 'Current (A)'),
+        # ── Figures: one per active sputtering source ──────────────────────────────────
+        if show_sources:
+            rf_by_index = {
+                ps.supply_index: ps
+                for ps in (self.rf_power_supplies or [])
+                if ps.supply_index is not None
+            }
+            ps4 = self.dc_power_supply
+
+            for src in (self.sources or []):
+                if src.active is None or not np.any(src.active.astype(bool)):
+                    continue
+
+                src_label = f'Source {src.source_index}'
+                if src.material:
+                    src_label += f' \u2013 {src.material}'
+
+                supply_rows = []  # (array, y_label, use_log)
+                ps_type = (src.power_supply_type or '').upper()
+
+                if 'DC' in ps_type or 'PULSED' in ps_type:
+                    if ps4 is not None:
+                        for arr, lbl in [
+                            (mag(ps4.power), 'Power (W)'),
+                            (mag(ps4.voltage), 'Voltage (V)'),
+                            (mag(ps4.current), 'Current (A)'),
+                            (mag(ps4.pulse_frequency), 'Pulse Freq (Hz)'),
+                        ]:
+                            if arr is not None and len(arr) == len(ts_raw):
+                                supply_rows.append((arr, lbl, False))
+                        for arr, lbl in [
+                            (mag(ps4.arc_count), 'Arc Count'),
+                            (mag(ps4.spark_count), 'Spark Count'),
+                        ]:
+                            if arr is not None and len(arr) == len(ts_raw):
+                                supply_rows.append((arr.astype(float), lbl, False))
+                else:
+                    # RF supply: sources 1-2 → PS1, sources 3-4 → PS3
+                    _SOURCES_ON_PS1 = 2
+                    si = src.source_index or 0
+                    rf_idx = 1 if si <= _SOURCES_ON_PS1 else 3
+                    ps = rf_by_index.get(rf_idx)
+                    if ps is not None:
+                        for arr, lbl in [
+                            (mag(ps.forward_power), 'Fwd Power (W)'),
+                            (mag(ps.reflected_power), 'Rfl Power (W)'),
+                            (mag(ps.dc_bias), 'RF DC Self-Bias (V)'),
+                            (mag(ps.load_cap_position), 'Load Cap Position'),
+                            (mag(ps.tune_cap_position), 'Tune Cap Position'),
+                        ]:
+                            if arr is not None and len(arr) == len(ts_raw):
+                                supply_rows.append((arr, lbl, False))
+
+                if not supply_rows:
+                    continue
+
+                n_rows = len(supply_rows)
+                fig = make_subplots(rows=n_rows, cols=1, shared_xaxes=True)
+                for r_i, (arr, lbl, log_scale) in enumerate(supply_rows, start=1):
+                    fig.add_trace(
+                        go.Scatter(x=ts_raw, y=arr, name=lbl, showlegend=False),
+                        row=r_i, col=1,
+                    )
+                    fig.update_yaxes(title_text=lbl, row=r_i, col=1)
+                    if log_scale:
+                        fig.update_yaxes(type='log', row=r_i, col=1)
+                fig.update_xaxes(title_text='Time (s)', row=n_rows, col=1)
+                fig.update_layout(
+                    template='plotly_white', height=max(300, 200 * n_rows), showlegend=False,
+                )
+                self.figures.append(PlotlyFigure(label=src_label, figure=fig.to_plotly_json()))
+
+        # ── Figure: Substrate Bias (only if bias was active) ──────────────────────────
+        if show_substrate_bias:
+            b_active = mag(self.substrate_bias_active)
+            if b_active is not None and np.any(b_active.astype(bool)):
+                bias_rows = []
+                for arr, lbl in [
+                    (mag(self.substrate_bias_voltage), 'Voltage (V)'),
+                    (mag(self.substrate_bias_current), 'Current (A)'),
+                    (mag(self.substrate_bias_power), 'Power (W)'),
+                ]:
+                    if arr is not None and len(arr) == len(ts_raw):
+                        bias_rows.append((arr, lbl))
+                if bias_rows:
+                    n_rows = len(bias_rows)
+                    fig = make_subplots(rows=n_rows, cols=1, shared_xaxes=True)
+                    for r_i, (arr, lbl) in enumerate(bias_rows, start=1):
+                        fig.add_trace(
+                            go.Scatter(x=ts_raw, y=arr, name=lbl, showlegend=False),
+                            row=r_i, col=1,
+                        )
+                        fig.update_yaxes(title_text=lbl, row=r_i, col=1)
+                    fig.update_xaxes(title_text='Time (s)', row=n_rows, col=1)
+                    fig.update_layout(
+                        template='plotly_white', height=max(300, 200 * n_rows), showlegend=False,
+                    )
+                    self.figures.append(PlotlyFigure(label='Substrate Bias', figure=fig.to_plotly_json()))
+
+        # ── Figure: Temperatures ──────────────────────────────────────────────────────
+        if show_temperatures:
+            temp_traces = []
+            temp_series = [
+                (self.substrate_temperature, 'Substrate T', True),
+                (self.substrate_temperature_2, 'Substrate T2', 'legendonly'),
+                (self.substrate_temperature_setpoint, 'Substrate T setpoint', 'legendonly'),
             ]
-            dc_rows = [(arr, lbl) for arr, lbl in dc_rows if arr is not None and len(arr) == len(ts_raw)]
-            if dc_rows:
-                fig = make_subplots(rows=len(dc_rows), cols=1, shared_xaxes=True,
-                                    subplot_titles=[lbl for _, lbl in dc_rows])
-                for row_i, (arr, lbl) in enumerate(dc_rows, start=1):
-                    fig.add_trace(go.Scatter(x=ts_raw, y=arr, name=lbl, showlegend=False), row=row_i, col=1)
-                fig.update_layout(template='plotly_white', height=500, xaxis_title='Time (s)')
-                self.figures.append(PlotlyFigure(label='DC Power Supply', figure=fig.to_plotly_json()))
-
-        # ── Figure 4: Temperatures ─────────────────────────────────────────
-        temp_traces = []
-        temp_series = [
-            (self.substrate_temperature, 'Substrate T', True),
-            (self.substrate_temperature_2, 'Substrate T2', 'legendonly'),
-            (self.substrate_temperature_setpoint, 'Substrate T setpoint', 'legendonly'),
-        ] + [
-            (getattr(self, f'tc{i}_temperature'), f'TC{i}', 'legendonly') for i in range(1, 7)
-        ]
-        for arr, label, visible in temp_series:
-            raw = mag(arr)
-            if raw is not None and len(raw) == len(ts_raw):
-                temp_traces.append(go.Scatter(
-                    x=ts_raw, y=raw - _KELVIN_TO_C, name=label, visible=visible,
-                ))
-        if temp_traces:
-            fig = go.Figure(data=temp_traces)
-            fig.update_layout(
-                template='plotly_white', height=350,
-                xaxis_title='Time (s)', yaxis_title='Temperature (°C)',
-                showlegend=True,
-            )
-            self.figures.append(PlotlyFigure(label='Temperatures', figure=fig.to_plotly_json()))
+            for arr, label, visible in temp_series:
+                raw = mag(arr)
+                if raw is not None and len(raw) == len(ts_raw):
+                    temp_traces.append(go.Scatter(
+                        x=ts_raw, y=raw - _KELVIN_TO_C, name=label, visible=visible,
+                    ))
+            if temp_traces:
+                fig = go.Figure(data=temp_traces)
+                fig.update_layout(
+                    template='plotly_white', height=350,
+                    xaxis_title='Time (s)', yaxis_title='Temperature (°C)',
+                    showlegend=True,
+                )
+                self.figures.append(PlotlyFigure(label='Temperatures', figure=fig.to_plotly_json()))
 
     def _create_thin_film(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         if not self.sources:
@@ -772,35 +945,54 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
         else:
             thinFilmRef = get_hash_ref(archive.m_context.upload_id, thinFilm_filename)
 
-        if self.substrate is None:
+        # Determine which substrates to create stacks for.
+        # substrates list takes precedence; falls back to single substrate.
+        substrates_to_stack = []
+        if self.substrates:
+            for sub_ref in self.substrates:
+                if sub_ref.reference is not None:
+                    # Use the substrate's own name as the stack filename suffix
+                    sub_name = (
+                        getattr(sub_ref.reference, 'name', None)
+                        or getattr(sub_ref, 'name', None)
+                        or ''
+                    )
+                    substrates_to_stack.append((sub_name, sub_ref))
+        elif self.substrate is not None:
+            substrates_to_stack.append(('', self.substrate))
+
+        if not substrates_to_stack:
             logger.info(
                 'BatteryChamberSputteringDeposition: thin film created without a stack '
-                '(no substrate set). Set the substrate field to auto-create a stack.'
+                '(no substrates set). '
+                'Add entries to the ``substrates`` field to auto-create stacks.'
             )
             return
 
-        new_thinFilmReference = INLThinFilmReference(reference=thinFilmRef)
+        for sub_name, substrate_ref in substrates_to_stack:
+            new_thinFilmReference = INLThinFilmReference(reference=thinFilmRef)
 
-        new_Stack = INLThinFilmStack()
-        new_Stack.substrate = self.substrate
-        new_Stack.layers.append(new_thinFilmReference)
+            new_Stack = INLThinFilmStack()
+            new_Stack.substrate = substrate_ref
+            new_Stack.layers.append(new_thinFilmReference)
 
-        stack_filename, stack_archive = create_filename(
-            data_file + '_sample',
-            new_Stack,
-            'ThinFilmStack',
-            archive,
-            logger,
-        )
-
-        if not archive.m_context.raw_path_exists(stack_filename):
-            create_archive(
-                stack_archive.m_to_dict(),
-                archive.m_context,
-                stack_filename,
-                filetype,
+            suffix = f'_{sub_name}' if sub_name else ''
+            stack_filename, stack_archive = create_filename(
+                f'{data_file}{suffix}_sample',
+                new_Stack,
+                'ThinFilmStack',
+                archive,
                 logger,
             )
+
+            if not archive.m_context.raw_path_exists(stack_filename):
+                create_archive(
+                    stack_archive.m_to_dict(),
+                    archive.m_context,
+                    stack_filename,
+                    filetype,
+                    logger,
+                )
 
 
 class PC03CathodeChamberDeposition(BatteryChamberSputteringDeposition):
@@ -864,7 +1056,7 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
     peak_temperature = Quantity(
         type=np.float64,
         unit='kelvin',
-        description='Maximum substrate heater temperature reached during the run.',
+        description='Maximum substrate heater temperature reached during the run. Auto-computed during file import.',
         a_eln=ELNAnnotation(component='NumberEditQuantity', defaultDisplayUnit='celsius'),
     )
 
@@ -967,7 +1159,15 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
         a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
     )
 
+    plot_config = SubSection(
+        section_def=PlotConfig,
+        description='Controls which figures are generated during normalization.',
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # Default plot_config to Thermal Treatment for annealing runs
+        if self.plot_config is None:
+            self.plot_config = PlotConfig(plot_mode='Thermal Treatment')
         super().normalize(archive, logger)
         self._compute_scalars()
         self._build_figures()
@@ -993,6 +1193,8 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
         if ts is None or len(ts) == 0:
             return
 
+        cfg = self.plot_config if self.plot_config is not None else PlotConfig(plot_mode='Thermal Treatment')
+
         _KELVIN_TO_C = 273.15
         _PA_TO_MBAR = 1e-2
 
@@ -1003,48 +1205,47 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
 
         ts_raw = mag(ts)
 
-        # ── Figure 1: Temperatures ──────────────────────────────────────────────────────
-        temp_traces = []
-        temp_series = [
-            (self.substrate_temperature, 'Substrate T', True),
-            (self.substrate_temperature_2, 'Substrate T2', 'legendonly'),
-            (self.substrate_temperature_setpoint, 'Substrate T setpoint', 'legendonly'),
-        ] + [
-            (getattr(self, f'tc{i}_temperature'), f'TC{i}', 'legendonly')
-            for i in range(1, 7)
-        ]
-        for arr, label, visible in temp_series:
-            raw = mag(arr)
-            if raw is not None and len(raw) == len(ts_raw):
-                temp_traces.append(go.Scatter(
-                    x=ts_raw, y=raw - _KELVIN_TO_C, name=label, visible=visible,
+        # ── Figure: Temperatures ──────────────────────────────────────────────────────
+        if cfg.show_temperatures:
+            temp_traces = []
+            temp_series = [
+                (self.substrate_temperature, 'Substrate T', True),
+                (self.substrate_temperature_2, 'Substrate T2', 'legendonly'),
+                (self.substrate_temperature_setpoint, 'Substrate T setpoint', 'legendonly'),
+            ]
+            for arr, label, visible in temp_series:
+                raw = mag(arr)
+                if raw is not None and len(raw) == len(ts_raw):
+                    temp_traces.append(go.Scatter(
+                        x=ts_raw, y=raw - _KELVIN_TO_C, name=label, visible=visible,
+                    ))
+            if temp_traces:
+                fig = go.Figure(data=temp_traces)
+                fig.update_layout(
+                    template='plotly_white', height=400,
+                    xaxis_title='Time (s)', yaxis_title='Temperature (°C)',
+                    showlegend=True,
+                )
+                self.figures.append(PlotlyFigure(label='Temperatures', figure=fig.to_plotly_json()))
+
+        # ── Figure: Pressure ─────────────────────────────────────────────────────────
+        if cfg.show_pressure:
+            p_raw = mag(self.wide_range_pressure)
+            if p_raw is not None and len(p_raw) == len(ts_raw):
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=ts_raw, y=p_raw * _PA_TO_MBAR, name='Wide Range Gauge',
+                    line=dict(color='darkorange'),
                 ))
-        if temp_traces:
-            fig = go.Figure(data=temp_traces)
-            fig.update_layout(
-                template='plotly_white', height=400,
-                xaxis_title='Time (s)', yaxis_title='Temperature (°C)',
-                showlegend=True,
-            )
-            self.figures.append(PlotlyFigure(label='Temperatures', figure=fig.to_plotly_json()))
+                fig.update_yaxes(type='log', title_text='Pressure (mbar)')
+                fig.update_layout(
+                    template='plotly_white', height=300,
+                    xaxis_title='Time (s)',
+                    showlegend=False,
+                )
+                self.figures.append(PlotlyFigure(label='Pressure', figure=fig.to_plotly_json()))
 
-        # ── Figure 2: Pressure ────────────────────────────────────────────────────────
-        p_raw = mag(self.wide_range_pressure)
-        if p_raw is not None and len(p_raw) == len(ts_raw):
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=ts_raw, y=p_raw * _PA_TO_MBAR, name='Wide Range Gauge',
-                line=dict(color='darkorange'),
-            ))
-            fig.update_yaxes(type='log')
-            fig.update_layout(
-                template='plotly_white', height=300,
-                xaxis_title='Time (s)', yaxis_title='Pressure (mbar)',
-                showlegend=False,
-            )
-            self.figures.append(PlotlyFigure(label='Pressure', figure=fig.to_plotly_json()))
-
-        # ── Figure 3: Heater Current ────────────────────────────────────────────────
+        # ── Figure: Heater Current ────────────────────────────────────────────────────
         i_raw = mag(self.substrate_heater_current)
         if i_raw is not None and len(i_raw) == len(ts_raw):
             fig = go.Figure()
@@ -1052,9 +1253,10 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
                 x=ts_raw, y=i_raw, name='Heater Current',
                 line=dict(color='crimson'),
             ))
+            fig.update_yaxes(title_text='Current (A)')
             fig.update_layout(
                 template='plotly_white', height=280,
-                xaxis_title='Time (s)', yaxis_title='Current (A)',
+                xaxis_title='Time (s)',
                 showlegend=False,
             )
             self.figures.append(PlotlyFigure(label='Heater Current', figure=fig.to_plotly_json()))

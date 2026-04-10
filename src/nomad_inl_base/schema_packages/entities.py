@@ -17,6 +17,7 @@ from nomad.datamodel.metainfo.basesections import (
 from nomad.metainfo import (
     Category,
     Datetime,
+    MEnum,
     Quantity,
     SchemaPackage,
     Section,
@@ -45,6 +46,17 @@ class INLSample(CompositeSystem):
     """Marker base class for all INL sample entities (substrate, thin film, stack)."""
 
     m_def = Section(label='INL Sample')
+
+    location = Quantity(
+        type=str,
+        description='Physical location of the sample (e.g. fridge, glovebox, characterization lab).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity, label='Location'),
+    )
+    status = Quantity(
+        type=MEnum('active', 'in use', 'consumed', 'broken', 'archived'),
+        description='Current status of the sample.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.EnumEditQuantity, label='Status'),
+    )
 
 
 class INLSampleReference(CompositeSystemReference):
@@ -286,6 +298,55 @@ class INLInstrumentReference(InstrumentReference):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.ReferenceEditQuantity,
             label='Instrument',
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.reference is not None:
+            if self.reference.name is not None:
+                self.name = self.reference.name
+            if self.reference.lab_id is not None:
+                self.lab_id = self.reference.lab_id
+
+
+class INLSampleFragment(INLSample, EntryData):
+    """A fragment cut or broken from a parent sample at any stage of preparation."""
+
+    m_def = Section(label='INL Sample Fragment', categories=[INLEntityCategory])
+
+    parent_sample = Quantity(
+        type=INLSample,
+        description='The parent sample (substrate, thin film, or stack) this fragment was cut from.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Parent Sample',
+        ),
+    )
+    fraction = Quantity(
+        type=str,
+        description='Fraction label describing the piece size (e.g. "1/2", "1/4", "triangle").',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity, label='Fraction'),
+    )
+    cut_date = Quantity(
+        type=Datetime,
+        description='Date when this fragment was cut or separated from the parent.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.DateTimeEditQuantity,
+            label='Cut Date',
+        ),
+    )
+
+
+class INLSampleFragmentReference(INLSampleReference):
+    """Reference to an INLSampleFragment entry."""
+
+    reference = Quantity(
+        type=INLSampleFragment,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Sample Fragment',
         ),
     )
 
