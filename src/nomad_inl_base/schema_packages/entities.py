@@ -72,6 +72,14 @@ class INLSampleReference(CompositeSystemReference):
         ),
     )
 
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        if self.reference is not None:
+            if self.reference.name is not None:
+                self.name = self.reference.name
+            if self.reference.lab_id is not None:
+                self.lab_id = self.reference.lab_id
+
 
 class INLSubstrate(Substrate, INLSample, EntryData):
     m_def = Section(label='INL Substrate', categories=[INLEntityCategory])
@@ -87,6 +95,9 @@ class INLSubstrate(Substrate, INLSample, EntryData):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+        if self.name is None and archive.metadata and archive.metadata.entry_name:
+            self.name = archive.metadata.entry_name
 
         if self.geometry is None:
             substrate_geo = RectangleCuboid()
@@ -140,6 +151,9 @@ class INLThinFilm(ThinFilm, INLSample, EntryData):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
+        if self.name is None and archive.metadata and archive.metadata.entry_name:
+            self.name = archive.metadata.entry_name
+
         if self.geometry is None:
             self.geometry = RectangleCuboid()
 
@@ -189,6 +203,9 @@ class INLThinFilmStack(ThinFilmStack, INLSample, EntryData):
         if archive.metadata and getattr(archive.metadata, 'mainfile', None):
             self.raw_path = archive.metadata.mainfile
 
+        if self.name is None and archive.metadata and archive.metadata.entry_name:
+            self.name = archive.metadata.entry_name
+
         self.components = []
         if self.layers:
             self.components = [
@@ -209,6 +226,11 @@ class INLThinFilmStack(ThinFilmStack, INLSample, EntryData):
                             self.substrate.reference.geometry.length
                         )
 
+        # ThinFilmStack.normalize (base) unconditionally accesses self.substrate.reference
+        # and will raise AttributeError when no substrate is set. Ensure it has a safe
+        # empty SubstrateReference to work with before delegating.
+        if self.substrate is None:
+            self.substrate = INLSubstrateReference()
         super().normalize(archive, logger)
 
 
