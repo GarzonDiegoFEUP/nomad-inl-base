@@ -332,14 +332,13 @@ class KLATencorProfilerParser(MatchingParser):
             data=entry,
             metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
         )
-        if not archive.m_context.raw_path_exists(prof_filename):
-            create_archive(
-                prof_archive.m_to_dict(),
-                archive.m_context,
-                prof_filename,
-                filetype,
-                logger,
-            )
+        create_archive(
+            prof_archive.m_to_dict(),
+            archive.m_context,
+            prof_filename,
+            filetype,
+            logger,
+        )
 
         file_reference = get_hash_ref(archive.m_context.upload_id, data_file)
         archive.data = RawFile_(
@@ -606,14 +605,13 @@ class FourPointProbeParser(MatchingParser):
             data=entry,
             metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
         )
-        if not archive.m_context.raw_path_exists(fpp_filename):
-            create_archive(
-                fpp_archive.m_to_dict(),
-                archive.m_context,
-                fpp_filename,
-                filetype,
-                logger,
-            )
+        create_archive(
+            fpp_archive.m_to_dict(),
+            archive.m_context,
+            fpp_filename,
+            filetype,
+            logger,
+        )
 
         file_reference = get_hash_ref(archive.m_context.upload_id, data_file)
         archive.data = RawFile_(
