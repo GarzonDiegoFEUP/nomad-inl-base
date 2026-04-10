@@ -544,4 +544,135 @@ class INLFourPointProbe(INLCharacterization, PlotSection):
         )
 
 
+# ---------------------------------------------------------------------------
+# KLA-Tencor Stylus Profiler
+# ---------------------------------------------------------------------------
+
+
+class INLKLATencorProfiler(INLCharacterization):
+    """Stylus profilometry measurement from the KLA-Tencor P-series profiler."""
+
+    m_def = Section(
+        label='INL KLA-Tencor Profiler',
+        categories=[INLCharacterizationCategory],
+        a_eln=dict(
+            hide=['lab_id', 'location', 'steps', 'instruments'],
+        ),
+    )
+
+    # --- Primary results ---
+    step_height = Quantity(
+        type=np.float64,
+        description='Step height (St Height) measured between left and right cursor regions.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='angstrom',
+        ),
+    )
+    Ra = Quantity(
+        type=np.float64,
+        description='Average roughness (Ra) over the roughness trace.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='angstrom',
+        ),
+    )
+    max_Ra = Quantity(
+        type=np.float64,
+        description='Maximum Ra over the roughness trace.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='angstrom',
+        ),
+    )
+    Rq = Quantity(
+        type=np.float64,
+        description='RMS roughness (Rq) over the roughness trace.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='angstrom',
+        ),
+    )
+    Rh = Quantity(
+        type=np.float64,
+        description='Roughness height (Rh) — peak-to-valley height over the roughness trace.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='angstrom',
+        ),
+    )
+
+    # --- Scan parameters ---
+    recipe = Quantity(
+        type=str,
+        description='Recipe name used for the measurement.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    site_name = Quantity(
+        type=str,
+        description='Site name recorded by the instrument.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    scan_length = Quantity(
+        type=np.float64,
+        description='Total scan length.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='um',
+        ),
+    )
+    scan_speed = Quantity(
+        type=np.float64,
+        description='Stylus scan speed.',
+        unit='m/s',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='um/s',
+        ),
+    )
+    sample_rate = Quantity(
+        type=np.float64,
+        description='Data acquisition rate.',
+        unit='Hz',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='Hz',
+        ),
+    )
+    scan_direction = Quantity(
+        type=str,
+        description='Scan direction as reported by the instrument.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    repeats = Quantity(
+        type=int,
+        description='Number of scan repeats.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+    stylus_force = Quantity(
+        type=np.float64,
+        description='Stylus contact force.',
+        unit='kg',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mg',
+        ),
+    )
+    noise_filter = Quantity(
+        type=np.float64,
+        description='Noise filter wavelength cut-off.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='um',
+        ),
+    )
+
+
 m_package.__init_metainfo__()

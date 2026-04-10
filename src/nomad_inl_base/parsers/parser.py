@@ -36,6 +36,7 @@ from nomad_inl_base.schema_packages.characterization import (
     ChronoamperometryMeasurement,
     CurrentTimeSeries,
     INLFourPointProbe,
+    INLKLATencorProfiler,
     PotentiostatMeasurement,
     ScanTimeSeries,
     VoltageTimeSeries,
@@ -209,6 +210,139 @@ class CVParser(MatchingParser):
             file_=file_reference,
         )
         archive.metadata.entry_name = data_file.replace('.xlsx', '')
+
+
+class KLATencorProfilerParser(MatchingParser):
+    """
+    Parser for KLA-Tencor P-series stylus profiler PDF reports (*profile.pdf).
+
+    The PDF is a generated (non-scanned) report with two regions of interest:
+      1. Left panel header — scan parameters (Recipe, Length, Speed, Rate, …)
+         and cursor results (St Height, TIR, Width, …)
+      2. Bottom table — 2D Surface Parameter Summary (Ra, MaxRa, Rq, Rh)
+    """
+
+    _ANGSTROM_TO_M = 1e-10
+    _UM_TO_M = 1e-6
+    _MG_TO_KG = 1e-6
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        import re
+
+        import pdfplumber
+
+        filetype = 'yaml'
+        data_file = (
+            mainfile.rsplit('/', maxsplit=1)[-1]
+            .rsplit('.', maxsplit=1)[0]
+            .replace(' ', '_')
+        )
+
+        with pdfplumber.open(mainfile) as pdf:
+            text = pdf.pages[0].extract_text() or ''
+
+        # --- Helper: extract first float after a label ---
+        def _find(pattern: str, txt: str = text):
+            m = re.search(pattern, txt)
+            return m.group(1).strip() if m else None
+
+        # --- Scan parameters (left panel) ---
+        # Note: the PDF two-column layout interleaves left/right panel text.
+        # "Recipe:" is followed by "Level:" (right column) then the recipe value.
+        recipe = _find(r'Recipe:\n[^\n]*\n([^\n:]{2,})')
+        site_name = _find(r'Site Name:\s*([A-Za-z0-9_\-\.]+)')
+        length_um = _find(r'Length:\s*([\d\.]+)\s*µm')
+        speed_um = _find(r'Speed:\s*([\d\.]+)\s*µm/s')
+        rate_hz = _find(r'Rate:\s*([\d\.]+)\s*Hz')
+        direction = _find(r'Direction\s*([-><]+)')
+        repeats_s = _find(r'Repeats:\s*(\d+)')
+        force_mg = _find(r'Force:\s*([\d\.]+)\s*mg')
+        noise_um = _find(r'Noise Filter:\s*([\d\.]+)\s*µm')
+
+        # --- Cursor / feature results ---
+        # St Height: -2883.8 Å  (may be negative, no space after colon)
+        st_height_a = _find(r'St Height:\s*([-\d\.]+)\s*\u00c5')
+
+        # --- 2D Surface Parameter Summary table ---
+        # Lines like: "Ra  2677.3 Å  Roughness  Roughness"
+        ra_a = _find(r'\bRa\b\s+([-\d\.]+)\s*\u00c5')
+        max_ra_a = _find(r'\bMaxRa\b\s+([-\d\.]+)\s*\u00c5')
+        rq_a = _find(r'\bRq\b\s+([-\d\.]+)\s*\u00c5')
+        rh_a = _find(r'\bRh\b\s+([-\d\.]+)\s*\u00c5')
+
+        # --- Datetime from footer ---
+        # The footer line uses doubled characters (PDF rendering artefact):
+        # "KKLLAA--TTeennccoorr ... AApprr 1100,, 22002266 -- 1111::2200"
+        # De-duplicate consecutive identical characters before parsing.
+        measurement_dt = None
+        for line in text.splitlines():
+            if 'KLA' in line or 'KKLLAA' in line:
+                deduped = re.sub(r'(.)\1', r'\1', line)
+                m = re.search(r'([A-Za-z]+ \d+, \d{4} - \d+:\d+)', deduped)
+                if m:
+                    try:
+                        measurement_dt = datetime.strptime(
+                            m.group(1), '%b %d, %Y - %H:%M'
+                        )
+                    except ValueError:
+                        pass
+                break
+
+        # --- Build entry ---
+        entry = INLKLATencorProfiler()
+
+        if measurement_dt:
+            entry.datetime = measurement_dt
+        if recipe:
+            entry.recipe = recipe
+        if site_name:
+            entry.site_name = site_name
+        if length_um:
+            entry.scan_length = float(length_um) * self._UM_TO_M
+        if speed_um:
+            entry.scan_speed = float(speed_um) * self._UM_TO_M
+        if rate_hz:
+            entry.sample_rate = float(rate_hz)
+        if direction:
+            entry.scan_direction = direction.strip()
+        if repeats_s:
+            entry.repeats = int(repeats_s)
+        if force_mg:
+            entry.stylus_force = float(force_mg) * self._MG_TO_KG
+        if noise_um:
+            entry.noise_filter = float(noise_um) * self._UM_TO_M
+        if st_height_a:
+            entry.step_height = float(st_height_a) * self._ANGSTROM_TO_M
+        if ra_a:
+            entry.Ra = float(ra_a) * self._ANGSTROM_TO_M
+        if max_ra_a:
+            entry.max_Ra = float(max_ra_a) * self._ANGSTROM_TO_M
+        if rq_a:
+            entry.Rq = float(rq_a) * self._ANGSTROM_TO_M
+        if rh_a:
+            entry.Rh = float(rh_a) * self._ANGSTROM_TO_M
+
+        # --- Create archive ---
+        prof_filename = f'{data_file}.profiler.archive.{filetype}'
+        prof_archive = EntryArchive(
+            data=entry,
+            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
+        )
+        if not archive.m_context.raw_path_exists(prof_filename):
+            create_archive(
+                prof_archive.m_to_dict(),
+                archive.m_context,
+                prof_filename,
+                filetype,
+                logger,
+            )
+
+        file_reference = get_hash_ref(archive.m_context.upload_id, data_file)
+        archive.data = RawFile_(
+            name=data_file + '_raw',
+            file_=file_reference,
+        )
+        archive.metadata.entry_name = data_file
 
 
 class FourPointProbeParser(MatchingParser):

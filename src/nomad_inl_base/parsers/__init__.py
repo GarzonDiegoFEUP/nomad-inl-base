@@ -77,3 +77,18 @@ four_point_probe_parser_entry_point = FourPointProbeParserEntryPoint(
     mainfile_mime_re=r'(application/vnd\.ms-excel|application/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|application/octet-stream)',
     mainfile_contents_re=r'Lot ID',
 )
+
+
+class KLATencorProfilerParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import KLATencorProfilerParser
+
+        return KLATencorProfilerParser(**self.dict())
+
+
+kla_tencor_profiler_parser_entry_point = KLATencorProfilerParserEntryPoint(
+    name='KLATencorProfilerParser',
+    description='Parser for KLA-Tencor stylus profiler PDF reports (*profile.pdf).',
+    mainfile_name_re=r'.*[Pp]rofile\.pdf$',
+    mainfile_mime_re=r'application/pdf',
+)
