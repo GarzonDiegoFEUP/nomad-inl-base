@@ -268,4 +268,280 @@ class PotentiostatMeasurement(INLCharacterization, PlotSection):
         )
 
 
+# ---------------------------------------------------------------------------
+# 4-Point Probe Sheet Resistance
+# ---------------------------------------------------------------------------
+
+
+class INLFourPointProbe(INLCharacterization, PlotSection):
+    """Sheet resistance and resistivity map measured by a 4-point probe system."""
+
+    m_def = Section(
+        label='INL 4-Point Probe',
+        categories=[INLCharacterizationCategory],
+        a_eln=dict(
+            hide=[
+                'lab_id',
+                'location',
+                'steps',
+                'instruments',
+                'lot_id',
+                'data_file_name',
+                'thickness',
+                'sample_material',
+                'material_resistivity',
+            ]
+        ),
+    )
+
+    # --- Hidden metadata (parsed but not shown in ELN) ---
+    lot_id = Quantity(
+        type=str,
+        description='Lot ID from the instrument header.',
+    )
+    data_file_name = Quantity(
+        type=str,
+        description='Data file name reported by the instrument.',
+    )
+    thickness = Quantity(
+        type=np.float64,
+        description='Substrate/film thickness as reported in the instrument header.',
+        unit='m',
+    )
+    sample_material = Quantity(
+        type=str,
+        description='Sample material identifier from the instrument header.',
+    )
+    material_resistivity = Quantity(
+        type=np.float64,
+        description='Reference material bulk resistivity from the instrument header.',
+        unit='ohm*m',
+    )
+
+    # --- Visible metadata ---
+    x_size = Quantity(
+        type=np.float64,
+        description='Wafer / sample X dimension.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+        ),
+    )
+    y_size = Quantity(
+        type=np.float64,
+        description='Wafer / sample Y dimension.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+        ),
+    )
+    exclusion_size = Quantity(
+        type=np.float64,
+        description='Edge exclusion zone.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+        ),
+    )
+    correction_factor = Quantity(
+        type=np.float64,
+        description='Geometric correction factor F applied by the instrument.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+    probe_spacing = Quantity(
+        type=np.float64,
+        description='Distance between adjacent probe tips.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+        ),
+    )
+    temperature_coefficient = Quantity(
+        type=np.float64,
+        description='Temperature coefficient of resistance used for correction.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+    measurement_temperature = Quantity(
+        type=np.float64,
+        description='Temperature at which the measurement was performed.',
+        unit='K',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='degC',
+        ),
+    )
+    reference_temperature = Quantity(
+        type=np.float64,
+        description='Reference temperature for resistance correction.',
+        unit='K',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='degC',
+        ),
+    )
+    measurement_mode = Quantity(
+        type=str,
+        description='Measurement mode used by the instrument (e.g. SetPoint).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    # --- Analysis summary (machine-computed statistics) ---
+    sigma_3_max = Quantity(
+        type=np.float64,
+        description='3-Sigma upper bound of sheet resistance [ohm/sq].',
+        unit='ohm',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='ohm',
+        ),
+    )
+    sigma_3_min = Quantity(
+        type=np.float64,
+        description='3-Sigma lower bound of sheet resistance [ohm/sq].',
+        unit='ohm',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='ohm',
+        ),
+    )
+    sheet_resistance_max = Quantity(
+        type=np.float64,
+        description='Maximum sheet resistance across all measurement points [ohm/sq].',
+        unit='ohm',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='ohm',
+        ),
+    )
+    sheet_resistance_min = Quantity(
+        type=np.float64,
+        description='Minimum sheet resistance across all measurement points [ohm/sq].',
+        unit='ohm',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='ohm',
+        ),
+    )
+    sheet_resistance_ave = Quantity(
+        type=np.float64,
+        description='Mean sheet resistance across all measurement points [ohm/sq].',
+        unit='ohm',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='ohm',
+        ),
+    )
+    sheet_resistance_std_dev = Quantity(
+        type=np.float64,
+        description='Standard deviation of sheet resistance [ohm/sq].',
+        unit='ohm',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='ohm',
+        ),
+    )
+    uniformity_pct = Quantity(
+        type=np.float64,
+        description='Uniformity Uni(%) as reported by the instrument.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+    sheet_resistance_range = Quantity(
+        type=np.float64,
+        description='Max-Min range of sheet resistance [ohm/sq].',
+        unit='ohm',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='ohm',
+        ),
+    )
+    std_dev_over_ave_pct = Quantity(
+        type=np.float64,
+        description='StDev/Ave(%) as reported by the instrument.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+    # --- Per-point measurement arrays ---
+    x_position = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='X coordinate of each measurement point.',
+        unit='m',
+        a_eln=ELNAnnotation(defaultDisplayUnit='mm'),
+    )
+    y_position = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Y coordinate of each measurement point.',
+        unit='m',
+        a_eln=ELNAnnotation(defaultDisplayUnit='mm'),
+    )
+    sheet_resistance = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Sheet resistance at each measurement point [ohm/sq].',
+        unit='ohm',
+        a_eln=ELNAnnotation(defaultDisplayUnit='ohm'),
+    )
+    resistivity = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Resistivity at each measurement point [ohm·cm in source, stored as ohm·m].',
+        unit='ohm*m',
+        a_eln=ELNAnnotation(
+            defaultDisplayUnit='ohm*cm',
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self.figures = []
+
+        if (
+            self.x_position is None
+            or self.y_position is None
+            or self.sheet_resistance is None
+        ):
+            return
+
+        x_mm = np.array(self.x_position) * 1e3
+        y_mm = np.array(self.y_position) * 1e3
+        rs = np.array(self.sheet_resistance)
+
+        import plotly.graph_objects as go
+
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=x_mm,
+                y=y_mm,
+                mode='markers',
+                marker=dict(
+                    size=14,
+                    color=rs,
+                    colorscale='Viridis',
+                    showscale=True,
+                    colorbar=dict(title='Rs (ohm/sq)'),
+                ),
+                text=[f'Rs = {v:.5f} ohm/sq' for v in rs],
+                hovertemplate='X: %{x:.1f} mm<br>Y: %{y:.1f} mm<br>%{text}<extra></extra>',
+            )
+        )
+        fig.update_layout(
+            template='plotly_white',
+            height=480,
+            width=520,
+            xaxis_title='X (mm)',
+            yaxis_title='Y (mm)',
+            yaxis=dict(scaleanchor='x', scaleratio=1),
+            title='Sheet Resistance Map',
+        )
+        self.figures.append(
+            PlotlyFigure(label='Sheet Resistance Map', figure=fig.to_plotly_json())
+        )
+
+
 m_package.__init_metainfo__()

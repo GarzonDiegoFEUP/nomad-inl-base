@@ -35,6 +35,7 @@ from nomad_inl_base.schema_packages.batteries import (
 from nomad_inl_base.schema_packages.characterization import (
     ChronoamperometryMeasurement,
     CurrentTimeSeries,
+    INLFourPointProbe,
     PotentiostatMeasurement,
     ScanTimeSeries,
     VoltageTimeSeries,
@@ -208,6 +209,278 @@ class CVParser(MatchingParser):
             file_=file_reference,
         )
         archive.metadata.entry_name = data_file.replace('.xlsx', '')
+
+
+class FourPointProbeParser(MatchingParser):
+    """
+    Parser for 4-point probe sheet resistance Excel files produced by the INL
+    4PP measurement system.
+
+    File structure (all in one sheet, no explicit header row until the data table):
+      Rows 0–16 : "N. Label :" in col A, value in col C
+      Row 17    : "18. Analysis [ ohm/sq ] : 3 Sigma=Max : X  Min : Y"
+      Rows 18–20: sub-analysis key-value pairs (European decimal comma)
+      Blank row
+      Header row: "No  X (mm)  Y (mm)  Sheet R ( ohm/sq )  Resistivity ( ohm.cm )"
+      Data rows : one row per measurement point
+    """
+
+    # Conversion factors
+    _MM_TO_M = 1e-3
+    _UM_TO_M = 1e-6
+    _OHM_CM_TO_OHM_M = 1e-2
+    _KELVIN_OFFSET = 273.15
+
+    @staticmethod
+    def _fval(raw) -> float:
+        """Convert a raw cell value to float, handling European decimal commas."""
+        return float(str(raw).replace(',', '.').strip())
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        import re
+
+        filetype = 'yaml'
+        data_file = (
+            mainfile.rsplit('/', maxsplit=1)[-1]
+            .rsplit('.', maxsplit=1)[0]
+            .replace(' ', '_')
+        )
+
+        # --- Read entire sheet as raw cells ---
+        raw = pd.read_excel(mainfile, header=None, dtype=str)
+
+        def cell(row: int, col: int):
+            """Return stripped cell string or empty string if missing/NaN."""
+            try:
+                v = raw.iat[row, col]
+                return '' if pd.isna(v) else str(v).strip()
+            except (IndexError, TypeError):
+                return ''
+
+        # --- Rows 0–16: numbered key-value metadata ---
+        # Col A: "N. Label :", Col C (index 2): value
+        # Indices: 0=Lot ID, 1=Data File, 2=X size, 3=Y size, 4=Exclusion,
+        #          5=Thickness, 6=Sample Material, 7=Mat.Resistivity,
+        #          8=Correction F, 9=Probe Space, 10=TCoefficient,
+        #          11=TMeasure, 12=TReference, 13=MMode, 14=Date, 15=Time, 16=Op ID
+        def _meta(row: int) -> str:
+            return cell(row, 2)
+
+        lot_id = _meta(0)
+        data_file_name = _meta(1)
+        x_size_mm = _meta(2)
+        y_size_mm = _meta(3)
+        exclusion_mm = _meta(4)
+        thickness_um = _meta(5)
+        sample_material = _meta(6)
+        mat_resistivity_raw = _meta(7)
+        correction_f = _meta(8)
+        probe_space_mm = _meta(9)
+        t_coeff = _meta(10)
+        t_measure = _meta(11)
+        t_reference = _meta(12)
+        m_mode = _meta(13)
+        date_str = _meta(14)
+        time_str = _meta(15)
+        op_id = _meta(16)
+
+        # --- Row 17: Analysis line ---
+        # "18. Analysis [ ohm/sq ] : 3 Sigma=Max : 0,39489  Min : 0,36679"
+        analysis_line = ''
+        for ci in range(raw.shape[1]):
+            v = cell(17, ci)
+            if v:
+                analysis_line += ' ' + v
+        analysis_line = analysis_line.strip()
+
+        sigma_3_max = sigma_3_min = None
+        m = re.search(r'Max\s*:\s*([\d,\.]+)', analysis_line)
+        if m:
+            sigma_3_max = self._fval(m.group(1))
+        m = re.search(r'Min\s*:\s*([\d,\.]+)', analysis_line)
+        if m:
+            sigma_3_min = self._fval(m.group(1))
+
+        # --- Rows 18–20: sub-analysis pairs ---
+        # Row 18: "1) Max : X  2) Min : Y  3) Ave : Z"
+        # Row 19: "4) StDev : X  5) Uni(%) : Y  6) Max-Min(Range) : Z"
+        # Row 20: "StDev/Ave(%) : X"
+        def _row_text(row: int) -> str:
+            parts = [cell(row, c) for c in range(raw.shape[1])]
+            return ' '.join(p for p in parts if p)
+
+        sub_line1 = _row_text(18)
+        sub_line2 = _row_text(19)
+        sub_line3 = _row_text(20)
+
+        def _extract(pattern: str, text: str):
+            m = re.search(pattern, text)
+            return self._fval(m.group(1)) if m else None
+
+        rs_max = _extract(r'Max\s*:\s*([\d,\.]+)', sub_line1)
+        rs_min = _extract(r'Min\s*:\s*([\d,\.]+)', sub_line1)
+        rs_ave = _extract(r'Ave\s*:\s*([\d,\.]+)', sub_line1)
+        rs_std = _extract(r'StDev\s*:\s*([\d,\.]+)', sub_line2)
+        uni_pct = _extract(r'Uni\(%\)\s*:\s*([\d,\.]+)', sub_line2)
+        rs_range = _extract(r'Max-Min\(Range\)\s*:\s*([\d,\.]+)', sub_line2)
+        std_ave_pct = _extract(r'StDev/Ave\(%\)\s*:\s*([\d,\.]+)', sub_line3)
+
+        # --- Find the data table header row ---
+        # Look for a row where col A (index 0) contains "No"
+        data_header_row = None
+        for ri in range(21, min(raw.shape[0], 50)):
+            if cell(ri, 0).strip().lower() == 'no':
+                data_header_row = ri
+                break
+
+        x_pos = y_pos = rs_arr = rho_arr = None
+        if data_header_row is not None:
+            df_data = pd.read_excel(
+                mainfile,
+                skiprows=data_header_row,
+                dtype=str,
+            )
+            # Expected columns: No, X (mm), Y (mm), Sheet R ( ohm/sq ), Resistivity ( ohm.cm )
+            # Normalise column names for lookup
+            col_map = {c.strip(): c for c in df_data.columns}
+
+            def _arr(key_hint: str):
+                for k in col_map:
+                    if key_hint.lower() in k.lower():
+                        raw_col = df_data[col_map[k]]
+                        return (
+                            raw_col.apply(
+                                lambda v: float(str(v).replace(',', '.'))
+                                if pd.notna(v)
+                                else np.nan
+                            )
+                            .to_numpy(dtype=np.float64)
+                        )
+                return None
+
+            x_pos = _arr('x (mm')
+            y_pos = _arr('y (mm')
+            rs_arr = _arr('sheet r')
+            rho_arr = _arr('resistivity')
+
+        # --- Parse datetime ---
+        measurement_dt = None
+        if date_str and time_str:
+            for fmt in ('%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S'):
+                try:
+                    measurement_dt = datetime.strptime(
+                        f'{date_str} {time_str}', fmt
+                    )
+                    break
+                except ValueError:
+                    continue
+
+        # --- Build entry ---
+        entry = INLFourPointProbe()
+
+        # Hidden metadata
+        if lot_id:
+            entry.lot_id = lot_id
+        if data_file_name:
+            entry.data_file_name = data_file_name
+        if thickness_um:
+            try:
+                entry.thickness = self._fval(thickness_um) * self._UM_TO_M
+            except ValueError:
+                pass
+        if sample_material:
+            entry.sample_material = sample_material
+        if mat_resistivity_raw:
+            try:
+                entry.material_resistivity = (
+                    self._fval(mat_resistivity_raw) * self._OHM_CM_TO_OHM_M
+                )
+            except ValueError:
+                pass
+
+        # Visible metadata
+        if op_id:
+            entry.operator = op_id
+        if measurement_dt:
+            entry.datetime = measurement_dt
+        if m_mode:
+            entry.measurement_mode = m_mode
+        for attr, raw_val, factor in [
+            ('x_size', x_size_mm, self._MM_TO_M),
+            ('y_size', y_size_mm, self._MM_TO_M),
+            ('exclusion_size', exclusion_mm, self._MM_TO_M),
+            ('probe_spacing', probe_space_mm, self._MM_TO_M),
+        ]:
+            if raw_val:
+                try:
+                    setattr(entry, attr, self._fval(raw_val) * factor)
+                except ValueError:
+                    pass
+        for attr, raw_val in [
+            ('correction_factor', correction_f),
+            ('temperature_coefficient', t_coeff),
+        ]:
+            if raw_val:
+                try:
+                    setattr(entry, attr, self._fval(raw_val))
+                except ValueError:
+                    pass
+        for attr, raw_val in [
+            ('measurement_temperature', t_measure),
+            ('reference_temperature', t_reference),
+        ]:
+            if raw_val:
+                try:
+                    setattr(entry, attr, self._fval(raw_val) + self._KELVIN_OFFSET)
+                except ValueError:
+                    pass
+
+        # Analysis summary
+        for attr, val in [
+            ('sigma_3_max', sigma_3_max),
+            ('sigma_3_min', sigma_3_min),
+            ('sheet_resistance_max', rs_max),
+            ('sheet_resistance_min', rs_min),
+            ('sheet_resistance_ave', rs_ave),
+            ('sheet_resistance_std_dev', rs_std),
+            ('uniformity_pct', uni_pct),
+            ('sheet_resistance_range', rs_range),
+            ('std_dev_over_ave_pct', std_ave_pct),
+        ]:
+            if val is not None:
+                setattr(entry, attr, val)
+
+        # Per-point arrays (positions: mm → m; resistivity: ohm·cm → ohm·m)
+        if x_pos is not None:
+            entry.x_position = x_pos * self._MM_TO_M
+        if y_pos is not None:
+            entry.y_position = y_pos * self._MM_TO_M
+        if rs_arr is not None:
+            entry.sheet_resistance = rs_arr
+        if rho_arr is not None:
+            entry.resistivity = rho_arr * self._OHM_CM_TO_OHM_M
+
+        # --- Create archive ---
+        fpp_filename = f'{data_file}.four_point_probe.archive.{filetype}'
+        fpp_archive = EntryArchive(
+            data=entry,
+            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
+        )
+        if not archive.m_context.raw_path_exists(fpp_filename):
+            create_archive(
+                fpp_archive.m_to_dict(),
+                archive.m_context,
+                fpp_filename,
+                filetype,
+                logger,
+            )
+
+        file_reference = get_hash_ref(archive.m_context.upload_id, data_file)
+        archive.data = RawFile_(
+            name=data_file + '_raw',
+            file_=file_reference,
+        )
+        archive.metadata.entry_name = data_file
 
 
 class _BaseSputteringChamberParser(MatchingParser):

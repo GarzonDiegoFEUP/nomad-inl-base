@@ -61,3 +61,19 @@ pc04_parser_entry_point = PC04ParserEntryPoint(
     mainfile_name_re=r'.*PC04.*\.[cC][sS][vV]$',
     mainfile_mime_re=r'(text/csv|text/plain|application/csv|application/octet-stream)',
 )
+
+
+class FourPointProbeParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import FourPointProbeParser
+
+        return FourPointProbeParser(**self.dict())
+
+
+four_point_probe_parser_entry_point = FourPointProbeParserEntryPoint(
+    name='FourPointProbeParser',
+    description='Parser for 4-point probe sheet resistance Excel files (.xls/.xlsx).',
+    mainfile_name_re=r'.*\.[xX][lL][sS][xX]?$',
+    mainfile_mime_re=r'(application/vnd\.ms-excel|application/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|application/octet-stream)',
+    mainfile_contents_re=r'Lot ID',
+)
