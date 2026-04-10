@@ -13,14 +13,12 @@ if TYPE_CHECKING:
 
 import yaml
 from baseclasses.atmosphere import Atmosphere
-from baseclasses.material_processes_misc import Annealing, Quenching
 from baseclasses.wet_chemical_deposition.blade_coating import BladeCoatingProperties
 from baseclasses.wet_chemical_deposition.dip_coating import DipCoatingProperties
 from baseclasses.wet_chemical_deposition.inkjet_printing import InkjetPrintingProperties
 from baseclasses.wet_chemical_deposition.slot_die_coating import (
     SlotDieCoatingProperties,
 )
-from baseclasses.wet_chemical_deposition.spin_coating import SpinCoatingRecipeSteps
 from baseclasses.wet_chemical_deposition.spray_pyrolysis import SprayPyrolysisProperties
 from baseclasses.wet_chemical_deposition.wet_chemical_deposition import (
     PrecursorSolution,
@@ -31,7 +29,11 @@ from nomad.datamodel.data import (
     EntryDataCategory,
 )
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
-from nomad.datamodel.metainfo.basesections import EntityReference, InstrumentReference
+from nomad.datamodel.metainfo.basesections import (
+    ActivityStep,
+    EntityReference,
+    InstrumentReference,
+)
 from nomad.metainfo import (
     Category,
     Quantity,
@@ -65,6 +67,107 @@ class INLPrecursorSolution(PrecursorSolution):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.ReferenceEditQuantity,
             label='Solution Reference',
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Process step classes
+# ---------------------------------------------------------------------------
+
+
+class INLWetDepositionStep(ActivityStep):
+    """Base step for INL wet deposition. Optionally carries its own solution."""
+
+    m_def = Section(a_eln=dict(hide=['start_time']))
+
+    solution = SubSection(
+        section_def=INLPrecursorSolution,
+        repeats=True,
+        description='Solution(s) for this step. Leave empty to use the entry-level solution.',
+    )
+
+
+class INLSpinCoatingStep(INLWetDepositionStep):
+    """A single spin-coating step (speed / time / acceleration)."""
+
+    m_def = Section(label='Spin Coating Step')
+
+    speed = Quantity(
+        type=float,
+        unit='rpm',
+        description='Rotation speed for this step.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='rpm',
+        ),
+    )
+    time = Quantity(
+        type=float,
+        unit='s',
+        description='Duration of this spin step.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='s',
+        ),
+    )
+    acceleration = Quantity(
+        type=float,
+        unit='rpm/s',
+        description='Ramp rate to reach the target speed.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='rpm/s',
+        ),
+    )
+
+
+class INLHotplateAnnealingStep(INLWetDepositionStep):
+    """A hotplate annealing step within a wet deposition sequence."""
+
+    m_def = Section(label='Hotplate Annealing Step')
+
+    temperature = Quantity(
+        type=float,
+        unit='K',
+        description='Hotplate set temperature.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='celsius',
+        ),
+    )
+    duration = Quantity(
+        type=float,
+        unit='minute',
+        description='Annealing duration.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='minute',
+        ),
+    )
+
+
+class INLAntisolventQuenchingStep(INLWetDepositionStep):
+    """An antisolvent quenching step within a wet deposition sequence."""
+
+    m_def = Section(label='Antisolvent Quenching Step')
+
+    volume = Quantity(
+        type=float,
+        unit='ml',
+        description='Volume of antisolvent dispensed.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='ml',
+        ),
+    )
+    dispensing_speed = Quantity(
+        type=float,
+        unit='ml/s',
+        description='Speed at which the antisolvent is dispensed.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='ml/s',
         ),
     )
 
@@ -110,14 +213,10 @@ class WetDepositionRecipe(EntryData):
         description='Solution/precursor template for the recipe.',
     )
 
-    annealing = SubSection(
-        section_def=Annealing,
-        description='Annealing template for the recipe.',
-    )
-
-    quenching = SubSection(
-        section_def=Quenching,
-        description='Quenching template for the recipe.',
+    steps = SubSection(
+        section_def=INLWetDepositionStep,
+        repeats=True,
+        description='Ordered process steps for this recipe.',
     )
 
 
@@ -138,28 +237,6 @@ class WetDepositionRecipeReference(EntityReference):
         # Skip EntityReference.normalize() — WetDepositionRecipe is not an Entity
         # and does not have lab_id.
         pass
-
-
-class INLSpinCoatingRecipe(WetDepositionRecipe):
-    """Recipe template for INL spin coating."""
-
-    m_def = Section(label='INL Spin Coating Recipe', categories=[INLWetDepositionCategory])
-
-    recipe_steps = SubSection(
-        section_def=SpinCoatingRecipeSteps,
-        repeats=True,
-        description='Spin coating steps template.',
-    )
-
-
-class INLSpinCoatingRecipeReference(WetDepositionRecipeReference):
-    reference = Quantity(
-        type=INLSpinCoatingRecipe,
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.ReferenceEditQuantity,
-            label='Spin coating recipe',
-        ),
-    )
 
 
 class INLSlotDieCoatingRecipe(WetDepositionRecipe):
@@ -273,7 +350,7 @@ class INLChemicalBathDepositionRecipe(WetDepositionRecipe):
     m_def = Section(
         label='INL Chemical Bath Deposition Recipe',
         categories=[INLWetDepositionCategory],
-        a_eln=dict(hide=['lab_id', 'annealing', 'quenching']),
+        a_eln=dict(hide=['lab_id']),
     )
 
     bath_temperature = Quantity(
@@ -341,7 +418,7 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
     m_def = Section(
         links=['https://purl.archive.org/tfsco/TFSCO_00002051'],
         categories=[INLWetDepositionCategory],
-        a_eln=dict(hide=['steps', 'instruments', 'lab_id', 'location', 'tags']),
+        a_eln=dict(hide=['instruments', 'lab_id', 'location', 'tags']),
     )
 
     tags = Quantity(
@@ -417,9 +494,11 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         repeats=True,
     )
 
-    annealing = SubSection(section_def=Annealing)
-
-    quenching = SubSection(section_def=Quenching)
+    steps = SubSection(
+        section_def=INLWetDepositionStep,
+        repeats=True,
+        description='Ordered process steps (spin coating, annealing, quenching, …).',
+    )
 
     deposited_material = Quantity(
         type=str,
@@ -581,10 +660,8 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
             self.atmosphere = recipe.atmosphere
         if recipe.solution is not None and not self.solution:
             self.solution = recipe.solution
-        if recipe.annealing is not None and self.annealing is None:
-            self.annealing = recipe.annealing
-        if recipe.quenching is not None and self.quenching is None:
-            self.quenching = recipe.quenching
+        if recipe.steps and not self.steps:
+            self.steps = recipe.steps
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         if not self.method:
@@ -628,22 +705,51 @@ class INLSpinCoating(INLThinFilmDeposition):
     )
 
     recipe = SubSection(
-        section_def=INLSpinCoatingRecipeReference,
+        section_def='INLSpinCoatingRecipeReference',
         description='Reference to an INL spin coating recipe.',
     )
-
-    recipe_steps = SubSection(section_def=SpinCoatingRecipeSteps, repeats=True)
-
-    def _apply_recipe(
-        self, recipe: 'INLSpinCoatingRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
-    ) -> None:
-        super()._apply_recipe(recipe, archive, logger)
-        if recipe.recipe_steps and not self.recipe_steps:
-            self.recipe_steps = recipe.recipe_steps
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.method = 'Spin Coating'
         super().normalize(archive, logger)
+
+
+class INLSpinCoatingRecipe(INLSpinCoating, EntryData):
+    """Reusable recipe template for spin coating — inherits all INLSpinCoating fields."""
+
+    m_def = Section(
+        label='INL Spin Coating Recipe',
+        categories=[INLWetDepositionCategory],
+        a_eln=dict(
+            hide=[
+                'lab_id',
+                'location',
+                'tags',
+                'start_time',
+                'end_time',
+                'datetime',
+                'instruments',
+                'samples',
+                'substrate',
+                'sample',
+                'creates_new_thin_film',
+                'apply_recipe',
+                'recipe',
+                'operator',
+                'method',
+            ]
+        ),
+    )
+
+
+class INLSpinCoatingRecipeReference(WetDepositionRecipeReference):
+    reference = Quantity(
+        type=INLSpinCoatingRecipe,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Spin coating recipe',
+        ),
+    )
 
 
 class INLSlotDieCoating(INLThinFilmDeposition):
@@ -781,7 +887,6 @@ class INLChemicalBathDeposition(INLThinFilmDeposition):
 
     m_def = Section(
         links=['http://purl.obolibrary.org/obo/CHMO_0001465'],
-        a_eln=dict(hide=['annealing', 'quenching']),
     )
 
     recipe = SubSection(
