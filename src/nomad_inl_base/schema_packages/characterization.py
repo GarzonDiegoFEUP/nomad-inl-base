@@ -8,7 +8,7 @@ import numpy as np
 import plotly.express as px
 from nomad.datamodel.data import EntryData, EntryDataCategory
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
-from nomad.datamodel.metainfo.basesections import Measurement
+from nomad.datamodel.metainfo.basesections import Measurement, MeasurementResult
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
 from nomad.metainfo import Category, Quantity, SchemaPackage, Section, SubSection
 from nomad_material_processing.general import TimeSeries
@@ -273,121 +273,10 @@ class PotentiostatMeasurement(INLCharacterization, PlotSection):
 # ---------------------------------------------------------------------------
 
 
-class INLFourPointProbe(INLCharacterization, PlotSection):
-    """Sheet resistance and resistivity map measured by a 4-point probe system."""
+class INLFourPointProbeResults(MeasurementResult, PlotSection):
+    """Statistics and per-point map for a single 4-point probe measurement run."""
 
-    m_def = Section(
-        label='INL 4-Point Probe',
-        categories=[INLCharacterizationCategory],
-        a_eln=dict(
-            hide=[
-                'lab_id',
-                'location',
-                'steps',
-                'instruments',
-                'lot_id',
-                'data_file_name',
-                'thickness',
-                'sample_material',
-                'material_resistivity',
-            ]
-        ),
-    )
-
-    # --- Hidden metadata (parsed but not shown in ELN) ---
-    lot_id = Quantity(
-        type=str,
-        description='Lot ID from the instrument header.',
-    )
-    data_file_name = Quantity(
-        type=str,
-        description='Data file name reported by the instrument.',
-    )
-    thickness = Quantity(
-        type=np.float64,
-        description='Substrate/film thickness as reported in the instrument header.',
-        unit='m',
-    )
-    sample_material = Quantity(
-        type=str,
-        description='Sample material identifier from the instrument header.',
-    )
-    material_resistivity = Quantity(
-        type=np.float64,
-        description='Reference material bulk resistivity from the instrument header.',
-        unit='ohm*m',
-    )
-
-    # --- Visible metadata ---
-    x_size = Quantity(
-        type=np.float64,
-        description='Wafer / sample X dimension.',
-        unit='m',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            defaultDisplayUnit='mm',
-        ),
-    )
-    y_size = Quantity(
-        type=np.float64,
-        description='Wafer / sample Y dimension.',
-        unit='m',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            defaultDisplayUnit='mm',
-        ),
-    )
-    exclusion_size = Quantity(
-        type=np.float64,
-        description='Edge exclusion zone.',
-        unit='m',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            defaultDisplayUnit='mm',
-        ),
-    )
-    correction_factor = Quantity(
-        type=np.float64,
-        description='Geometric correction factor F applied by the instrument.',
-        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
-    )
-    probe_spacing = Quantity(
-        type=np.float64,
-        description='Distance between adjacent probe tips.',
-        unit='m',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            defaultDisplayUnit='mm',
-        ),
-    )
-    temperature_coefficient = Quantity(
-        type=np.float64,
-        description='Temperature coefficient of resistance used for correction.',
-        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
-    )
-    measurement_temperature = Quantity(
-        type=np.float64,
-        description='Temperature at which the measurement was performed.',
-        unit='K',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            defaultDisplayUnit='degC',
-        ),
-    )
-    reference_temperature = Quantity(
-        type=np.float64,
-        description='Reference temperature for resistance correction.',
-        unit='K',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            defaultDisplayUnit='degC',
-        ),
-    )
-    measurement_mode = Quantity(
-        type=str,
-        description='Measurement mode used by the instrument (e.g. SetPoint).',
-        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
-    )
+    m_def = Section(label='4PP Results')
 
     # --- Analysis summary (machine-computed statistics) ---
     sigma_3_max = Quantity(
@@ -544,23 +433,135 @@ class INLFourPointProbe(INLCharacterization, PlotSection):
         )
 
 
+class INLFourPointProbe(INLCharacterization):
+    """Sheet resistance and resistivity map measured by a 4-point probe system."""
+
+    m_def = Section(
+        label='INL 4-Point Probe',
+        categories=[INLCharacterizationCategory],
+        a_eln=dict(
+            hide=[
+                'lab_id',
+                'location',
+                'steps',
+                'instruments',
+                'lot_id',
+                'data_file_name',
+                'thickness',
+                'sample_material',
+                'material_resistivity',
+            ]
+        ),
+    )
+
+    # --- Hidden metadata (parsed but not shown in ELN) ---
+    lot_id = Quantity(
+        type=str,
+        description='Lot ID from the instrument header.',
+    )
+    data_file_name = Quantity(
+        type=str,
+        description='Data file name reported by the instrument.',
+    )
+    thickness = Quantity(
+        type=np.float64,
+        description='Substrate/film thickness as reported in the instrument header.',
+        unit='m',
+    )
+    sample_material = Quantity(
+        type=str,
+        description='Sample material identifier from the instrument header.',
+    )
+    material_resistivity = Quantity(
+        type=np.float64,
+        description='Reference material bulk resistivity from the instrument header.',
+        unit='ohm*m',
+    )
+
+    # --- Visible metadata ---
+    x_size = Quantity(
+        type=np.float64,
+        description='Wafer / sample X dimension.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+        ),
+    )
+    y_size = Quantity(
+        type=np.float64,
+        description='Wafer / sample Y dimension.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+        ),
+    )
+    exclusion_size = Quantity(
+        type=np.float64,
+        description='Edge exclusion zone.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+        ),
+    )
+    correction_factor = Quantity(
+        type=np.float64,
+        description='Geometric correction factor F applied by the instrument.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+    probe_spacing = Quantity(
+        type=np.float64,
+        description='Distance between adjacent probe tips.',
+        unit='m',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+        ),
+    )
+    temperature_coefficient = Quantity(
+        type=np.float64,
+        description='Temperature coefficient of resistance used for correction.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+    measurement_temperature = Quantity(
+        type=np.float64,
+        description='Temperature at which the measurement was performed.',
+        unit='K',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='degC',
+        ),
+    )
+    reference_temperature = Quantity(
+        type=np.float64,
+        description='Reference temperature for resistance correction.',
+        unit='K',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='degC',
+        ),
+    )
+    measurement_mode = Quantity(
+        type=str,
+        description='Measurement mode used by the instrument (e.g. SetPoint).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    results = SubSection(section_def=INLFourPointProbeResults, repeats=True)
+
+
 # ---------------------------------------------------------------------------
 # KLA-Tencor Stylus Profiler
 # ---------------------------------------------------------------------------
 
 
-class INLKLATencorProfiler(INLCharacterization):
-    """Stylus profilometry measurement from the KLA-Tencor P-series profiler."""
+class INLKLATencorProfilerResults(MeasurementResult):
+    """Primary measurement results from a KLA-Tencor profilometry run."""
 
-    m_def = Section(
-        label='INL KLA-Tencor Profiler',
-        categories=[INLCharacterizationCategory],
-        a_eln=dict(
-            hide=['lab_id', 'location', 'steps', 'instruments'],
-        ),
-    )
+    m_def = Section(label='Profiler Results')
 
-    # --- Primary results ---
     step_height = Quantity(
         type=np.float64,
         description='Step height (St Height) measured between left and right cursor regions.',
@@ -604,6 +605,18 @@ class INLKLATencorProfiler(INLCharacterization):
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
             defaultDisplayUnit='angstrom',
+        ),
+    )
+
+
+class INLKLATencorProfiler(INLCharacterization):
+    """Stylus profilometry measurement from the KLA-Tencor P-series profiler."""
+
+    m_def = Section(
+        label='INL KLA-Tencor Profiler',
+        categories=[INLCharacterizationCategory],
+        a_eln=dict(
+            hide=['lab_id', 'location', 'steps', 'instruments'],
         ),
     )
 
@@ -673,6 +686,8 @@ class INLKLATencorProfiler(INLCharacterization):
             defaultDisplayUnit='um',
         ),
     )
+
+    results = SubSection(section_def=INLKLATencorProfilerResults, repeats=True)
 
 
 m_package.__init_metainfo__()

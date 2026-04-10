@@ -36,7 +36,9 @@ from nomad_inl_base.schema_packages.characterization import (
     ChronoamperometryMeasurement,
     CurrentTimeSeries,
     INLFourPointProbe,
+    INLFourPointProbeResults,
     INLKLATencorProfiler,
+    INLKLATencorProfilerResults,
     PotentiostatMeasurement,
     ScanTimeSeries,
     VoltageTimeSeries,
@@ -311,16 +313,18 @@ class KLATencorProfilerParser(MatchingParser):
             entry.stylus_force = float(force_mg) * self._MG_TO_KG
         if noise_um:
             entry.noise_filter = float(noise_um) * self._UM_TO_M
+        result = INLKLATencorProfilerResults()
         if st_height_a:
-            entry.step_height = float(st_height_a) * self._ANGSTROM_TO_M
+            result.step_height = float(st_height_a) * self._ANGSTROM_TO_M
         if ra_a:
-            entry.Ra = float(ra_a) * self._ANGSTROM_TO_M
+            result.Ra = float(ra_a) * self._ANGSTROM_TO_M
         if max_ra_a:
-            entry.max_Ra = float(max_ra_a) * self._ANGSTROM_TO_M
+            result.max_Ra = float(max_ra_a) * self._ANGSTROM_TO_M
         if rq_a:
-            entry.Rq = float(rq_a) * self._ANGSTROM_TO_M
+            result.Rq = float(rq_a) * self._ANGSTROM_TO_M
         if rh_a:
-            entry.Rh = float(rh_a) * self._ANGSTROM_TO_M
+            result.Rh = float(rh_a) * self._ANGSTROM_TO_M
+        entry.results.append(result)
 
         # --- Create archive ---
         prof_filename = f'{data_file}.profiler.archive.{filetype}'
@@ -569,7 +573,8 @@ class FourPointProbeParser(MatchingParser):
                 except ValueError:
                     pass
 
-        # Analysis summary
+        # Analysis summary + per-point data stored in a results sub-section
+        result = INLFourPointProbeResults()
         for attr, val in [
             ('sigma_3_max', sigma_3_max),
             ('sigma_3_min', sigma_3_min),
@@ -582,17 +587,18 @@ class FourPointProbeParser(MatchingParser):
             ('std_dev_over_ave_pct', std_ave_pct),
         ]:
             if val is not None:
-                setattr(entry, attr, val)
+                setattr(result, attr, val)
 
         # Per-point arrays (positions: mm → m; resistivity: ohm·cm → ohm·m)
         if x_pos is not None:
-            entry.x_position = x_pos * self._MM_TO_M
+            result.x_position = x_pos * self._MM_TO_M
         if y_pos is not None:
-            entry.y_position = y_pos * self._MM_TO_M
+            result.y_position = y_pos * self._MM_TO_M
         if rs_arr is not None:
-            entry.sheet_resistance = rs_arr
+            result.sheet_resistance = rs_arr
         if rho_arr is not None:
-            entry.resistivity = rho_arr * self._OHM_CM_TO_OHM_M
+            result.resistivity = rho_arr * self._OHM_CM_TO_OHM_M
+        entry.results.append(result)
 
         # --- Create archive ---
         fpp_filename = f'{data_file}.four_point_probe.archive.{filetype}'
