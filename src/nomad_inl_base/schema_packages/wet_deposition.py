@@ -30,9 +30,9 @@ from nomad.datamodel.data import (
 )
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import (
-    ActivityStep,
     EntityReference,
     InstrumentReference,
+    ProcessStep,
 )
 from nomad.metainfo import (
     Category,
@@ -76,7 +76,7 @@ class INLPrecursorSolution(PrecursorSolution):
 # ---------------------------------------------------------------------------
 
 
-class INLWetDepositionStep(ActivityStep):
+class INLWetDepositionStep(ProcessStep):
     """Base step for INL wet deposition. Optionally carries its own solution."""
 
     m_def = Section(a_eln=dict(hide=['start_time']))
@@ -102,7 +102,7 @@ class INLSpinCoatingStep(INLWetDepositionStep):
             defaultDisplayUnit='rpm',
         ),
     )
-    time = Quantity(
+    duration = Quantity(
         type=float,
         unit='s',
         description='Duration of this spin step.',
@@ -138,7 +138,7 @@ class INLHotplateAnnealingStep(INLWetDepositionStep):
     )
     duration = Quantity(
         type=float,
-        unit='minute',
+        unit='s',
         description='Annealing duration.',
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
