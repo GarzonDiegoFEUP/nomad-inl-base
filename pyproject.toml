@@ -30,6 +30,7 @@ dependencies = [
     'nomad-material-processing',
     "nomad-baseclasses @ git+https://github.com/nomad-hzb/nomad-baseclasses.git@a569524f06e7f9fc4996fee2bb9d54b88930f4e1",
     "pdfplumber",
+    "nomad-analysis",
 ]
 
 [project.urls]
@@ -105,6 +106,7 @@ ignore = [
     "PLR0912", # Too many branches
     "PLR0913", # Too many arguments in function definition
     "PLR0915", # Too many statements
+    "PLR2004", # Magic value used in comparison
 ]
 
 fixable = ["ALL"]
@@ -151,6 +153,10 @@ pc03_parser_entry_point = "nomad_inl_base.parsers:pc03_parser_entry_point"
 pc04_parser_entry_point = "nomad_inl_base.parsers:pc04_parser_entry_point"
 four_point_probe_parser_entry_point = "nomad_inl_base.parsers:four_point_probe_parser_entry_point"
 kla_tencor_profiler_parser_entry_point = "nomad_inl_base.parsers:kla_tencor_profiler_parser_entry_point"
+eqe_parser_entry_point = "nomad_inl_base.parsers:eqe_parser_entry_point"
+solar_cell_iv_parser_entry_point = "nomad_inl_base.parsers:solar_cell_iv_parser_entry_point"
+gdoes_parser_entry_point = "nomad_inl_base.parsers:gdoes_parser_entry_point"
+analysis_entry_point = "nomad_inl_base.analysis:analysis_entry_point"
 
 
 

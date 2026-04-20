@@ -1070,3 +1070,352 @@ class PC04ChamberParser(_BaseSputteringChamberParser):
         archive.data = entry
         data_file = mainfile.rsplit('/', maxsplit=1)[-1].rsplit('.', maxsplit=1)[0]
         archive.metadata.entry_name = data_file
+
+
+# ---------------------------------------------------------------------------
+# EQE Parser
+# ---------------------------------------------------------------------------
+
+
+class EQEParser(MatchingParser):
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        import re
+
+        filetype = 'yaml'
+        data_file = (
+            mainfile.rsplit('/', maxsplit=1)[-1]
+            .rsplit('.', maxsplit=1)[0]
+            .replace(' ', '_')
+        )
+
+        # Read the file: data lines are tab-separated, footer starts after a
+        # line that doesn't have numeric first column or is blank after data.
+        data_lines = []
+        footer_lines = []
+        in_footer = False
+        with open(mainfile, encoding='utf-8', errors='replace') as fh:
+            header = fh.readline()  # noqa: F841 — column header line
+            for line in fh:
+                stripped = line.strip()
+                if not stripped:
+                    in_footer = True
+                    continue
+                if not in_footer:
+                    parts = stripped.split('\t')
+                    try:
+                        float(parts[0])
+                        data_lines.append(parts)
+                    except (ValueError, IndexError):
+                        in_footer = True
+                        footer_lines.append(stripped)
+                else:
+                    footer_lines.append(stripped)
+
+        # Parse data columns
+        wavelength = np.array([float(row[0]) for row in data_lines], dtype=np.float64)
+        qe = np.array([float(row[1]) for row in data_lines], dtype=np.float64)
+        # Normalise: if values look like percentages (>1), convert to fraction
+        if np.nanmax(qe) > 1.0:
+            qe = qe / 100.0
+
+        # Parse footer metadata
+        footer_dict = {}
+        for fl in footer_lines:
+            if '\t' in fl:
+                parts = fl.split('\t', maxsplit=1)
+                if len(parts) == 2:
+                    footer_dict[parts[0].strip()] = parts[1].strip()
+
+        def footer_float(key_pattern):
+            for k, v in footer_dict.items():
+                if re.search(key_pattern, k, re.IGNORECASE):
+                    try:
+                        return float(v)
+                    except ValueError:
+                        return None
+            return None
+
+        def footer_str(key_pattern):
+            for k, v in footer_dict.items():
+                if re.search(key_pattern, k, re.IGNORECASE):
+                    return v
+            return None
+
+        from nomad_inl_base.schema_packages.characterization import INLEQE
+
+        eqe_entry = INLEQE()
+        eqe_entry.wavelength = ureg.Quantity(wavelength, ureg.nanometer)
+        eqe_entry.quantum_efficiency = qe
+
+        jsc_val = footer_float(r'Jsc')
+        if jsc_val is not None:
+            eqe_entry.jsc = ureg.Quantity(jsc_val, ureg('milliampere/centimeter**2'))
+
+        bg_val = footer_float(r'[Bb]andgap')
+        if bg_val is not None:
+            eqe_entry.bandgap = ureg.Quantity(bg_val, ureg.eV)
+
+        dev_id = footer_str(r'[Dd]evice\s*ID')
+        if dev_id is not None:
+            eqe_entry.device_id = dev_id
+
+        chop_val = footer_float(r'[Cc]hopping\s*[Ff]requency')
+        if chop_val is not None:
+            eqe_entry.chopping_frequency = ureg.Quantity(chop_val, ureg.hertz)
+
+        lb_val = footer_float(r'[Ll]ight\s*[Bb]ias\s*[Cc]urrent')
+        if lb_val is not None:
+            eqe_entry.light_bias_current = ureg.Quantity(lb_val, ureg.milliampere)
+
+        vb_val = footer_float(r'[Vv]oltage\s*[Bb]ias')
+        if vb_val is not None:
+            eqe_entry.voltage_bias = ureg.Quantity(vb_val, ureg.volt)
+
+        eqe_filename = f'{data_file}.EQE.archive.{filetype}'
+        eqe_archive = EntryArchive(
+            data=eqe_entry,
+            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
+        )
+        create_archive(
+            eqe_archive.m_to_dict(),
+            archive.m_context,
+            eqe_filename,
+            filetype,
+            logger,
+        )
+
+        archive.data = RawFile_(
+            name=data_file + '_raw',
+            file_=get_hash_ref(archive.m_context.upload_id, data_file),
+        )
+        archive.metadata.entry_name = data_file
+
+
+# ---------------------------------------------------------------------------
+# Solar Cell IV Parser
+# ---------------------------------------------------------------------------
+
+
+class SolarCellIVParser(MatchingParser):
+    """
+    Matches on 'Results Table' .txt files.  For each matched file, looks up
+    all sibling Results Table and IV Graph files sharing the same sample
+    prefix and combines them into a single INLSolarCellIV archive entry.
+    """
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        import os
+        import re
+
+        filetype = 'yaml'
+        basename = mainfile.rsplit('/', maxsplit=1)[-1]
+        directory = mainfile.rsplit('/', maxsplit=1)[0] if '/' in mainfile else '.'
+
+        # Extract sample prefix: everything before "Results Table"
+        match = re.match(r'^(.+?)\s*Results\s*Table', basename, re.IGNORECASE)
+        if not match:
+            logger.error(f'Could not extract sample prefix from {basename}')
+            return
+        sample_prefix = match.group(1).strip()
+
+        # Find all sibling Results Table and IV Graph files for this sample
+        results_files = []
+        iv_files = []
+        for fname in sorted(os.listdir(directory)):
+            if not fname.lower().endswith('.txt'):
+                continue
+            if fname.startswith(sample_prefix):
+                if re.search(r'Results\s*Table', fname, re.IGNORECASE):
+                    results_files.append(os.path.join(directory, fname))
+                elif re.search(r'IV\s*Graph', fname, re.IGNORECASE):
+                    iv_files.append(os.path.join(directory, fname))
+
+        from nomad_inl_base.schema_packages.characterization import (
+            INLSolarCellIV,
+            SolarCellIVCurve,
+            SolarCellIVResult,
+        )
+
+        entry = INLSolarCellIV()
+        all_results = []
+        all_curves = []
+
+        # Parse Results Table files
+        for rf in results_files:
+            try:
+                df = pd.read_csv(rf, sep='\t', encoding='utf-8', engine='python')
+            except Exception:
+                logger.warn(f'Could not read results table: {rf}')
+                continue
+
+            for _, row in df.iterrows():
+                result = SolarCellIVResult()
+                result.measurement_name = str(row.get('Measurement', ''))
+                if 'Voc V' in df.columns:
+                    result.voc = ureg.Quantity(float(row['Voc V']), ureg.volt)
+                if 'Isc A' in df.columns:
+                    result.isc = ureg.Quantity(float(row['Isc A']), ureg.ampere)
+                if 'Jsc mA/cm2' in df.columns:
+                    result.jsc = ureg.Quantity(
+                        float(row['Jsc mA/cm2']),
+                        ureg('milliampere/centimeter**2'),
+                    )
+                if 'Vmax V' in df.columns:
+                    result.vmax = ureg.Quantity(float(row['Vmax V']), ureg.volt)
+                if 'Imax A' in df.columns:
+                    result.imax = ureg.Quantity(float(row['Imax A']), ureg.ampere)
+                if 'Pmax mW' in df.columns:
+                    result.pmax = ureg.Quantity(
+                        float(row['Pmax mW']), ureg.milliwatt
+                    )
+                if 'Fill Factor' in df.columns:
+                    result.fill_factor = float(row['Fill Factor'])
+                if 'Efficiency' in df.columns:
+                    result.efficiency = float(row['Efficiency'])
+                if 'RShunt ohms' in df.columns:
+                    result.r_shunt = ureg.Quantity(
+                        float(row['RShunt ohms']), ureg.ohm
+                    )
+                if 'R at Voc' in df.columns:
+                    result.r_at_voc = float(row['R at Voc'])
+                if 'R at Isc' in df.columns:
+                    result.r_at_isc = float(row['R at Isc'])
+                if 'Exposure' in df.columns:
+                    result.exposure = ureg.Quantity(
+                        float(row['Exposure']), ureg.second
+                    )
+                if 'Time' in df.columns and 'Date' in df.columns:
+                    result.datetime = f"{row.get('Date', '')} {row.get('Time', '')}"
+                all_results.append(result)
+
+        # Parse IV Graph files
+        for ivf in iv_files:
+            try:
+                df = pd.read_csv(ivf, sep='\t', encoding='utf-8', engine='python')
+            except Exception:
+                logger.warn(f'Could not read IV graph: {ivf}')
+                continue
+
+            # File has two header rows: row 0 = measurement names, row 1 = Vmeas/Imeas
+            # Re-read with header=[0,1] for multi-level columns
+            try:
+                df = pd.read_csv(
+                    ivf, sep='\t', header=[0, 1], encoding='utf-8', engine='python'
+                )
+            except Exception:
+                logger.warn(f'Could not parse IV graph multi-header: {ivf}')
+                continue
+
+            # Iterate over measurement columns in pairs
+            cols = list(df.columns)
+            i = 0
+            while i < len(cols) - 1:
+                meas_name = cols[i][0] if isinstance(cols[i], tuple) else str(cols[i])
+                col_type = cols[i][1] if isinstance(cols[i], tuple) else ''
+                if 'Vmeas' in str(col_type) or 'Vmeas' in str(cols[i]):
+                    v_data = pd.to_numeric(df.iloc[:, i], errors='coerce').dropna()
+                    i_data = pd.to_numeric(df.iloc[:, i + 1], errors='coerce').dropna()
+                    if len(v_data) > 0 and len(i_data) > 0:
+                        min_len = min(len(v_data), len(i_data))
+                        curve = SolarCellIVCurve()
+                        curve.measurement_name = str(meas_name).strip()
+                        curve.voltage = ureg.Quantity(
+                            v_data.values[:min_len].astype(np.float64), ureg.volt
+                        )
+                        curve.current = ureg.Quantity(
+                            i_data.values[:min_len].astype(np.float64), ureg.ampere
+                        )
+                        all_curves.append(curve)
+                    i += 2
+                else:
+                    i += 1
+
+        entry.results = all_results
+        entry.iv_curves = all_curves
+
+        safe_prefix = sample_prefix.replace(' ', '_')
+        sc_filename = f'{safe_prefix}.SolarCellIV.archive.{filetype}'
+        sc_archive = EntryArchive(
+            data=entry,
+            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
+        )
+        create_archive(
+            sc_archive.m_to_dict(),
+            archive.m_context,
+            sc_filename,
+            filetype,
+            logger,
+        )
+
+        data_file = basename.rsplit('.', maxsplit=1)[0].replace(' ', '_')
+        archive.data = RawFile_(
+            name=data_file + '_raw',
+            file_=get_hash_ref(archive.m_context.upload_id, data_file),
+        )
+        archive.metadata.entry_name = data_file
+
+
+# ---------------------------------------------------------------------------
+# GDOES Parser
+# ---------------------------------------------------------------------------
+
+
+class GDOESParser(MatchingParser):
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        filetype = 'yaml'
+        data_file = (
+            mainfile.rsplit('/', maxsplit=1)[-1]
+            .rsplit('.', maxsplit=1)[0]
+            .replace(' ', '_')
+        )
+
+        # GDOES files: 2 header lines then tab-separated data
+        # First column is depth, remaining columns are element concentrations
+        df = pd.read_csv(mainfile, sep='\t', encoding='utf-8', engine='python')
+
+        # Detect depth column (first column, may contain unit info like "µm")
+        depth_col = df.columns[0]
+        depth_values = pd.to_numeric(df[depth_col], errors='coerce').dropna().values
+
+        from nomad_inl_base.schema_packages.characterization import (
+            INLGDOES,
+            GDOESElementProfile,
+        )
+
+        gdoes_entry = INLGDOES()
+        gdoes_entry.depth = ureg.Quantity(
+            depth_values.astype(np.float64), ureg.micrometer
+        )
+
+        profiles = []
+        for col_name in df.columns[1:]:
+            values = pd.to_numeric(df[col_name], errors='coerce').dropna().values
+            if len(values) == 0:
+                continue
+            # Align to depth length
+            min_len = min(len(depth_values), len(values))
+            profile = GDOESElementProfile()
+            profile.element_name = str(col_name).strip()
+            profile.concentration = values[:min_len].astype(np.float64)
+            profiles.append(profile)
+
+        gdoes_entry.element_profiles = profiles
+
+        gdoes_filename = f'{data_file}.GDOES.archive.{filetype}'
+        gdoes_archive = EntryArchive(
+            data=gdoes_entry,
+            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
+        )
+        create_archive(
+            gdoes_archive.m_to_dict(),
+            archive.m_context,
+            gdoes_filename,
+            filetype,
+            logger,
+        )
+
+        archive.data = RawFile_(
+            name=data_file + '_raw',
+            file_=get_hash_ref(archive.m_context.upload_id, data_file),
+        )
+        archive.metadata.entry_name = data_file

@@ -91,3 +91,48 @@ kla_tencor_profiler_parser_entry_point = KLATencorProfilerParserEntryPoint(
     mainfile_name_re=r'.*[Pp]rofile\.pdf$',
     mainfile_mime_re=r'application/pdf',
 )
+
+
+class EQEParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import EQEParser
+
+        return EQEParser(**self.dict())
+
+
+eqe_parser_entry_point = EQEParserEntryPoint(
+    name='EQEParser',
+    description='Parser for External Quantum Efficiency .txt data files.',
+    mainfile_name_re=r'(?i).*eqe.*\.txt$',
+    mainfile_mime_re=r'text/plain',
+)
+
+
+class SolarCellIVParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import SolarCellIVParser
+
+        return SolarCellIVParser(**self.dict())
+
+
+solar_cell_iv_parser_entry_point = SolarCellIVParserEntryPoint(
+    name='SolarCellIVParser',
+    description='Parser for Solar Cell IV Results Table .txt files.',
+    mainfile_name_re=r'(?i).*Results\s*Table.*\.txt$',
+    mainfile_mime_re=r'text/plain',
+)
+
+
+class GDOESParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import GDOESParser
+
+        return GDOESParser(**self.dict())
+
+
+gdoes_parser_entry_point = GDOESParserEntryPoint(
+    name='GDOESParser',
+    description='Parser for GDOES depth profile .txt data files.',
+    mainfile_name_re=r'(?i).*gdoes.*\.txt$',
+    mainfile_mime_re=r'text/plain',
+)

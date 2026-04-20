@@ -690,4 +690,326 @@ class INLKLATencorProfiler(INLCharacterization):
     results = SubSection(section_def=INLKLATencorProfilerResults, repeats=True)
 
 
+# ---------------------------------------------------------------------------
+# External Quantum Efficiency (EQE)
+# ---------------------------------------------------------------------------
+
+
+class INLEQE(INLCharacterization, PlotSection):
+    m_def = Section(
+        label='INL EQE',
+        categories=[INLCharacterizationCategory],
+    )
+    wavelength = Quantity(
+        type=np.float64,
+        description='Wavelength values.',
+        shape=['*'],
+        unit='nanometer',
+    )
+    quantum_efficiency = Quantity(
+        type=np.float64,
+        description='Quantum efficiency values (fraction, 0–1).',
+        shape=['*'],
+    )
+    jsc = Quantity(
+        type=np.float64,
+        description='Short-circuit current density from EQE integration.',
+        unit='milliampere/centimeter**2',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='milliampere/centimeter**2',
+        ),
+    )
+    bandgap = Quantity(
+        type=np.float64,
+        description='Bandgap estimated from EQE.',
+        unit='eV',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='eV',
+        ),
+    )
+    device_id = Quantity(
+        type=str,
+        description='Device identifier.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    chopping_frequency = Quantity(
+        type=np.float64,
+        description='Chopping frequency used during EQE measurement.',
+        unit='hertz',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='hertz',
+        ),
+    )
+    light_bias_current = Quantity(
+        type=np.float64,
+        description='Light bias current.',
+        unit='milliampere',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='milliampere',
+        ),
+    )
+    voltage_bias = Quantity(
+        type=np.float64,
+        description='Voltage bias applied during measurement.',
+        unit='volt',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='volt',
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self.figures = []
+        if self.wavelength is not None and self.quantum_efficiency is not None:
+            wl = np.array(self.wavelength)
+            qe = np.array(self.quantum_efficiency) * 100  # fraction → %
+            fig = make_subplots(rows=1, cols=1)
+            trace = px.scatter(x=wl, y=qe)
+            fig.add_trace(trace.data[0], row=1, col=1)
+            fig.update_layout(
+                template='plotly_white',
+                height=400,
+                width=716,
+                xaxis_title='Wavelength (nm)',
+                yaxis_title='EQE (%)',
+                title_text='External Quantum Efficiency',
+            )
+            self.figures.append(
+                PlotlyFigure(label='EQE', figure=fig.to_plotly_json())
+            )
+
+
+# ---------------------------------------------------------------------------
+# Solar Cell IV
+# ---------------------------------------------------------------------------
+
+
+class SolarCellIVResult(Section):
+    """Extracted parameters for a single cell measurement."""
+
+    measurement_name = Quantity(
+        type=str,
+        description='Name identifying this measurement.',
+    )
+    voc = Quantity(type=np.float64, description='Open-circuit voltage.', unit='volt')
+    isc = Quantity(type=np.float64, description='Short-circuit current.', unit='ampere')
+    jsc = Quantity(
+        type=np.float64,
+        description='Short-circuit current density.',
+        unit='milliampere/centimeter**2',
+    )
+    vmax = Quantity(
+        type=np.float64,
+        description='Voltage at maximum power.',
+        unit='volt',
+    )
+    imax = Quantity(
+        type=np.float64,
+        description='Current at maximum power.',
+        unit='ampere',
+    )
+    pmax = Quantity(
+        type=np.float64,
+        description='Maximum power.',
+        unit='milliwatt',
+    )
+    fill_factor = Quantity(
+        type=np.float64,
+        description='Fill factor (fraction, 0–1).',
+    )
+    efficiency = Quantity(
+        type=np.float64,
+        description='Power conversion efficiency (fraction, 0–1).',
+    )
+    r_shunt = Quantity(
+        type=np.float64,
+        description='Shunt resistance.',
+        unit='ohm',
+    )
+    r_at_voc = Quantity(
+        type=np.float64,
+        description='Resistance at open-circuit voltage.',
+    )
+    r_at_isc = Quantity(
+        type=np.float64,
+        description='Resistance at short-circuit current.',
+    )
+    exposure = Quantity(
+        type=np.float64,
+        description='Illumination exposure time.',
+        unit='second',
+    )
+    datetime = Quantity(
+        type=str,
+        description='Date and time of the measurement.',
+    )
+
+
+class SolarCellIVCurve(Section):
+    """I-V curve data for a single cell measurement."""
+
+    measurement_name = Quantity(
+        type=str,
+        description='Name identifying this measurement.',
+    )
+    voltage = Quantity(
+        type=np.float64,
+        description='Measured voltage.',
+        shape=['*'],
+        unit='volt',
+    )
+    current = Quantity(
+        type=np.float64,
+        description='Measured current.',
+        shape=['*'],
+        unit='ampere',
+    )
+
+
+class INLSolarCellIV(INLCharacterization, PlotSection):
+    m_def = Section(
+        label='INL Solar Cell IV',
+        categories=[INLCharacterizationCategory],
+    )
+    results = SubSection(section_def=SolarCellIVResult, repeats=True)
+    iv_curves = SubSection(section_def=SolarCellIVCurve, repeats=True)
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self.figures = []
+
+        # Plot best-cell JV curve (highest efficiency)
+        if self.iv_curves:
+            best_idx = 0
+            if self.results:
+                effs = [
+                    r.efficiency if r.efficiency is not None else 0.0
+                    for r in self.results
+                ]
+                best_idx = int(np.argmax(effs))
+                if best_idx >= len(self.iv_curves):
+                    best_idx = 0
+
+            curve = self.iv_curves[best_idx]
+            if curve.voltage is not None and curve.current is not None:
+                v = np.array(curve.voltage)
+                i_ma = np.array(curve.current) * 1000
+                fig = make_subplots(rows=1, cols=1)
+                trace = px.scatter(x=v, y=i_ma)
+                fig.add_trace(trace.data[0], row=1, col=1)
+                label = curve.measurement_name or 'Best cell'
+                fig.update_layout(
+                    template='plotly_white',
+                    height=400,
+                    width=716,
+                    xaxis_title='Voltage (V)',
+                    yaxis_title='Current (mA)',
+                    title_text=f'JV Curve — {label}',
+                )
+                self.figures.append(
+                    PlotlyFigure(label='Best JV', figure=fig.to_plotly_json())
+                )
+
+        # Boxplots of key parameters
+        if self.results and len(self.results) > 1:
+            params = {
+                'Voc (V)': [r.voc for r in self.results if r.voc is not None],
+                'Jsc (mA/cm²)': [r.jsc for r in self.results if r.jsc is not None],
+                'Fill Factor': [
+                    r.fill_factor for r in self.results if r.fill_factor is not None
+                ],
+                'Efficiency': [
+                    r.efficiency for r in self.results if r.efficiency is not None
+                ],
+            }
+            import plotly.graph_objects as go
+
+            fig = make_subplots(rows=1, cols=4, subplot_titles=list(params.keys()))
+            for col_idx, (name, vals) in enumerate(params.items(), start=1):
+                if vals:
+                    fig.add_trace(
+                        go.Box(y=vals, name=name, boxmean=True),
+                        row=1,
+                        col=col_idx,
+                    )
+            fig.update_layout(
+                template='plotly_white',
+                height=400,
+                width=900,
+                showlegend=False,
+                title_text='Solar Cell Parameters',
+            )
+            self.figures.append(
+                PlotlyFigure(label='Parameters', figure=fig.to_plotly_json())
+            )
+
+
+# ---------------------------------------------------------------------------
+# GDOES (Glow Discharge Optical Emission Spectroscopy)
+# ---------------------------------------------------------------------------
+
+
+class GDOESElementProfile(Section):
+    """Concentration profile for a single element."""
+
+    element_name = Quantity(
+        type=str,
+        description='Element label as it appears in the data file header.',
+    )
+    concentration = Quantity(
+        type=np.float64,
+        description='Concentration values (mol %).',
+        shape=['*'],
+    )
+
+
+class INLGDOES(INLCharacterization, PlotSection):
+    m_def = Section(
+        label='INL GDOES',
+        categories=[INLCharacterizationCategory],
+    )
+    depth = Quantity(
+        type=np.float64,
+        description='Depth profile values.',
+        shape=['*'],
+        unit='micrometer',
+    )
+    element_profiles = SubSection(section_def=GDOESElementProfile, repeats=True)
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self.figures = []
+        if self.depth is not None and self.element_profiles:
+            import plotly.graph_objects as go
+
+            depth = np.array(self.depth)
+            fig = go.Figure()
+            for profile in self.element_profiles:
+                if profile.concentration is not None:
+                    fig.add_trace(
+                        go.Scatter(
+                            x=depth,
+                            y=np.array(profile.concentration),
+                            mode='lines',
+                            name=profile.element_name or 'Unknown',
+                        )
+                    )
+            fig.update_layout(
+                template='plotly_white',
+                height=400,
+                width=716,
+                xaxis_title='Depth (µm)',
+                yaxis_title='Concentration (mol %)',
+                title_text='GDOES Depth Profile',
+            )
+            self.figures.append(
+                PlotlyFigure(label='Depth Profile', figure=fig.to_plotly_json())
+            )
+
+
 m_package.__init_metainfo__()
