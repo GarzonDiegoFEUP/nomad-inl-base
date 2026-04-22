@@ -2,9 +2,8 @@
 
 **nomad-inl-base** is a [NOMAD](https://nomad-lab.eu) plugin developed at
 [INL – International Iberian Nanotechnology Laboratory](https://www.inl.int)
-for the **LaNaSC** (Laser and Nanomaterials Science Centre) group.
-It provides ELN (Electronic Lab Notebook) schemas and automatic normalization routines
-for thin-film research covering:
+for the **Sadewasser Reasearch Group** (Previously know as Laboratory for Nanostructured Solar Cells - LaNaSC) group.
+It provides ELN (Electronic Lab Notebook) schemas and automatic normalization routines for thin-film research covering:
 
 - **STAR magnetron sputtering** – DC and RF deposition with target inventory tracking
 - **Wet deposition** – spin coating, slot-die coating, blade coating, inkjet printing, spray pyrolysis, dip coating, and chemical bath deposition
