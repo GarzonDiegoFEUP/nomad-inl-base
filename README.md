@@ -1,6 +1,6 @@
 # nomad-inl-base
 
-A plugin to manage the data from LaNaSC
+A plugin to manage the data from the Sadewasser Research Group at INL. 
 
 This `nomad` plugin was generated with `Cookiecutter` along with `@nomad`'s [`cookiecutter-nomad-plugin`](https://github.com/FAIRmat-NFDI/cookiecutter-nomad-plugin) template.
 
