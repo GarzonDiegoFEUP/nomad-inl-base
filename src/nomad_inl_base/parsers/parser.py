@@ -1118,58 +1118,70 @@ class EQEParser(MatchingParser):
         if np.nanmax(qe) > 1.0:
             qe = qe / 100.0
 
-        # Parse footer metadata
-        footer_dict = {}
-        for fl in footer_lines:
-            if '\t' in fl:
-                parts = fl.split('\t', maxsplit=1)
-                if len(parts) == 2:
-                    footer_dict[parts[0].strip()] = parts[1].strip()
+        # Parse footer metadata.
+        # Format: "Key [optional_unit]:  value(s)" — one entry per line.
+        # Jsc has multiple tab-separated values; first value = AM1.5G.
+        # Replace tabs with spaces so every line is flat for regex matching.
+        footer_flat = re.sub(r'\t+', ' ', '\n'.join(footer_lines))
 
         def footer_float(key_pattern):
-            for k, v in footer_dict.items():
-                if re.search(key_pattern, k, re.IGNORECASE):
-                    try:
-                        return float(v)
-                    except ValueError:
-                        return None
+            """Return the first float after 'Key [unit]: ...' in the footer."""
+            m = re.search(
+                key_pattern + r'(?:[^\n:]*:)?\s*([-+]?\d+\.?\d*(?:[Ee][+-]?\d+)?)',
+                footer_flat,
+                re.IGNORECASE,
+            )
+            if m:
+                try:
+                    return float(m.group(1))
+                except ValueError:
+                    return None
             return None
 
         def footer_str(key_pattern):
-            for k, v in footer_dict.items():
-                if re.search(key_pattern, k, re.IGNORECASE):
-                    return v
+            """Return the string value after 'Key: value' (to end of line)."""
+            m = re.search(
+                key_pattern + r'\s*:\s*([^\n\r]+)',
+                footer_flat,
+                re.IGNORECASE,
+            )
+            if m:
+                return m.group(1).strip()
             return None
 
-        from nomad_inl_base.schema_packages.characterization import INLEQE
+        from nomad_inl_base.schema_packages.characterization import INLEQE, EQEResult
 
         eqe_entry = INLEQE()
         eqe_entry.wavelength = ureg.Quantity(wavelength, ureg.nanometer)
         eqe_entry.quantum_efficiency = qe
 
+        eqe_result = EQEResult()
+
         jsc_val = footer_float(r'Jsc')
         if jsc_val is not None:
-            eqe_entry.jsc = ureg.Quantity(jsc_val, ureg('milliampere/centimeter**2'))
+            eqe_result.jsc = ureg.Quantity(jsc_val, ureg('milliampere/centimeter**2'))
 
         bg_val = footer_float(r'[Bb]andgap')
         if bg_val is not None:
-            eqe_entry.bandgap = ureg.Quantity(bg_val, ureg.eV)
+            eqe_result.bandgap = ureg.Quantity(bg_val, ureg.eV)
 
         dev_id = footer_str(r'[Dd]evice\s*ID')
         if dev_id is not None:
-            eqe_entry.device_id = dev_id
+            eqe_result.device_id = dev_id
 
         chop_val = footer_float(r'[Cc]hopping\s*[Ff]requency')
         if chop_val is not None:
-            eqe_entry.chopping_frequency = ureg.Quantity(chop_val, ureg.hertz)
+            eqe_result.chopping_frequency = ureg.Quantity(chop_val, ureg.hertz)
 
         lb_val = footer_float(r'[Ll]ight\s*[Bb]ias\s*[Cc]urrent')
         if lb_val is not None:
-            eqe_entry.light_bias_current = ureg.Quantity(lb_val, ureg.milliampere)
+            eqe_result.light_bias_current = ureg.Quantity(lb_val, ureg.milliampere)
 
         vb_val = footer_float(r'[Vv]oltage\s*[Bb]ias')
         if vb_val is not None:
-            eqe_entry.voltage_bias = ureg.Quantity(vb_val, ureg.volt)
+            eqe_result.voltage_bias = ureg.Quantity(vb_val, ureg.volt)
+
+        eqe_entry.results = [eqe_result]
 
         eqe_filename = f'{data_file}.EQE.archive.{filetype}'
         eqe_archive = EntryArchive(
@@ -1272,20 +1284,53 @@ class SolarCellIVParser(MatchingParser):
                     result.fill_factor = float(row['Fill Factor'])
                 if 'Efficiency' in df.columns:
                     result.efficiency = float(row['Efficiency'])
-                if 'RShunt ohms' in df.columns:
-                    result.r_shunt = ureg.Quantity(
-                        float(row['RShunt ohms']), ureg.ohm
-                    )
                 if 'R at Voc' in df.columns:
-                    result.r_at_voc = float(row['R at Voc'])
+                    result.r_at_voc = ureg.Quantity(float(row['R at Voc']), ureg.ohm)
                 if 'R at Isc' in df.columns:
-                    result.r_at_isc = float(row['R at Isc'])
+                    result.r_at_isc = ureg.Quantity(float(row['R at Isc']), ureg.ohm)
                 if 'Exposure' in df.columns:
                     result.exposure = ureg.Quantity(
                         float(row['Exposure']), ureg.second
                     )
                 if 'Time' in df.columns and 'Date' in df.columns:
                     result.datetime = f"{row.get('Date', '')} {row.get('Time', '')}"
+
+                # Derived quantities -----------------------------------------
+                # Cell area [cm²] = Isc [A] / Jsc [mA/cm²] * 1000
+                isc_raw = float(row['Isc A']) if 'Isc A' in df.columns else None
+                jsc_raw = float(row['Jsc mA/cm2']) if 'Jsc mA/cm2' in df.columns else None
+                area_cm2 = None
+                if isc_raw and jsc_raw and jsc_raw != 0:
+                    area_cm2 = (isc_raw / jsc_raw) * 1000.0
+                    result.cell_area = ureg.Quantity(area_cm2, ureg('centimeter**2'))
+
+                # Area-normalised resistances [Ω·cm²]
+                r_voc_raw = float(row['R at Voc']) if 'R at Voc' in df.columns else None
+                r_isc_raw = float(row['R at Isc']) if 'R at Isc' in df.columns else None
+                if area_cm2 is not None:
+                    if r_voc_raw is not None:
+                        result.r_series = ureg.Quantity(
+                            r_voc_raw * area_cm2, ureg('ohm * centimeter**2')
+                        )
+                    if r_isc_raw is not None:
+                        result.r_shunt = ureg.Quantity(
+                            r_isc_raw * area_cm2, ureg('ohm * centimeter**2')
+                        )
+
+                # Filter out unphysical measurements:
+                # Jsc and Voc must be > 0; fill factor must be ≤ 85 %
+                voc_val = float(row['Voc V']) if 'Voc V' in df.columns else None
+                jsc_val = float(row['Jsc mA/cm2']) if 'Jsc mA/cm2' in df.columns else None
+                ff_val = float(row['Fill Factor']) if 'Fill Factor' in df.columns else None
+                if voc_val is not None and voc_val <= 0:
+                    logger.warning(f'Skipping row {row.get("Measurement", "")}: Voc={voc_val} ≤ 0')
+                    continue
+                if jsc_val is not None and jsc_val <= 0:
+                    logger.warning(f'Skipping row {row.get("Measurement", "")}: Jsc={jsc_val} ≤ 0')
+                    continue
+                if ff_val is not None and ff_val > 85:
+                    logger.warning(f'Skipping row {row.get("Measurement", "")}: FF={ff_val} > 85 %')
+                    continue
                 all_results.append(result)
 
         # Parse IV Graph files
@@ -1369,13 +1414,33 @@ class GDOESParser(MatchingParser):
             .replace(' ', '_')
         )
 
-        # GDOES files: 2 header lines then tab-separated data
-        # First column is depth, remaining columns are element concentrations
-        df = pd.read_csv(mainfile, sep='\t', encoding='utf-8', engine='python')
+        # GDOES files: row 0 = sample/title info, row 1 = column names
+        # (Depth [µm], C 166, Se 196, ..., *Se/Sb!), data from row 2 on.
+        # Read with header=0 (title row) so column alignment is stable, then
+        # rename columns using the actual element-name row.
+        df = pd.read_csv(mainfile, sep='\t', encoding='utf-8', engine='python', header=0)
+
+        # Extract proper column names from row 1 of the raw file
+        with open(mainfile, encoding='utf-8', errors='replace') as _fh:
+            _fh.readline()  # skip title row
+            _name_line = _fh.readline()
+        _elem_names = [s.strip() for s in _name_line.rstrip('\n\r').split('\t')]
+        # Rename columns up to however many names we got
+        _n = min(len(df.columns), len(_elem_names))
+        df.columns = list(_elem_names[:_n]) + list(df.columns[_n:])
+
+        # Convert all columns to numeric; -nan(ind) and other non-numeric
+        # strings become NaN via errors='coerce'
+        df_numeric = df.apply(lambda c: pd.to_numeric(c, errors='coerce'))
 
         # Detect depth column (first column, may contain unit info like "µm")
         depth_col = df.columns[0]
-        depth_values = pd.to_numeric(df[depth_col], errors='coerce').dropna().values
+        depth_raw = df_numeric[depth_col].values.astype(np.float64)
+
+        # Use a consistent row mask: only rows where depth is finite
+        # This keeps all columns aligned to the same index
+        valid_mask = np.isfinite(depth_raw)
+        depth_values = depth_raw[valid_mask]
 
         from nomad_inl_base.schema_packages.characterization import (
             INLGDOES,
@@ -1383,20 +1448,25 @@ class GDOESParser(MatchingParser):
         )
 
         gdoes_entry = INLGDOES()
-        gdoes_entry.depth = ureg.Quantity(
-            depth_values.astype(np.float64), ureg.micrometer
-        )
+        gdoes_entry.depth = ureg.Quantity(depth_values, ureg.micrometer)
 
         profiles = []
         for col_name in df.columns[1:]:
-            values = pd.to_numeric(df[col_name], errors='coerce').dropna().values
-            if len(values) == 0:
+            col_str = str(col_name).strip()
+            values = df_numeric[col_name].values.astype(np.float64)[valid_mask]
+            # Skip columns that are entirely NaN or all-zero (no real data)
+            if np.all(~np.isfinite(values)) or np.all(values == 0.0):
                 continue
-            # Align to depth length
-            min_len = min(len(depth_values), len(values))
+            # Skip ratio/derived columns: name contains '*' or '/', or
+            # finite values exceed 100 mol% (not a real concentration)
+            finite_vals = values[np.isfinite(values)]
+            if '*' in col_str or '/' in col_str or (len(finite_vals) > 0 and np.max(finite_vals) > 100):
+                continue
+            # Replace remaining non-finite values (NaN/inf mid-column) with 0.0
+            values = np.where(np.isfinite(values), values, 0.0)
             profile = GDOESElementProfile()
-            profile.element_name = str(col_name).strip()
-            profile.concentration = values[:min_len].astype(np.float64)
+            profile.element_name = col_str
+            profile.concentration = values
             profiles.append(profile)
 
         gdoes_entry.element_profiles = profiles
@@ -1419,3 +1489,168 @@ class GDOESParser(MatchingParser):
             file_=get_hash_ref(archive.m_context.upload_id, data_file),
         )
         archive.metadata.entry_name = data_file
+
+
+def _parse_tfs_tiff_metadata(path: str) -> dict:
+    """Extract FEI/TFS SEM metadata from TIFF tag 34682.
+
+    Returns a flat dict with keys like ``'EBeam/HV'``, ``'Scan/PixelWidth'``.
+    Values are ``np.float64``, ``np.int64``, or ``str``.
+    Returns an empty dict when tag 34682 is absent (not an FEI/TFS TIFF).
+    """
+    import re
+
+    from PIL import Image
+
+    meta = {}
+    with Image.open(path) as img:
+        if 34682 not in img.tag_v2:
+            return meta
+        blob = img.tag_v2[34682]
+        text = blob.decode('utf-8', errors='replace') if isinstance(blob, bytes) else str(blob)
+    current_section = None
+    for line in (ln.strip() for ln in re.split(r'\r\n|\r|\n', text)):
+        if not line:
+            continue
+        section_match = re.match(r'^\[(\w+)\]$', line)
+        if section_match:
+            current_section = section_match.group(1)
+            continue
+        if current_section and '=' in line:
+            key, _, value = line.partition('=')
+            key = key.strip()
+            value = value.strip()
+            if not value:
+                continue
+            flat_key = f'{current_section}/{key}'
+            try:
+                meta[flat_key] = np.int64(value)
+            except ValueError:
+                try:
+                    meta[flat_key] = np.float64(value)
+                except ValueError:
+                    meta[flat_key] = value
+    return meta
+
+
+class SEMZipParser(MatchingParser):
+    """Parse FEI/TFS SEM TIFF images.
+
+    NOMAD auto-extracts ZIP uploads, so this parser matches the "base" TIFF
+    (no _NNN suffix) for each sample group and collects all related images
+    (same filename prefix) into a single INLSEMSession archive entry.
+    """
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        import glob
+        import os
+
+        from PIL import Image
+
+        from nomad_inl_base.schema_packages.characterization import (
+            INLSEMImage,
+            INLSEMSession,
+        )
+
+        _MAX_PX = 1024  # downsample stored array to ≤ this dimension
+
+        # Base name prefix (without extension) — used to collect _NNN sibling files
+        base_name = os.path.splitext(os.path.basename(mainfile))[0]
+        raw_dir = os.path.dirname(mainfile)
+
+        # Collect all TIF files in the same directory that share this base prefix
+        tif_paths = sorted(
+            p
+            for ext in ('*.tif', '*.tiff', '*.TIF', '*.TIFF')
+            for p in glob.glob(os.path.join(raw_dir, ext))
+            if os.path.basename(p).startswith(base_name)
+        )
+
+        session = INLSEMSession()
+        microscope_model = None
+        source_type = None
+        images = []
+
+        for tif_path in tif_paths:
+            tif_name = os.path.basename(tif_path)
+            meta = _parse_tfs_tiff_metadata(tif_path)
+            if not meta:
+                logger.warning(
+                    f'SEMZipParser: {tif_name} has no FEI metadata (tag 34682), skipping'
+                )
+                continue
+
+            # Capture session-level info from the first TIFF
+            if microscope_model is None:
+                microscope_model = meta.get('System/SystemType') or meta.get('System/Type')
+                source_type = meta.get('System/Source')
+
+            # Read image, crop data bar to Image/ResolutionX × Image/ResolutionY
+            with Image.open(tif_path) as img:
+                res_x = int(meta.get('Image/ResolutionX', img.width))
+                res_y = int(meta.get('Image/ResolutionY', img.height))
+                arr = np.array(img.convert('L'))[:res_y, :res_x]
+
+            # Downsample for archive storage
+            ih, iw = arr.shape
+            if max(ih, iw) > _MAX_PX:
+                scale = _MAX_PX / max(ih, iw)
+                new_h = max(1, int(ih * scale))
+                new_w = max(1, int(iw * scale))
+                arr = np.array(
+                    Image.fromarray(arr).resize((new_w, new_h), Image.LANCZOS)
+                )
+
+            # Compute nominal magnification: canvas_width / HFW
+            magnification = None
+            hfw = meta.get('EBeam/HFW')
+            canvas_w = meta.get('Image/MagCanvasRealWidth')
+            if hfw and canvas_w:
+                try:
+                    hfw_f = float(hfw)
+                    if hfw_f > 0:
+                        magnification = float(canvas_w) / hfw_f
+                except (TypeError, ValueError):
+                    pass
+
+            date_str = str(meta.get('User/Date') or '')
+            time_str = str(meta.get('User/Time') or '')
+            acq_dt = f'{date_str} {time_str}'.strip() or None
+
+            def _f(key, _meta=meta):
+                v = _meta.get(key)
+                if v is None:
+                    return None
+                try:
+                    return float(v)
+                except (TypeError, ValueError):
+                    return None
+
+            images.append(
+                INLSEMImage(
+                    file_name=tif_name,
+                    image_array=arr.astype(np.uint8),
+                    width_pixels=np.int64(res_x),
+                    height_pixels=np.int64(res_y),
+                    accelerating_voltage=_f('EBeam/HV'),
+                    magnification=magnification,
+                    horizontal_field_width=_f('EBeam/HFW'),
+                    pixel_width=_f('Scan/PixelWidth') or _f('EScan/PixelWidth'),
+                    working_distance=_f('EBeam/WD'),
+                    detector_name=meta.get('Detectors/Name'),
+                    detector_mode=meta.get('Detectors/Mode'),
+                    emission_current=_f('EBeam/EmissionCurrent'),
+                    dwell_time=_f('Scan/Dwelltime'),
+                    stage_x=_f('Stage/StageX'),
+                    stage_y=_f('Stage/StageY'),
+                    stage_z=_f('Stage/StageZ'),
+                    stage_tilt=_f('Stage/StageT'),
+                    acquisition_datetime=acq_dt,
+                    operator=str(meta.get('User/User') or '') or None,
+                )
+            )
+
+        session.microscope_model = microscope_model
+        session.source_type = source_type
+        session.images = images
+        archive.data = session

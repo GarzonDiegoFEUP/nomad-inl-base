@@ -31,6 +31,7 @@ dependencies = [
     "nomad-baseclasses @ git+https://github.com/nomad-hzb/nomad-baseclasses.git@a569524f06e7f9fc4996fee2bb9d54b88930f4e1",
     "pdfplumber",
     "nomad-analysis",
+    "Pillow",
 ]
 
 [project.urls]
@@ -156,6 +157,7 @@ kla_tencor_profiler_parser_entry_point = "nomad_inl_base.parsers:kla_tencor_prof
 eqe_parser_entry_point = "nomad_inl_base.parsers:eqe_parser_entry_point"
 solar_cell_iv_parser_entry_point = "nomad_inl_base.parsers:solar_cell_iv_parser_entry_point"
 gdoes_parser_entry_point = "nomad_inl_base.parsers:gdoes_parser_entry_point"
+sem_zip_parser_entry_point = "nomad_inl_base.parsers:sem_zip_parser_entry_point"
 analysis_entry_point = "nomad_inl_base.analysis:analysis_entry_point"
 
 

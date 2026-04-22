@@ -6,11 +6,17 @@ if TYPE_CHECKING:
 
 import numpy as np
 import plotly.express as px
-from nomad.datamodel.data import EntryData, EntryDataCategory
+from nomad.datamodel.data import ArchiveSection, EntryData, EntryDataCategory
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import Measurement, MeasurementResult
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
-from nomad.metainfo import Category, Quantity, SchemaPackage, Section, SubSection
+from nomad.metainfo import (
+    Category,
+    Quantity,
+    SchemaPackage,
+    Section,
+    SubSection,
+)
 from nomad_material_processing.general import TimeSeries
 from nomad_material_processing.solution.general import Solution
 from nomad_measurements.transmission.schema import ELNUVVisNirTransmission
@@ -695,25 +701,12 @@ class INLKLATencorProfiler(INLCharacterization):
 # ---------------------------------------------------------------------------
 
 
-class INLEQE(INLCharacterization, PlotSection):
-    m_def = Section(
-        label='INL EQE',
-        categories=[INLCharacterizationCategory],
-    )
-    wavelength = Quantity(
-        type=np.float64,
-        description='Wavelength values.',
-        shape=['*'],
-        unit='nanometer',
-    )
-    quantum_efficiency = Quantity(
-        type=np.float64,
-        description='Quantum efficiency values (fraction, 0–1).',
-        shape=['*'],
-    )
+class EQEResult(MeasurementResult):
+    """Scalar parameters extracted from an EQE measurement."""
+
     jsc = Quantity(
         type=np.float64,
-        description='Short-circuit current density from EQE integration.',
+        description='Short-circuit current density from EQE integration (AM1.5G).',
         unit='milliampere/centimeter**2',
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
@@ -762,15 +755,40 @@ class INLEQE(INLCharacterization, PlotSection):
         ),
     )
 
+
+class INLEQE(INLCharacterization, PlotSection):
+    m_def = Section(
+        label='INL EQE',
+        categories=[INLCharacterizationCategory],
+    )
+    wavelength = Quantity(
+        type=np.float64,
+        description='Wavelength values.',
+        shape=['*'],
+        unit='nanometer',
+    )
+    quantum_efficiency = Quantity(
+        type=np.float64,
+        description='Quantum efficiency values (fraction, 0–1).',
+        shape=['*'],
+    )
+    results = SubSection(section_def=EQEResult, repeats=True)
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        import json
+
+        import plotly.graph_objects as go
+        import plotly.io as pio
+
         super().normalize(archive, logger)
         self.figures = []
         if self.wavelength is not None and self.quantum_efficiency is not None:
-            wl = np.array(self.wavelength)
-            qe = np.array(self.quantum_efficiency) * 100  # fraction → %
-            fig = make_subplots(rows=1, cols=1)
-            trace = px.scatter(x=wl, y=qe)
-            fig.add_trace(trace.data[0], row=1, col=1)
+            wl_arr = np.array(self.wavelength)  # already in nm (unit='nanometer')
+            qe_arr = np.array(self.quantum_efficiency) * 100  # fraction → %
+            wl = [None if not np.isfinite(v) else float(v) for v in wl_arr]
+            qe = [None if not np.isfinite(v) else float(v) for v in qe_arr]
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=wl, y=qe, mode='lines', name='EQE'))
             fig.update_layout(
                 template='plotly_white',
                 height=400,
@@ -778,9 +796,12 @@ class INLEQE(INLCharacterization, PlotSection):
                 xaxis_title='Wavelength (nm)',
                 yaxis_title='EQE (%)',
                 title_text='External Quantum Efficiency',
+                dragmode='zoom',
+                xaxis=dict(fixedrange=False),
+                yaxis=dict(fixedrange=False),
             )
             self.figures.append(
-                PlotlyFigure(label='EQE', figure=fig.to_plotly_json())
+                PlotlyFigure(label='EQE', figure=json.loads(pio.to_json(fig)))
             )
 
 
@@ -789,7 +810,7 @@ class INLEQE(INLCharacterization, PlotSection):
 # ---------------------------------------------------------------------------
 
 
-class SolarCellIVResult(Section):
+class SolarCellIVResult(MeasurementResult):
     """Extracted parameters for a single cell measurement."""
 
     measurement_name = Quantity(
@@ -826,18 +847,42 @@ class SolarCellIVResult(Section):
         type=np.float64,
         description='Power conversion efficiency (fraction, 0–1).',
     )
+    cell_area = Quantity(
+        type=np.float64,
+        description='Active cell area calculated from Isc / Jsc.',
+        unit='centimeter**2',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='centimeter**2',
+        ),
+    )
     r_shunt = Quantity(
         type=np.float64,
-        description='Shunt resistance.',
-        unit='ohm',
+        description='Area-normalised shunt resistance (R_at_Isc × cell_area).',
+        unit='ohm * centimeter**2',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='ohm * centimeter**2',
+        ),
     )
     r_at_voc = Quantity(
         type=np.float64,
-        description='Resistance at open-circuit voltage.',
+        description='Differential resistance measured at open-circuit voltage (≈ series resistance).',
+        unit='ohm',
     )
     r_at_isc = Quantity(
         type=np.float64,
-        description='Resistance at short-circuit current.',
+        description='Differential resistance measured at short-circuit current (≈ shunt resistance).',
+        unit='ohm',
+    )
+    r_series = Quantity(
+        type=np.float64,
+        description='Area-normalised series resistance (R_at_Voc × cell_area).',
+        unit='ohm * centimeter**2',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='ohm * centimeter**2',
+        ),
     )
     exposure = Quantity(
         type=np.float64,
@@ -850,7 +895,7 @@ class SolarCellIVResult(Section):
     )
 
 
-class SolarCellIVCurve(Section):
+class SolarCellIVCurve(ArchiveSection):
     """I-V curve data for a single cell measurement."""
 
     measurement_name = Quantity(
@@ -880,6 +925,11 @@ class INLSolarCellIV(INLCharacterization, PlotSection):
     iv_curves = SubSection(section_def=SolarCellIVCurve, repeats=True)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        import json
+
+        import plotly.graph_objects as go
+        import plotly.io as pio
+
         super().normalize(archive, logger)
         self.figures = []
 
@@ -897,29 +947,64 @@ class INLSolarCellIV(INLCharacterization, PlotSection):
 
             curve = self.iv_curves[best_idx]
             if curve.voltage is not None and curve.current is not None:
-                v = np.array(curve.voltage)
-                i_ma = np.array(curve.current) * 1000
-                fig = make_subplots(rows=1, cols=1)
-                trace = px.scatter(x=v, y=i_ma)
-                fig.add_trace(trace.data[0], row=1, col=1)
+                v_arr = np.array(curve.voltage)  # volts
+
+                # Look up cell area from matching result for mA/cm² conversion
+                area_cm2 = None
+                if self.results:
+                    matching = next(
+                        (r for r in self.results if r.measurement_name == curve.measurement_name),
+                        None,
+                    )
+                    if matching is None and best_idx < len(self.results):
+                        matching = self.results[best_idx]
+                    if matching is not None and matching.cell_area is not None:
+                        area_cm2 = float(
+                            matching.cell_area.to('centimeter**2').magnitude
+                        )
+
+                if area_cm2 and area_cm2 > 0:
+                    # Convert A → mA/cm²
+                    j_arr = np.array(curve.current) * 1000.0 / area_cm2
+                    y_label = 'Current Density (mA/cm²)'
+                else:
+                    # Fallback: plot in mA
+                    j_arr = np.array(curve.current) * 1000.0
+                    y_label = 'Current (mA)'
+
+                v = [None if not np.isfinite(x) else float(x) for x in v_arr]
+                j = [None if not np.isfinite(x) else float(x) for x in j_arr]
                 label = curve.measurement_name or 'Best cell'
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=v, y=j, mode='lines', name=label))
                 fig.update_layout(
                     template='plotly_white',
                     height=400,
                     width=716,
                     xaxis_title='Voltage (V)',
-                    yaxis_title='Current (mA)',
+                    yaxis_title=y_label,
                     title_text=f'JV Curve — {label}',
+                    dragmode='zoom',
+                    xaxis=dict(fixedrange=False),
+                    yaxis=dict(fixedrange=False),
                 )
                 self.figures.append(
-                    PlotlyFigure(label='Best JV', figure=fig.to_plotly_json())
+                    PlotlyFigure(label='Best JV', figure=json.loads(pio.to_json(fig)))
                 )
 
         # Boxplots of key parameters
         if self.results and len(self.results) > 1:
             params = {
-                'Voc (V)': [r.voc for r in self.results if r.voc is not None],
-                'Jsc (mA/cm²)': [r.jsc for r in self.results if r.jsc is not None],
+                'Voc (V)': [
+                    r.voc.to('volt').magnitude
+                    for r in self.results
+                    if r.voc is not None
+                ],
+                'Jsc (mA/cm²)': [
+                    r.jsc.to('milliampere/centimeter**2').magnitude
+                    for r in self.results
+                    if r.jsc is not None
+                ],
                 'Fill Factor': [
                     r.fill_factor for r in self.results if r.fill_factor is not None
                 ],
@@ -927,8 +1012,6 @@ class INLSolarCellIV(INLCharacterization, PlotSection):
                     r.efficiency for r in self.results if r.efficiency is not None
                 ],
             }
-            import plotly.graph_objects as go
-
             fig = make_subplots(rows=1, cols=4, subplot_titles=list(params.keys()))
             for col_idx, (name, vals) in enumerate(params.items(), start=1):
                 if vals:
@@ -945,7 +1028,7 @@ class INLSolarCellIV(INLCharacterization, PlotSection):
                 title_text='Solar Cell Parameters',
             )
             self.figures.append(
-                PlotlyFigure(label='Parameters', figure=fig.to_plotly_json())
+                PlotlyFigure(label='Parameters', figure=json.loads(pio.to_json(fig)))
             )
 
 
@@ -954,7 +1037,7 @@ class INLSolarCellIV(INLCharacterization, PlotSection):
 # ---------------------------------------------------------------------------
 
 
-class GDOESElementProfile(Section):
+class GDOESElementProfile(ArchiveSection):
     """Concentration profile for a single element."""
 
     element_name = Quantity(
@@ -985,18 +1068,36 @@ class INLGDOES(INLCharacterization, PlotSection):
         super().normalize(archive, logger)
         self.figures = []
         if self.depth is not None and self.element_profiles:
-            import plotly.graph_objects as go
+            import json
 
-            depth = np.array(self.depth)
+            import plotly.graph_objects as go
+            import plotly.io as pio
+
+            # self.depth is in µm (schema unit='micrometer', returned as-is)
+            depth_arr = np.array(self.depth)
+            # Use None for non-finite values so plotly renders them as gaps
+            # (avoids NaN in JSON which crashes the browser renderer)
+            depth = [None if not np.isfinite(v) else float(v) for v in depth_arr]
             fig = go.Figure()
             for profile in self.element_profiles:
                 if profile.concentration is not None:
+                    conc_arr = np.array(profile.concentration)
+                    n = min(len(depth), len(conc_arr))
+                    conc = [
+                        None if not np.isfinite(v) else float(v)
+                        for v in conc_arr[:n]
+                    ]
                     fig.add_trace(
                         go.Scatter(
-                            x=depth,
-                            y=np.array(profile.concentration),
+                            x=depth[:n],
+                            y=conc,
                             mode='lines',
                             name=profile.element_name or 'Unknown',
+                            hovertemplate=(
+                                '<b>%{fullData.name}</b><br>'
+                                'Depth: %{x:.4f} µm<br>'
+                                'Concentration: %{y:.2f} mol %<extra></extra>'
+                            ),
                         )
                     )
             fig.update_layout(
@@ -1006,10 +1107,345 @@ class INLGDOES(INLCharacterization, PlotSection):
                 xaxis_title='Depth (µm)',
                 yaxis_title='Concentration (mol %)',
                 title_text='GDOES Depth Profile',
+                dragmode='zoom',
+                xaxis=dict(fixedrange=False),
+                yaxis=dict(fixedrange=False),
+                showlegend=True,
+                legend=dict(
+                    title='Elements',
+                    itemclick='toggle',
+                    itemdoubleclick='toggleothers',
+                    bgcolor='rgba(255,255,255,0.8)',
+                    bordercolor='lightgrey',
+                    borderwidth=1,
+                ),
             )
+            # Use pio.to_json + json.loads to guarantee a JSON-safe dict
+            # (handles NaN/Inf that would otherwise break browser JS)
             self.figures.append(
-                PlotlyFigure(label='Depth Profile', figure=fig.to_plotly_json())
+                PlotlyFigure(
+                    label='Depth Profile',
+                    figure=json.loads(pio.to_json(fig)),
+                )
             )
+
+
+# ---------------------------------------------------------------------------
+# SEM (Scanning Electron Microscopy)
+# ---------------------------------------------------------------------------
+
+
+class INLSEMImage(MeasurementResult, PlotSection):
+    """Single SEM image with acquisition metadata parsed from FEI/TFS TIFF tag 34682."""
+
+    m_def = Section(label='SEM Image')
+
+    file_name = Quantity(
+        type=str,
+        description='File name of this image within the uploaded ZIP.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    label = Quantity(
+        type=str,
+        description='User annotation for this image.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    image_array = Quantity(
+        type=np.uint8,
+        shape=['*', '*'],
+        description='Grayscale pixel data (data bar cropped, downsampled to ≤1024 px for storage).',
+    )
+    width_pixels = Quantity(
+        type=np.int64,
+        description='Image width in pixels (Image/ResolutionX).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+    height_pixels = Quantity(
+        type=np.int64,
+        description='Image height in pixels (Image/ResolutionY).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+    accelerating_voltage = Quantity(
+        type=np.float64,
+        description='Accelerating voltage (EBeam/HV).',
+        unit='volt',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='kilovolt',
+        ),
+    )
+    magnification = Quantity(
+        type=np.float64,
+        description='Nominal magnification (Image/MagCanvasRealWidth / EBeam/HFW).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+    horizontal_field_width = Quantity(
+        type=np.float64,
+        description='Physical width of the full image (EBeam/HFW).',
+        unit='meter',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='micrometer',
+        ),
+    )
+    pixel_width = Quantity(
+        type=np.float64,
+        description='Physical width of one pixel (Scan/PixelWidth).',
+        unit='meter',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='nanometer',
+        ),
+    )
+    working_distance = Quantity(
+        type=np.float64,
+        description='Working distance (EBeam/WD).',
+        unit='meter',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='millimeter',
+        ),
+    )
+    detector_name = Quantity(
+        type=str,
+        description='Detector name (Detectors/Name), e.g. ETD, CBS.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    detector_mode = Quantity(
+        type=str,
+        description='Detector signal mode (Detectors/Mode), e.g. SE, BSE.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    emission_current = Quantity(
+        type=np.float64,
+        description='Source emission current (EBeam/EmissionCurrent).',
+        unit='ampere',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='microampere',
+        ),
+    )
+    dwell_time = Quantity(
+        type=np.float64,
+        description='Pixel dwell time (Scan/Dwelltime).',
+        unit='second',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='microsecond',
+        ),
+    )
+    stage_x = Quantity(
+        type=np.float64,
+        description='Stage X position (Stage/StageX).',
+        unit='meter',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='millimeter',
+        ),
+    )
+    stage_y = Quantity(
+        type=np.float64,
+        description='Stage Y position (Stage/StageY).',
+        unit='meter',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='millimeter',
+        ),
+    )
+    stage_z = Quantity(
+        type=np.float64,
+        description='Stage Z position (Stage/StageZ).',
+        unit='meter',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='millimeter',
+        ),
+    )
+    stage_tilt = Quantity(
+        type=np.float64,
+        description='Stage tilt angle in radians (Stage/StageT).',
+        unit='radian',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='degree',
+        ),
+    )
+    acquisition_datetime = Quantity(
+        type=str,
+        description='Date and time of image acquisition (User/Date + User/Time).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    operator = Quantity(
+        type=str,
+        description='Operator username (User/User).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self.figures = []
+        if self.image_array is None:
+            return
+        arr = np.array(self.image_array)
+        h, w = arr.shape
+        if self.pixel_width is not None:
+            pw_um = self.pixel_width.to('micrometer').magnitude
+            x_um = np.linspace(0.0, w * pw_um, w, endpoint=False)
+            y_um = np.linspace(0.0, h * pw_um, h, endpoint=False)
+            fig = px.imshow(
+                arr,
+                x=x_um,
+                y=y_um,
+                labels={'x': 'x (µm)', 'y': 'y (µm)', 'color': 'Intensity'},
+                color_continuous_scale='gray',
+                aspect='equal',
+            )
+        else:
+            fig = px.imshow(arr, color_continuous_scale='gray', aspect='equal')
+        det = self.detector_name or 'SEM'
+        mag_str = f' ×{int(self.magnification):,}' if self.magnification else ''
+        hfw_str = (
+            f'  HFW={self.horizontal_field_width.to("micrometer").magnitude:.2f} µm'
+            if self.horizontal_field_width
+            else ''
+        )
+        kv_str = (
+            f'  {self.accelerating_voltage.to("kilovolt").magnitude:.0f} kV'
+            if self.accelerating_voltage
+            else ''
+        )
+        fig.update_layout(
+            template='plotly_white',
+            height=500,
+            width=716,
+            title_text=f'{det}{mag_str}{hfw_str}{kv_str}',
+            coloraxis_showscale=False,
+        )
+        lbl = self.label or self.file_name or 'SEM Image'
+        self.figures.append(PlotlyFigure(label=lbl, figure=fig.to_plotly_json()))
+
+
+class INLSEMSession(INLCharacterization, PlotSection):
+    """SEM session: one or more images acquired during a single microscope session."""
+
+    m_def = Section(
+        label='INL SEM Session',
+        categories=[INLCharacterizationCategory],
+    )
+
+    microscope_model = Quantity(
+        type=str,
+        description='Microscope model (System/SystemType), e.g. "Quanta FEG".',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    source_type = Quantity(
+        type=str,
+        description='Electron source type (System/Source), e.g. "FEG".',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    images = SubSection(section_def=INLSEMImage, repeats=True)
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self.figures = []
+        if not self.images:
+            return
+        import json
+
+        import plotly.graph_objects as go
+        import plotly.io as pio
+
+        n = len(self.images)
+        # One column, one row per image — compute per-image height to match aspect ratio
+        PLOT_WIDTH = 716
+        row_heights = []
+        for img in self.images:
+            if img.image_array is not None:
+                arr = np.array(img.image_array)
+                ih, iw = arr.shape
+                row_heights.append(PLOT_WIDTH * ih / iw if iw > 0 else PLOT_WIDTH)
+            else:
+                row_heights.append(PLOT_WIDTH)
+
+        subtitles = []
+        for img in self.images:
+            det = img.detector_name or 'SEM'
+            mag_str = f' ×{int(img.magnification):,}' if img.magnification else ''
+            hfw_str = (
+                f'  HFW={img.horizontal_field_width.to("micrometer").magnitude:.1f} µm'
+                if img.horizontal_field_width
+                else ''
+            )
+            subtitles.append(f'{det}{mag_str}{hfw_str}')
+
+        fig = make_subplots(
+            rows=n,
+            cols=1,
+            subplot_titles=subtitles,
+            row_heights=row_heights,
+            vertical_spacing=0.02,
+        )
+
+        for idx, img in enumerate(self.images):
+            if img.image_array is None:
+                continue
+            row = idx + 1
+            arr = np.array(img.image_array)
+            ih, iw = arr.shape
+
+            if img.pixel_width is not None:
+                pw_um = img.pixel_width.to('micrometer').magnitude
+                x_um = np.linspace(0.0, iw * pw_um, iw, endpoint=False)
+                y_um = np.linspace(0.0, ih * pw_um, ih, endpoint=False)
+                heatmap = go.Heatmap(
+                    z=arr,
+                    x=x_um,
+                    y=y_um,
+                    colorscale='gray',
+                    showscale=False,
+                    name=subtitles[idx],
+                )
+                x_title = 'x (µm)'
+                y_title = 'y (µm)'
+            else:
+                heatmap = go.Heatmap(
+                    z=arr,
+                    colorscale='gray',
+                    showscale=False,
+                    name=subtitles[idx],
+                )
+                x_title = 'x (px)'
+                y_title = 'y (px)'
+
+            fig.add_trace(heatmap, row=row, col=1)
+            fig.update_xaxes(
+                title_text=x_title,
+                fixedrange=True,
+                row=row,
+                col=1,
+            )
+            fig.update_yaxes(
+                title_text=y_title,
+                autorange='reversed',
+                fixedrange=True,
+                scaleanchor=f'x{idx + 1 if idx > 0 else ""}',
+                scaleratio=1,
+                row=row,
+                col=1,
+            )
+
+        total_height = int(sum(row_heights)) + 60 * n  # extra for titles
+        fig.update_layout(
+            template='plotly_white',
+            height=total_height,
+            width=PLOT_WIDTH,
+            title_text='SEM Session Gallery',
+            dragmode=False,
+        )
+        self.figures.append(
+            PlotlyFigure(label='Gallery', figure=json.loads(pio.to_json(fig)))
+        )
 
 
 m_package.__init_metainfo__()

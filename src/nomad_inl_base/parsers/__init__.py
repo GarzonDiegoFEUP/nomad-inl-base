@@ -136,3 +136,23 @@ gdoes_parser_entry_point = GDOESParserEntryPoint(
     mainfile_name_re=r'(?i).*gdoes.*\.txt$',
     mainfile_mime_re=r'text/plain',
 )
+
+
+class SEMZipParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import SEMZipParser
+
+        return SEMZipParser(**self.dict())
+
+
+sem_zip_parser_entry_point = SEMZipParserEntryPoint(
+    name='SEMZipParser',
+    description=(
+        'Parser for FEI/ThermoFisher SEM TIFF images. '
+        'Matches the base image (no _NNN suffix) and collects all related images '
+        'into one INLSEMSession entry per sample group.'
+    ),
+    # Match the "base" tif (full path): YYMMDD - <name>.tif, no _NNN suffix
+    mainfile_name_re=r'(?i)(?:.*[/\\])?\d{6} - (?!.*_\d+\.tiff?$).*\.tiff?',
+    mainfile_mime_re=r'image/tiff',
+)
