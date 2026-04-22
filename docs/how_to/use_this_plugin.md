@@ -123,17 +123,69 @@ are recomputed automatically. If any threshold is exceeded,
 
 ### Cyclic voltammetry
 
-1. Create a new entry → **INL Cyclic Voltammetry** (`PotentiostatMeasurement`).
-2. Add **Current**, **Voltage**, and **Scan** time-series sub-sections with
-   your measured data.
-3. Set **Area electrode** if you want the plot to show current density
+1. Upload a `*mVs.xlsx` file (e.g. `sample_50mVs.xlsx`) — the parser creates
+   a `PotentiostatMeasurement` entry automatically.
+2. Set **Area electrode** if you want the plot to show current density
    instead of raw current.
-4. After normalization, a CV curve is displayed (scan 3 by default, scan 2 as
+3. After normalization, a CV curve is displayed (scan 3 by default, scan 2 as
    fallback).
 
 ### Chronoamperometry
 
-1. Create a new entry → **INL Chronoamperometry** (`ChronoamperometryMeasurement`).
-2. Set **Voltage applied** and add a **Current** time-series sub-section.
-3. Set **Area electrode** to normalize the curve to current density.
-4. The normalized entry displays a current (density) vs. time plot.
+1. Upload a `*ED.xlsx` file (e.g. `sample_ED.xlsx`) — the parser creates a
+   `ChronoamperometryMeasurement` entry automatically.
+2. Set **Voltage applied** and **Area electrode** as needed.
+3. The normalized entry displays a current (density) vs. time plot.
+
+### 4-Point probe sheet resistance
+
+1. Upload a `*4pp.xls` or `*4pp.xlsx` file — the parser creates an
+   `INLFourPointProbe` entry with the statistical summary and a spatial map.
+2. Open the entry to review individual `INLFourPointProbeResults` sub-sections.
+
+### KLA-Tencor profilometry
+
+1. Upload a `*[Pp]rofile.pdf` file — the parser creates an
+   `INLKLATencorProfiler` entry with step height and roughness values.
+2. Each measurement site becomes an `INLKLATencorProfilerResults` sub-section.
+
+### External Quantum Efficiency (EQE)
+
+1. Upload a `*eqe*.txt` file (case-insensitive) — the parser creates an
+   `INLEQE` entry with the EQE spectrum and extracted scalar parameters.
+2. Link a sample via the **Samples** reference field.
+
+### Solar cell IV
+
+1. Upload a `*Results Table*.txt` file (case-insensitive) — the parser creates
+   an `INLSolarCellIV` entry with JV curves and parameter boxplots.
+2. The best-efficiency cell's JV curve is plotted automatically.
+
+### GDOES depth profile
+
+1. Upload a `*gdoes*.txt` file (case-insensitive) — the parser creates an
+   `INLGDOES` entry with a per-element concentration vs. depth plot.
+
+### SEM session
+
+1. Upload FEI/ThermoFisher TIFF files named `YYMMDD - <name>.tif` (the base
+   image without a `_NNN` suffix) — all related images
+   (`YYMMDD - <name>_001.tif`, `_002.tif`, …) are grouped into one
+   `INLSEMSession` entry automatically.
+2. A gallery figure is generated with all images stacked vertically.
+3. Set **Label** on individual `INLSEMImage` sub-sections to annotate images.
+
+---
+
+## File naming for automatic parsing
+
+| Measurement type | Required file name pattern | Produces |
+|-----------------|---------------------------|---------|
+| Cyclic voltammetry | `*mVs.xlsx` | `PotentiostatMeasurement` |
+| Chronoamperometry | `*ED.xlsx` | `ChronoamperometryMeasurement` |
+| 4-Point probe | `*4pp.xls` or `*4pp.xlsx` | `INLFourPointProbe` |
+| KLA-Tencor profilometry | `*[Pp]rofile.pdf` | `INLKLATencorProfiler` |
+| EQE | `*eqe*.txt` *(case-insensitive)* | `INLEQE` |
+| Solar cell IV | `*Results Table*.txt` *(case-insensitive)* | `INLSolarCellIV` |
+| GDOES | `*gdoes*.txt` *(case-insensitive)* | `INLGDOES` |
+| SEM session | `YYMMDD - <name>.tif` *(base image, no `_NNN` suffix)* | `INLSEMSession` |

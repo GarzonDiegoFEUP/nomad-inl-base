@@ -22,14 +22,27 @@ Apply it to a deposition entry by referencing it and ticking **Apply recipe**.
 |-------------|------|-------------|
 | `instrument` | `InstrumentReference` | Default instrument |
 | `atmosphere` | `Atmosphere` | Default atmosphere (glovebox, ambient …) |
-| `substrate` | `INLSubstrateReference` | Default substrate |
-| `solution` | `PrecursorSolution` (repeats) | Default precursor(s) |
-| `annealing` | `Annealing` | Default annealing conditions |
-| `quenching` | `Quenching` | Default quenching conditions |
+| `solution` | `INLPrecursorSolution` (repeats) | Default precursor(s) |
+| `steps` | `INLWetDepositionStep` (repeats) | Ordered process steps |
 
 Recipe fields are copied to the deposition entry **only if the corresponding
 field is currently empty** (non-destructive merge). The `apply_recipe` toggle
 resets to `False` after a successful application.
+
+### Method-specific recipe classes
+
+Each deposition method has a dedicated recipe class that adds method-specific
+fields on top of `WetDepositionRecipe`:
+
+| Recipe class | Inherits | Extra fields |
+|---|---|---|
+| `INLSpinCoatingRecipe` | `INLSpinCoating` | All spin-coating fields (acts as a full template entry) |
+| `INLSlotDieCoatingRecipe` | `WetDepositionRecipe` | `properties: SlotDieCoatingProperties` |
+| `INLBladeCoatingRecipe` | `WetDepositionRecipe` | `properties: BladeCoatingProperties` |
+| `INLInkjetPrintingRecipe` | `WetDepositionRecipe` | `properties: InkjetPrintingProperties` |
+| `INLSprayPyrolysisRecipe` | `WetDepositionRecipe` | `properties: SprayPyrolysisProperties` |
+| `INLDipCoatingRecipe` | `WetDepositionRecipe` | `properties: DipCoatingProperties` |
+| `INLChemicalBathDepositionRecipe` | `WetDepositionRecipe` | `bath_temperature`, `duration`, `ph`, `stirring_speed`, `deposited_material` |
 
 ---
 
@@ -44,7 +57,8 @@ All deposition entry types below inherit from this base class.
 | `name` | `str` | Entry name (inherited) |
 | `operator` | `str` | Person who performed the deposition |
 | `tags` | `str` (list) | Free-text tags for search and filtering |
-| `creates_new_thin_film` | `bool` | Auto-create `INLThinFilm` + `INLThinFilmStack` entries |
+| `deposited_material` | `str` | Material of the deposited film (auto-filled from solution solute name if not set) |
+| `creates_new_thin_film` | `bool` | Auto-create or append an `INLThinFilm` + `INLThinFilmStack` entry |
 | `apply_recipe` | `bool` | Copy recipe fields into this entry on normalize |
 
 ### Shared sub-sections
@@ -53,23 +67,37 @@ All deposition entry types below inherit from this base class.
 |-------------|------|-------------|
 | `instrument` | `InstrumentReference` | Instrument used |
 | `atmosphere` | `Atmosphere` | Processing atmosphere |
-| `substrate` | `INLSubstrateReference` | Substrate used |
+| `substrate` | `INLSubstrateReference` | Bare substrate (used when depositing the first layer) |
+| `sample` | `INLThinFilmStackReference` | Existing stack to append a new layer to (or resulting stack after creation) |
+| `samples` | `INLSampleReference` (repeats) | Additional sample references |
 | `recipe` | `WetDepositionRecipeReference` | Recipe to apply |
-| `thin_film_stack` | `INLThinFilmStackReference` | Resulting stack (auto or manual) |
-| `solution` | `PrecursorSolution` (repeats) | Precursor solutions |
-| `annealing` | `Annealing` | Post-deposition anneal |
-| `quenching` | `Quenching` | Post-deposition quench |
+| `solution` | `INLPrecursorSolution` (repeats) | Precursor solutions |
+| `steps` | `INLWetDepositionStep` (repeats) | Ordered process steps (spin, anneal, quench, …) |
+
+### Process step types
+
+Steps are added to the `steps` list. Available step types:
+
+| Class | Label | Key quantities |
+|-------|-------|----------------|
+| `INLSpinCoatingStep` | Spin Coating Step | `speed` (rpm), `duration` (s), `acceleration` (rpm/s) |
+| `INLHotplateAnnealingStep` | Hotplate Annealing Step | `temperature` (°C), `duration` (min) |
+| `INLAntisolventQuenchingStep` | Antisolvent Quenching Step | `volume` (ml), `dispensing_speed` (ml/s) |
+
+Each step can optionally carry its own `solution` sub-sections to override the
+entry-level solution for that specific step.
 
 ### Auto-creation of film/stack entries
 
-When `creates_new_thin_film` is `True`, normalization:
+When `creates_new_thin_film` is `True`, normalization runs one of:
 
-1. Creates an `INLThinFilm` YAML entry in the upload
-2. Creates an `INLThinFilmStack` YAML entry linking the film and substrate
-3. Sets `thin_film_stack` to reference the new stack
-4. Resets `creates_new_thin_film` to `False`
+- **Case A – `sample` already set:** creates an `INLThinFilm` entry and appends
+  it as a new layer to the existing stack (writes back to the stack YAML).
+- **Case B – only `substrate` set:** creates an `INLThinFilm` entry and a new
+  `INLThinFilmStack` linking the film and substrate; sets `sample`.
+- **Case C – neither set:** logs a warning and skips creation.
 
-If `thin_film_stack` already points to an entry the step is skipped.
+In all cases `creates_new_thin_film` resets to `False` after one run.
 
 ---
 
@@ -79,9 +107,11 @@ If `thin_film_stack` already points to an entry the step is skipped.
 **Method label:** `Spin Coating`  
 **Ontology:** [CHMO:0001472](http://purl.obolibrary.org/obo/CHMO_0001472)
 
-| Sub-section | Type | Description |
-|-------------|------|-------------|
-| `recipe_steps` | `SpinCoatingRecipeSteps` (repeats) | Speed, acceleration, and time for each stage |
+Uses the shared `steps` list (see base class). Add `INLSpinCoatingStep`,
+`INLHotplateAnnealingStep`, and/or `INLAntisolventQuenchingStep` entries in order.
+
+**Recipe class:** `INLSpinCoatingRecipe` — a full spin-coating entry that acts as
+a reusable template (inherits all `INLSpinCoating` fields).
 
 ---
 
@@ -158,4 +188,5 @@ Additional quantities specific to CBD:
 | `bath_temperature` | `float` | °C | Temperature of the chemical bath |
 | `duration` | `float` | min | Total deposition duration |
 | `ph` | `float` | – | pH of the bath |
+| `color_change_time` | `float` | min | Time at which a colour change was observed |
 | `stirring_speed` | `float` | rpm | Stirring speed during deposition |

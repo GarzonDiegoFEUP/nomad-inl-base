@@ -108,6 +108,28 @@ mkdocs serve
 ```
 
 
+## File naming for automatic parsing
+
+Several measurement types are parsed automatically when you upload a file whose
+name matches the pattern below. The parser creates the corresponding NOMAD entry
+without any manual steps.
+
+| Measurement type | Required file name pattern | Example |
+|-----------------|---------------------------|---------|
+| Cyclic voltammetry | `*mVs.xlsx` | `sample_50mVs.xlsx` |
+| Chronoamperometry | `*ED.xlsx` | `sample_ED.xlsx` |
+| 4-Point probe | `*4pp.xls` or `*4pp.xlsx` | `sample_4pp.xlsx` |
+| KLA-Tencor profilometry | `*[Pp]rofile.pdf` | `sample_Profile.pdf` |
+| External quantum efficiency (EQE) | `*eqe*.txt` *(case-insensitive)* | `sample_EQE_data.txt` |
+| Solar cell IV | `*Results Table*.txt` *(case-insensitive)* | `sample_Results Table.txt` |
+| GDOES depth profile | `*gdoes*.txt` *(case-insensitive)* | `sample_GDOES.txt` |
+| SEM session (FEI/TFS TIFF) | `YYMMDD - <name>.tif` *(base image, no `_NNN` suffix)* | `250115 - sample.tif` |
+
+> **Note:** For XRD (`.xrdml`, `.rasx`, `.brml`, `.raw`) and UV-Vis (`.asc`),
+> file naming is handled by `nomad-measurements` — no special naming is required.
+
+---
+
 ## Adding this plugin to NOMAD
 
 Currently, NOMAD has two distinct flavors that are relevant depending on your role as an user:

@@ -16,6 +16,7 @@ nav:
   - Explanation: explanation/explanation.md
   - Reference:
       - Overview: reference/references.md
+      - Entities: reference/entities.md
       - STAR Sputtering: reference/sputtering.md
       - Wet Deposition: reference/wet_deposition.md
       - Characterization: reference/characterization.md
