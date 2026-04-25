@@ -100,22 +100,18 @@ class EDParser(MatchingParser):
         # create a ED archive
         ED_filename = f'{data_file}.ED_measurement.archive.{filetype}'
 
-        if archive.m_context.raw_path_exists(ED_filename):
-            logger.warn(f'Process archive already exists: {ED_filename}')
-        else:
+        if not archive.m_context.raw_path_exists(ED_filename):
             ED_archive = EntryArchive(
-                data=ED_measurement if ED_filename else ChronoamperometryMeasurement(),
-                # m_context=archive.m_context,
+                data=ED_measurement,
                 metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
             )
-
-        create_archive(
-            ED_archive.m_to_dict(),
-            archive.m_context,
-            ED_filename,
-            filetype,
-            logger,
-        )
+            create_archive(
+                ED_archive.m_to_dict(),
+                archive.m_context,
+                ED_filename,
+                filetype,
+                logger,
+            )
 
         archive.data = RawFile_(
             name=data_file + '_raw',
@@ -190,22 +186,18 @@ class CVParser(MatchingParser):
         # create a CV archive
         CV_filename = f'{data_file}.CV_measurement.archive.{filetype}'
 
-        if archive.m_context.raw_path_exists(CV_filename):
-            logger.warn(f'Process archive already exists: {CV_filename}')
-        else:
+        if not archive.m_context.raw_path_exists(CV_filename):
             CV_archive = EntryArchive(
-                data=CV_measurement if CV_filename else PotentiostatMeasurement(),
-                # m_context=archive.m_context,
+                data=CV_measurement,
                 metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
             )
-
-        create_archive(
-            CV_archive.m_to_dict(),
-            archive.m_context,
-            CV_filename,
-            filetype,
-            logger,
-        )
+            create_archive(
+                CV_archive.m_to_dict(),
+                archive.m_context,
+                CV_filename,
+                filetype,
+                logger,
+            )
 
         archive.data = RawFile_(
             name=data_file + '_raw',
@@ -1650,7 +1642,31 @@ class SEMZipParser(MatchingParser):
                 )
             )
 
+        # ----------------------------------------------------------------
+        # Write a sidecar archive for the INLSEMSession on first parse only.
+        # On subsequent reprocesses (e.g. after user edits sample references)
+        # the file already exists and is left untouched, preserving all ELN edits.
+        # ----------------------------------------------------------------
         session.microscope_model = microscope_model
         session.source_type = source_type
         session.images = images
-        archive.data = session
+
+        sidecar_filename = f'{base_name}.SEMSession.archive.yaml'
+        if not archive.m_context.raw_path_exists(sidecar_filename):
+            sem_archive = EntryArchive(
+                data=session,
+                metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
+            )
+            create_archive(
+                sem_archive.m_to_dict(),
+                archive.m_context,
+                sidecar_filename,
+                'yaml',
+                logger,
+            )
+
+        archive.data = RawFile_(
+            name=base_name + '_sem_raw',
+            file_=get_hash_ref(archive.m_context.upload_id, base_name),
+        )
+        archive.metadata.entry_name = base_name

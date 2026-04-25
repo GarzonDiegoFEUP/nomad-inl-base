@@ -75,10 +75,17 @@ class INLSampleReference(CompositeSystemReference):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
         if self.reference is not None:
-            if self.reference.name is not None:
-                self.name = self.reference.name
-            if self.reference.lab_id is not None:
-                self.lab_id = self.reference.lab_id
+            try:
+                if self.reference.name is not None:
+                    self.name = self.reference.name
+                if self.reference.lab_id is not None:
+                    self.lab_id = self.reference.lab_id
+            except Exception as exc:
+                logger.warning(
+                    'INLSampleReference: could not resolve sample reference '
+                    'to read name/lab_id.',
+                    exc_info=exc,
+                )
 
 
 class INLSubstrate(Substrate, INLSample, EntryData):
