@@ -1,0 +1,1222 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A plugin to manage the data from LaNaSC">
+      
+      
+        <meta name="author" content="Diego Garzon">
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-8.1.1">
+    
+    
+      
+        <title>Wet Deposition - nomad-inl-base</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.23b6d78a.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+          
+          
+          <meta name="theme-color" content="">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,400i,700%7C&display=fallback">
+        <style>:root{--md-text-font:"Titillium Web";--md-code-font:""}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="#2a4cdf" data-md-color-accent="#008a67">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#reference-wet-deposition" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-header__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            nomad-inl-base
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Wet Deposition
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-nav__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    nomad-inl-base
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/tutorial.html" class="md-nav__link">
+        Tutorial
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How-to guides" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/install_this_plugin.html" class="md-nav__link">
+        Install this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/use_this_plugin.html" class="md-nav__link">
+        Use this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_this_plugin.html" class="md-nav__link">
+        Contribute to this plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_the_documentation.html" class="md-nav__link">
+        Contribute to the documentation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explanation/explanation.html" class="md-nav__link">
+        Explanation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="references.html" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="entities.html" class="md-nav__link">
+        Entities
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sputtering.html" class="md-nav__link">
+        STAR Sputtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Wet Deposition
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="wet_deposition.html" class="md-nav__link md-nav__link--active">
+        Wet Deposition
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#wetdepositionrecipe" class="md-nav__link">
+    WetDepositionRecipe
+  </a>
+  
+    <nav class="md-nav" aria-label="WetDepositionRecipe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#method-specific-recipe-classes" class="md-nav__link">
+    Method-specific recipe classes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlthinfilmdeposition-base" class="md-nav__link">
+    INLThinFilmDeposition (base)
+  </a>
+  
+    <nav class="md-nav" aria-label="INLThinFilmDeposition (base)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#shared-quantities" class="md-nav__link">
+    Shared quantities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shared-sub-sections" class="md-nav__link">
+    Shared sub-sections
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process-step-types" class="md-nav__link">
+    Process step types
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto-creation-of-filmstack-entries" class="md-nav__link">
+    Auto-creation of film/stack entries
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlspincoating" class="md-nav__link">
+    INLSpinCoating
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlslotdiecoating" class="md-nav__link">
+    INLSlotDieCoating
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlbladecoating" class="md-nav__link">
+    INLBladeCoating
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlinkjetprinting" class="md-nav__link">
+    INLInkjetPrinting
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlspraypyrolysis" class="md-nav__link">
+    INLSprayPyrolysis
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inldipcoating" class="md-nav__link">
+    INLDipCoating
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlchemicalbathdeposition" class="md-nav__link">
+    INLChemicalBathDeposition
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="characterization.html" class="md-nav__link">
+        Characterization
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#wetdepositionrecipe" class="md-nav__link">
+    WetDepositionRecipe
+  </a>
+  
+    <nav class="md-nav" aria-label="WetDepositionRecipe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#method-specific-recipe-classes" class="md-nav__link">
+    Method-specific recipe classes
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlthinfilmdeposition-base" class="md-nav__link">
+    INLThinFilmDeposition (base)
+  </a>
+  
+    <nav class="md-nav" aria-label="INLThinFilmDeposition (base)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#shared-quantities" class="md-nav__link">
+    Shared quantities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shared-sub-sections" class="md-nav__link">
+    Shared sub-sections
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process-step-types" class="md-nav__link">
+    Process step types
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto-creation-of-filmstack-entries" class="md-nav__link">
+    Auto-creation of film/stack entries
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlspincoating" class="md-nav__link">
+    INLSpinCoating
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlslotdiecoating" class="md-nav__link">
+    INLSlotDieCoating
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlbladecoating" class="md-nav__link">
+    INLBladeCoating
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlinkjetprinting" class="md-nav__link">
+    INLInkjetPrinting
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlspraypyrolysis" class="md-nav__link">
+    INLSprayPyrolysis
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inldipcoating" class="md-nav__link">
+    INLDipCoating
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlchemicalbathdeposition" class="md-nav__link">
+    INLChemicalBathDeposition
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="reference-wet-deposition">Reference – Wet Deposition<a class="headerlink" href="#reference-wet-deposition" title="Permanent link">&para;</a></h1>
+<p>This page documents all ELN entry types in the <strong>INL Wet Deposition</strong> category.</p>
+<hr />
+<h2 id="wetdepositionrecipe">WetDepositionRecipe<a class="headerlink" href="#wetdepositionrecipe" title="Permanent link">&para;</a></h2>
+<p><strong>Base class:</strong> <code>EntryData</code></p>
+<p>A reusable template that stores standard parameters for a wet deposition process.
+Apply it to a deposition entry by referencing it and ticking <strong>Apply recipe</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td><code>str</code></td>
+<td>Recipe name</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td><code>str</code></td>
+<td>Rich-text description</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Sub-sections:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Sub-section</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>instrument</code></td>
+<td><code>InstrumentReference</code></td>
+<td>Default instrument</td>
+</tr>
+<tr>
+<td><code>atmosphere</code></td>
+<td><code>Atmosphere</code></td>
+<td>Default atmosphere (glovebox, ambient …)</td>
+</tr>
+<tr>
+<td><code>solution</code></td>
+<td><code>INLPrecursorSolution</code> (repeats)</td>
+<td>Default precursor(s)</td>
+</tr>
+<tr>
+<td><code>steps</code></td>
+<td><code>INLWetDepositionStep</code> (repeats)</td>
+<td>Ordered process steps</td>
+</tr>
+</tbody>
+</table>
+<p>Recipe fields are copied to the deposition entry <strong>only if the corresponding
+field is currently empty</strong> (non-destructive merge). The <code>apply_recipe</code> toggle
+resets to <code>False</code> after a successful application.</p>
+<h3 id="method-specific-recipe-classes">Method-specific recipe classes<a class="headerlink" href="#method-specific-recipe-classes" title="Permanent link">&para;</a></h3>
+<p>Each deposition method has a dedicated recipe class that adds method-specific
+fields on top of <code>WetDepositionRecipe</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Recipe class</th>
+<th>Inherits</th>
+<th>Extra fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>INLSpinCoatingRecipe</code></td>
+<td><code>INLSpinCoating</code></td>
+<td>All spin-coating fields (acts as a full template entry)</td>
+</tr>
+<tr>
+<td><code>INLSlotDieCoatingRecipe</code></td>
+<td><code>WetDepositionRecipe</code></td>
+<td><code>properties: SlotDieCoatingProperties</code></td>
+</tr>
+<tr>
+<td><code>INLBladeCoatingRecipe</code></td>
+<td><code>WetDepositionRecipe</code></td>
+<td><code>properties: BladeCoatingProperties</code></td>
+</tr>
+<tr>
+<td><code>INLInkjetPrintingRecipe</code></td>
+<td><code>WetDepositionRecipe</code></td>
+<td><code>properties: InkjetPrintingProperties</code></td>
+</tr>
+<tr>
+<td><code>INLSprayPyrolysisRecipe</code></td>
+<td><code>WetDepositionRecipe</code></td>
+<td><code>properties: SprayPyrolysisProperties</code></td>
+</tr>
+<tr>
+<td><code>INLDipCoatingRecipe</code></td>
+<td><code>WetDepositionRecipe</code></td>
+<td><code>properties: DipCoatingProperties</code></td>
+</tr>
+<tr>
+<td><code>INLChemicalBathDepositionRecipe</code></td>
+<td><code>WetDepositionRecipe</code></td>
+<td><code>bath_temperature</code>, <code>duration</code>, <code>ph</code>, <code>stirring_speed</code>, <code>deposited_material</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="inlthinfilmdeposition-base">INLThinFilmDeposition (base)<a class="headerlink" href="#inlthinfilmdeposition-base" title="Permanent link">&para;</a></h2>
+<p>All deposition entry types below inherit from this base class.</p>
+<h3 id="shared-quantities">Shared quantities<a class="headerlink" href="#shared-quantities" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td><code>str</code></td>
+<td>Entry name (inherited)</td>
+</tr>
+<tr>
+<td><code>operator</code></td>
+<td><code>str</code></td>
+<td>Person who performed the deposition</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td><code>str</code> (list)</td>
+<td>Free-text tags for search and filtering</td>
+</tr>
+<tr>
+<td><code>deposited_material</code></td>
+<td><code>str</code></td>
+<td>Material of the deposited film (auto-filled from solution solute name if not set)</td>
+</tr>
+<tr>
+<td><code>creates_new_thin_film</code></td>
+<td><code>bool</code></td>
+<td>Auto-create or append an <code>INLThinFilm</code> + <code>INLThinFilmStack</code> entry</td>
+</tr>
+<tr>
+<td><code>apply_recipe</code></td>
+<td><code>bool</code></td>
+<td>Copy recipe fields into this entry on normalize</td>
+</tr>
+</tbody>
+</table>
+<h3 id="shared-sub-sections">Shared sub-sections<a class="headerlink" href="#shared-sub-sections" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Sub-section</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>instrument</code></td>
+<td><code>InstrumentReference</code></td>
+<td>Instrument used</td>
+</tr>
+<tr>
+<td><code>atmosphere</code></td>
+<td><code>Atmosphere</code></td>
+<td>Processing atmosphere</td>
+</tr>
+<tr>
+<td><code>substrate</code></td>
+<td><code>INLSubstrateReference</code></td>
+<td>Bare substrate (used when depositing the first layer)</td>
+</tr>
+<tr>
+<td><code>sample</code></td>
+<td><code>INLThinFilmStackReference</code></td>
+<td>Existing stack to append a new layer to (or resulting stack after creation)</td>
+</tr>
+<tr>
+<td><code>samples</code></td>
+<td><code>INLSampleReference</code> (repeats)</td>
+<td>Additional sample references</td>
+</tr>
+<tr>
+<td><code>recipe</code></td>
+<td><code>WetDepositionRecipeReference</code></td>
+<td>Recipe to apply</td>
+</tr>
+<tr>
+<td><code>solution</code></td>
+<td><code>INLPrecursorSolution</code> (repeats)</td>
+<td>Precursor solutions</td>
+</tr>
+<tr>
+<td><code>steps</code></td>
+<td><code>INLWetDepositionStep</code> (repeats)</td>
+<td>Ordered process steps (spin, anneal, quench, …)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="process-step-types">Process step types<a class="headerlink" href="#process-step-types" title="Permanent link">&para;</a></h3>
+<p>Steps are added to the <code>steps</code> list. Available step types:</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Label</th>
+<th>Key quantities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>INLSpinCoatingStep</code></td>
+<td>Spin Coating Step</td>
+<td><code>speed</code> (rpm), <code>duration</code> (s), <code>acceleration</code> (rpm/s)</td>
+</tr>
+<tr>
+<td><code>INLHotplateAnnealingStep</code></td>
+<td>Hotplate Annealing Step</td>
+<td><code>temperature</code> (°C), <code>duration</code> (min)</td>
+</tr>
+<tr>
+<td><code>INLAntisolventQuenchingStep</code></td>
+<td>Antisolvent Quenching Step</td>
+<td><code>volume</code> (ml), <code>dispensing_speed</code> (ml/s)</td>
+</tr>
+</tbody>
+</table>
+<p>Each step can optionally carry its own <code>solution</code> sub-sections to override the
+entry-level solution for that specific step.</p>
+<h3 id="auto-creation-of-filmstack-entries">Auto-creation of film/stack entries<a class="headerlink" href="#auto-creation-of-filmstack-entries" title="Permanent link">&para;</a></h3>
+<p>When <code>creates_new_thin_film</code> is <code>True</code>, normalization runs one of:</p>
+<ul>
+<li><strong>Case A – <code>sample</code> already set:</strong> creates an <code>INLThinFilm</code> entry and appends
+  it as a new layer to the existing stack (writes back to the stack YAML).</li>
+<li><strong>Case B – only <code>substrate</code> set:</strong> creates an <code>INLThinFilm</code> entry and a new
+  <code>INLThinFilmStack</code> linking the film and substrate; sets <code>sample</code>.</li>
+<li><strong>Case C – neither set:</strong> logs a warning and skips creation.</li>
+</ul>
+<p>In all cases <code>creates_new_thin_film</code> resets to <code>False</code> after one run.</p>
+<hr />
+<h2 id="inlspincoating">INLSpinCoating<a class="headerlink" href="#inlspincoating" title="Permanent link">&para;</a></h2>
+<p><strong>Inherits:</strong> <code>INLThinFilmDeposition</code><br />
+<strong>Method label:</strong> <code>Spin Coating</code><br />
+<strong>Ontology:</strong> <a href="http://purl.obolibrary.org/obo/CHMO_0001472">CHMO:0001472</a></p>
+<p>Uses the shared <code>steps</code> list (see base class). Add <code>INLSpinCoatingStep</code>,
+<code>INLHotplateAnnealingStep</code>, and/or <code>INLAntisolventQuenchingStep</code> entries in order.</p>
+<p><strong>Recipe class:</strong> <code>INLSpinCoatingRecipe</code> — a full spin-coating entry that acts as
+a reusable template (inherits all <code>INLSpinCoating</code> fields).</p>
+<hr />
+<h2 id="inlslotdiecoating">INLSlotDieCoating<a class="headerlink" href="#inlslotdiecoating" title="Permanent link">&para;</a></h2>
+<p><strong>Inherits:</strong> <code>INLThinFilmDeposition</code><br />
+<strong>Method label:</strong> <code>Slot-Die Coating</code><br />
+<strong>Ontology:</strong> <a href="https://purl.archive.org/tfsco/TFSCO_00000075">TFSCO:00000075</a></p>
+<table>
+<thead>
+<tr>
+<th>Sub-section</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>properties</code></td>
+<td><code>SlotDieCoatingProperties</code></td>
+<td>Head gap, coating speed, flow rate, etc.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="inlbladecoating">INLBladeCoating<a class="headerlink" href="#inlbladecoating" title="Permanent link">&para;</a></h2>
+<p><strong>Inherits:</strong> <code>INLThinFilmDeposition</code><br />
+<strong>Method label:</strong> <code>Blade Coating</code><br />
+<strong>Ontology:</strong> <a href="https://purl.archive.org/tfsco/TFSCO_00002060">TFSCO:00002060</a></p>
+<table>
+<thead>
+<tr>
+<th>Sub-section</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>properties</code></td>
+<td><code>BladeCoatingProperties</code></td>
+<td>Blade gap, speed, temperature, etc.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="inlinkjetprinting">INLInkjetPrinting<a class="headerlink" href="#inlinkjetprinting" title="Permanent link">&para;</a></h2>
+<p><strong>Inherits:</strong> <code>INLThinFilmDeposition</code><br />
+<strong>Method label:</strong> <code>Inkjet Printing</code><br />
+<strong>Ontology:</strong> <a href="https://purl.archive.org/tfsco/TFSCO_00002053">TFSCO:00002053</a></p>
+<table>
+<thead>
+<tr>
+<th>Sub-section</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>properties</code></td>
+<td><code>InkjetPrintingProperties</code></td>
+<td>Drop volume, firing frequency, nozzle parameters</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="inlspraypyrolysis">INLSprayPyrolysis<a class="headerlink" href="#inlspraypyrolysis" title="Permanent link">&para;</a></h2>
+<p><strong>Inherits:</strong> <code>INLThinFilmDeposition</code><br />
+<strong>Method label:</strong> <code>Spray Pyrolysis</code><br />
+<strong>Ontology:</strong> <a href="http://purl.obolibrary.org/obo/CHMO_0001516">CHMO:0001516</a></p>
+<table>
+<thead>
+<tr>
+<th>Sub-section</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>properties</code></td>
+<td><code>SprayPyrolysisProperties</code></td>
+<td>Nozzle type, carrier gas, substrate temperature</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="inldipcoating">INLDipCoating<a class="headerlink" href="#inldipcoating" title="Permanent link">&para;</a></h2>
+<p><strong>Inherits:</strong> <code>INLThinFilmDeposition</code><br />
+<strong>Method label:</strong> <code>Dip Coating</code><br />
+<strong>Ontology:</strong> <a href="http://purl.obolibrary.org/obo/CHMO_0001471">CHMO:0001471</a></p>
+<table>
+<thead>
+<tr>
+<th>Sub-section</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>properties</code></td>
+<td><code>DipCoatingProperties</code></td>
+<td>Withdrawal speed, immersion time, solution viscosity</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="inlchemicalbathdeposition">INLChemicalBathDeposition<a class="headerlink" href="#inlchemicalbathdeposition" title="Permanent link">&para;</a></h2>
+<p><strong>Inherits:</strong> <code>INLThinFilmDeposition</code><br />
+<strong>Method label:</strong> <code>Chemical Bath Deposition</code><br />
+<strong>Ontology:</strong> <a href="http://purl.obolibrary.org/obo/CHMO_0001465">CHMO:0001465</a></p>
+<p>Additional quantities specific to CBD:</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Type</th>
+<th>Unit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bath_temperature</code></td>
+<td><code>float</code></td>
+<td>°C</td>
+<td>Temperature of the chemical bath</td>
+</tr>
+<tr>
+<td><code>duration</code></td>
+<td><code>float</code></td>
+<td>min</td>
+<td>Total deposition duration</td>
+</tr>
+<tr>
+<td><code>ph</code></td>
+<td><code>float</code></td>
+<td>–</td>
+<td>pH of the bath</td>
+</tr>
+<tr>
+<td><code>color_change_time</code></td>
+<td><code>float</code></td>
+<td>min</td>
+<td>Time at which a colour change was observed</td>
+</tr>
+<tr>
+<td><code>stirring_speed</code></td>
+<td><code>float</code></td>
+<td>rpm</td>
+<td>Stirring speed during deposition</td>
+</tr>
+</tbody>
+</table>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="sputtering.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: STAR Sputtering" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              STAR Sputtering
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="characterization.html" class="md-footer__link md-footer__link--next" aria-label="Next: Characterization" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Characterization
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant"], "search": "../assets/javascripts/workers/search.c7dec7e7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.da79ceb7.min.js"></script>
+      
+        <script src="../javascript.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
