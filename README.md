@@ -124,6 +124,7 @@ without any manual steps.
 | Solar cell IV | `*Results Table*.txt` *(case-insensitive)* | `sample_Results Table.txt` |
 | GDOES depth profile | `*gdoes*.txt` *(case-insensitive)* | `sample_GDOES.txt` |
 | SEM session (FEI/TFS TIFF) | `YYMMDD - <name>.tif` *(base image, no `_NNN` suffix)* | `250115 - sample.tif` |
+| EDX/EDS spectrum (EMSA) | `.txt`, `.msa`, `.emsa`, or `.ems` with `#FORMAT : EMSA` in header | `sample_edx.msa` |
 
 > **Note:** For XRD (`.xrdml`, `.rasx`, `.brml`, `.raw`) and UV-Vis (`.asc`),
 > file naming is handled by `nomad-measurements` — no special naming is required.

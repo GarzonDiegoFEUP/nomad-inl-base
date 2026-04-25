@@ -427,3 +427,55 @@ Holds pixel data and all acquisition metadata for one image. A calibrated
 | `stage_tilt` | ° | Stage tilt angle |
 | `acquisition_datetime` | – | Date and time of acquisition |
 | `operator` | – | Operator username |
+
+---
+
+## INLEDXSpectrum
+
+**Base class:** `INLCharacterization`, `PlotSection`  
+**Label:** `INL EDX Spectrum`
+
+Energy-Dispersive X-ray (EDX/EDS) spectrum acquired in a SEM, parsed from an
+EMSA/MAS text file. Plots counts vs. energy (keV) automatically.
+
+**File format:** upload any `.txt`, `.msa`, `.emsa`, or `.ems` file whose
+contents contain the header line `#FORMAT : EMSA` — the parser creates the
+entry automatically.
+
+### Acquisition quantities
+
+| Quantity | Type | Unit | Description |
+|----------|------|------|-------------|
+| `beam_energy` | `float` | keV | Accelerating voltage |
+| `live_time` | `float` | s | Detector live time |
+| `real_time` | `float` | s | Real (clock) time |
+| `probe_current` | `float` | nA | Electron probe current |
+| `magnification` | `float` | – | SEM magnification |
+| `tilt_angle` | `float` | ° | Stage X tilt angle |
+| `elevation_angle` | `float` | ° | Detector elevation angle |
+| `azimuth_angle` | `float` | ° | Detector azimuth angle |
+| `x_stage_position` | `float` | mm | Stage X position |
+| `y_stage_position` | `float` | mm | Stage Y position |
+| `z_stage_position` | `float` | mm | Stage Z / working distance |
+| `signal_type` | `str` | – | Signal type from EMSA header (e.g. `EDS`) |
+| `n_channels` | `int` | – | Number of spectrum channels |
+| `energy_per_channel` | `float` | keV | Energy width per channel (XPERCHAN) |
+| `energy_offset` | `float` | keV | Energy offset of channel zero (OFFSET) |
+| `vendor_annotations` | `str` | – | Raw vendor-specific header lines (e.g. Oxford Instruments) |
+
+### Sub-sections
+
+| Sub-section | Type | Description |
+|-------------|------|-------------|
+| `results` | `EDXSpectrumResult` (repeats) | Raw spectral data |
+
+### EDXSpectrumResult
+
+| Quantity | Unit | Description |
+|----------|------|-------------|
+| `energy_axis` | keV | Energy axis values (one per channel) |
+| `counts` | – | Raw X-ray counts per channel |
+
+### Normalization behavior
+
+- Plots counts vs. energy (keV) for the first `EDXSpectrumResult`

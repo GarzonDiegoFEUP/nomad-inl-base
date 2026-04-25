@@ -166,6 +166,14 @@ are recomputed automatically. If any threshold is exceeded,
 1. Upload a `*gdoes*.txt` file (case-insensitive) — the parser creates an
    `INLGDOES` entry with a per-element concentration vs. depth plot.
 
+### EDX/EDS spectrum
+
+1. Upload an EMSA/MAS text file (`.txt`, `.msa`, `.emsa`, or `.ems`) whose
+   first few lines contain `#FORMAT : EMSA` — the parser creates an
+   `INLEDXSpectrum` entry with a counts vs. energy plot.
+2. Acquisition metadata (beam energy, live time, stage position, etc.) is
+   parsed from the EMSA header automatically.
+
 ### SEM session
 
 1. Upload FEI/ThermoFisher TIFF files named `YYMMDD - <name>.tif` (the base
@@ -189,3 +197,4 @@ are recomputed automatically. If any threshold is exceeded,
 | Solar cell IV | `*Results Table*.txt` *(case-insensitive)* | `INLSolarCellIV` |
 | GDOES | `*gdoes*.txt` *(case-insensitive)* | `INLGDOES` |
 | SEM session | `YYMMDD - <name>.tif` *(base image, no `_NNN` suffix)* | `INLSEMSession` |
+| EDX/EDS spectrum | `.txt`/`.msa`/`.emsa`/`.ems` with `#FORMAT : EMSA` header | `INLEDXSpectrum` |
