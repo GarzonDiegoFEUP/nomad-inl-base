@@ -1343,11 +1343,66 @@ class INLSEMSession(INLCharacterization, PlotSection):
         description='Electron source type (System/Source), e.g. "FEG".',
         a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
     )
+    raw_dir = Quantity(
+        type=str,
+        description=(
+            'Path to the directory containing the source TIFF files, '
+            'relative to the upload raw root. Set by the parser; used by '
+            'normalize to load pixel data without storing arrays in the archive.'
+        ),
+    )
 
     images = SubSection(section_def=INLSEMImage, repeats=True)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+        # ----------------------------------------------------------------
+        # Load pixel data from source TIFFs.
+        # image_array is intentionally excluded from the sidecar YAML to
+        # keep the file small.  We reload it here on every normalization
+        # from the original TIFF files stored in the upload.
+        # ----------------------------------------------------------------
+        if self.raw_dir and self.images and hasattr(archive.m_context, 'raw_path'):
+            import os
+
+            from PIL import Image as _PilImage
+
+            _MAX_PX = 1024
+            raw_root = archive.m_context.raw_path
+            tif_dir = os.path.join(raw_root, self.raw_dir)
+            for img in self.images:
+                if img.file_name and os.path.isdir(tif_dir):
+                    tif_path = os.path.join(tif_dir, img.file_name)
+                    if os.path.exists(tif_path):
+                        try:
+                            res_x = int(img.width_pixels) if img.width_pixels is not None else None
+                            res_y = int(img.height_pixels) if img.height_pixels is not None else None
+                            with _PilImage.open(tif_path) as pil_img:
+                                if res_x is None:
+                                    res_x = pil_img.width
+                                if res_y is None:
+                                    res_y = pil_img.height
+                                arr = np.array(pil_img.convert('L'))[:res_y, :res_x]
+                            ih, iw = arr.shape
+                            if max(ih, iw) > _MAX_PX:
+                                scale = _MAX_PX / max(ih, iw)
+                                new_h = max(1, int(ih * scale))
+                                new_w = max(1, int(iw * scale))
+                                arr = np.array(
+                                    _PilImage.fromarray(arr).resize(
+                                        (new_w, new_h), _PilImage.LANCZOS
+                                    )
+                                )
+                            img.image_array = arr.astype(np.uint8)
+                            # Also trigger per-image figure now that array is loaded
+                            img.normalize(archive, logger)
+                        except Exception as exc:
+                            logger.warning(
+                                f'INLSEMSession: could not load pixel data for {img.file_name}',
+                                exc_info=exc,
+                            )
+
         self.figures = []
         if not self.images:
             return

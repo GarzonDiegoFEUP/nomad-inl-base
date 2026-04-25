@@ -1537,24 +1537,22 @@ class SEMZipParser(MatchingParser):
         import glob
         import os
 
-        from PIL import Image
-
         from nomad_inl_base.schema_packages.characterization import (
             INLSEMImage,
             INLSEMSession,
         )
 
-        _MAX_PX = 1024  # downsample stored array to ≤ this dimension
-
         # Base name prefix (without extension) — used to collect _NNN sibling files
         base_name = os.path.splitext(os.path.basename(mainfile))[0]
-        raw_dir = os.path.dirname(mainfile)
+        raw_dir_abs = os.path.dirname(mainfile)
+        raw_root = archive.m_context.raw_path
+        raw_dir_rel = os.path.relpath(raw_dir_abs, raw_root)
 
         # Collect all TIF files in the same directory that share this base prefix
         tif_paths = sorted(
             p
             for ext in ('*.tif', '*.tiff', '*.TIF', '*.TIFF')
-            for p in glob.glob(os.path.join(raw_dir, ext))
+            for p in glob.glob(os.path.join(raw_dir_abs, ext))
             if os.path.basename(p).startswith(base_name)
         )
 
@@ -1577,21 +1575,8 @@ class SEMZipParser(MatchingParser):
                 microscope_model = meta.get('System/SystemType') or meta.get('System/Type')
                 source_type = meta.get('System/Source')
 
-            # Read image, crop data bar to Image/ResolutionX × Image/ResolutionY
-            with Image.open(tif_path) as img:
-                res_x = int(meta.get('Image/ResolutionX', img.width))
-                res_y = int(meta.get('Image/ResolutionY', img.height))
-                arr = np.array(img.convert('L'))[:res_y, :res_x]
-
-            # Downsample for archive storage
-            ih, iw = arr.shape
-            if max(ih, iw) > _MAX_PX:
-                scale = _MAX_PX / max(ih, iw)
-                new_h = max(1, int(ih * scale))
-                new_w = max(1, int(iw * scale))
-                arr = np.array(
-                    Image.fromarray(arr).resize((new_w, new_h), Image.LANCZOS)
-                )
+            res_x = int(meta.get('Image/ResolutionX', 0)) or None
+            res_y = int(meta.get('Image/ResolutionY', 0)) or None
 
             # Compute nominal magnification: canvas_width / HFW
             magnification = None
@@ -1618,12 +1603,14 @@ class SEMZipParser(MatchingParser):
                 except (TypeError, ValueError):
                     return None
 
+            # image_array is intentionally omitted here — it is loaded from
+            # the TIFF file in INLSEMSession.normalize to keep the sidecar
+            # YAML small (numpy arrays would serialize as millions of ints).
             images.append(
                 INLSEMImage(
                     file_name=tif_name,
-                    image_array=arr.astype(np.uint8),
-                    width_pixels=np.int64(res_x),
-                    height_pixels=np.int64(res_y),
+                    width_pixels=np.int64(res_x) if res_x else None,
+                    height_pixels=np.int64(res_y) if res_y else None,
                     accelerating_voltage=_f('EBeam/HV'),
                     magnification=magnification,
                     horizontal_field_width=_f('EBeam/HFW'),
@@ -1646,9 +1633,11 @@ class SEMZipParser(MatchingParser):
         # Write a sidecar archive for the INLSEMSession on first parse only.
         # On subsequent reprocesses (e.g. after user edits sample references)
         # the file already exists and is left untouched, preserving all ELN edits.
+        # image_array is NOT stored in the sidecar — normalize reloads it.
         # ----------------------------------------------------------------
         session.microscope_model = microscope_model
         session.source_type = source_type
+        session.raw_dir = raw_dir_rel
         session.images = images
 
         sidecar_filename = f'{base_name}.SEMSession.archive.yaml'
