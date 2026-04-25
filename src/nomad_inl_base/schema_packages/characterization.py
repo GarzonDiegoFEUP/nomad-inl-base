@@ -1369,7 +1369,7 @@ class INLSEMSession(INLCharacterization, PlotSection):
             from PIL import Image as _PilImage
 
             _MAX_PX = 1024
-            raw_root = archive.m_context.raw_path
+            raw_root = archive.m_context.raw_path()
             tif_dir = os.path.join(raw_root, self.raw_dir)
             for img in self.images:
                 if img.file_name and os.path.isdir(tif_dir):
@@ -1694,6 +1694,7 @@ class INLEDXSpectrum(INLCharacterization, PlotSection):
             yaxis_title='Counts',
             title_text='EDX Spectrum',
             dragmode='zoom',
+            xaxis_limits=[0, self.beam_energy.to('keV').magnitude * 1.1 if self.beam_energy else None],
             xaxis=dict(fixedrange=False),
             yaxis=dict(fixedrange=False),
         )

@@ -1545,7 +1545,7 @@ class SEMZipParser(MatchingParser):
         # Base name prefix (without extension) — used to collect _NNN sibling files
         base_name = os.path.splitext(os.path.basename(mainfile))[0]
         raw_dir_abs = os.path.dirname(mainfile)
-        raw_root = archive.m_context.raw_path
+        raw_root = archive.m_context.raw_path()
         raw_dir_rel = os.path.relpath(raw_dir_abs, raw_root)
 
         # Collect all TIF files in the same directory that share this base prefix
