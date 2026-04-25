@@ -1694,8 +1694,7 @@ class INLEDXSpectrum(INLCharacterization, PlotSection):
             yaxis_title='Counts',
             title_text='EDX Spectrum',
             dragmode='zoom',
-            xaxis_limits=[0, self.beam_energy.to('keV').magnitude * 1.1 if self.beam_energy else None],
-            xaxis=dict(fixedrange=False),
+            xaxis=dict(fixedrange=False, range=[0, self.beam_energy.to('keV').magnitude * 1.1 if self.beam_energy else None]),
             yaxis=dict(fixedrange=False),
         )
         self.figures.append(
