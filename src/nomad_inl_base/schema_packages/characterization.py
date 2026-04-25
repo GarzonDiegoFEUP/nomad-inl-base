@@ -1448,4 +1448,203 @@ class INLSEMSession(INLCharacterization, PlotSection):
         )
 
 
+# ---------------------------------------------------------------------------
+# EDX / EDS Spectrum (EMSA/MAS format)
+# ---------------------------------------------------------------------------
+
+
+class EDXSpectrumResult(MeasurementResult):
+    """Raw spectral data from a single EDX/EDS acquisition."""
+
+    m_def = Section(label='EDX Spectrum')
+
+    energy_axis = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Energy axis values (one per channel).',
+        unit='keV',
+    )
+    counts = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Raw X-ray counts per channel.',
+    )
+
+
+class INLEDXSpectrum(INLCharacterization, PlotSection):
+    """EDX/EDS spectrum acquired in a SEM, stored as an EMSA/MAS text file."""
+
+    m_def = Section(
+        label='INL EDX Spectrum',
+        categories=[INLCharacterizationCategory],
+        a_eln=dict(hide=['lab_id', 'location', 'steps', 'instruments']),
+    )
+
+    # --- Acquisition parameters (from EMSA header) ---
+    beam_energy = Quantity(
+        type=np.float64,
+        description='Accelerating voltage of the electron beam.',
+        unit='keV',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='keV',
+        ),
+    )
+    live_time = Quantity(
+        type=np.float64,
+        description='Detector live time during acquisition.',
+        unit='second',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='s',
+        ),
+    )
+    real_time = Quantity(
+        type=np.float64,
+        description='Real (clock) time during acquisition.',
+        unit='second',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='s',
+        ),
+    )
+    probe_current = Quantity(
+        type=np.float64,
+        description='Electron probe current.',
+        unit='nA',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='nA',
+        ),
+    )
+    magnification = Quantity(
+        type=np.float64,
+        description='SEM magnification at time of acquisition.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+    tilt_angle = Quantity(
+        type=np.float64,
+        description='Stage X tilt angle.',
+        unit='degree',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='degree',
+        ),
+    )
+    elevation_angle = Quantity(
+        type=np.float64,
+        description='Detector elevation angle above the horizontal plane.',
+        unit='degree',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='degree',
+        ),
+    )
+    azimuth_angle = Quantity(
+        type=np.float64,
+        description='Detector azimuth angle.',
+        unit='degree',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='degree',
+        ),
+    )
+    x_stage_position = Quantity(
+        type=np.float64,
+        description='Stage X position at time of acquisition.',
+        unit='mm',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+        ),
+    )
+    y_stage_position = Quantity(
+        type=np.float64,
+        description='Stage Y position at time of acquisition.',
+        unit='mm',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+        ),
+    )
+    z_stage_position = Quantity(
+        type=np.float64,
+        description='Stage Z (working distance) position at time of acquisition.',
+        unit='mm',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+        ),
+    )
+    signal_type = Quantity(
+        type=str,
+        description='Signal type as reported in the EMSA header (e.g. EDS).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    n_channels = Quantity(
+        type=int,
+        description='Number of spectrum channels (NPOINTS).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+    energy_per_channel = Quantity(
+        type=np.float64,
+        description='Energy width of each channel (XPERCHAN).',
+        unit='keV',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='keV',
+        ),
+    )
+    energy_offset = Quantity(
+        type=np.float64,
+        description='Energy offset of channel zero (OFFSET).',
+        unit='keV',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='keV',
+        ),
+    )
+    vendor_annotations = Quantity(
+        type=str,
+        description='Raw vendor-specific header lines (e.g. Oxford Instruments ##OXINST* keys) preserved for provenance.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.RichTextEditQuantity),
+    )
+
+    results = SubSection(section_def=EDXSpectrumResult, repeats=True)
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        import json
+
+        import plotly.graph_objects as go
+        import plotly.io as pio
+
+        super().normalize(archive, logger)
+        self.figures = []
+        if not self.results:
+            return
+        spectrum = self.results[0]
+        if spectrum.energy_axis is None or spectrum.counts is None:
+            return
+        energy = [float(v) for v in np.array(spectrum.energy_axis)]
+        counts = [float(v) for v in np.array(spectrum.counts)]
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(x=energy, y=counts, mode='lines', name='EDX spectrum')
+        )
+        fig.update_layout(
+            template='plotly_white',
+            height=400,
+            width=716,
+            xaxis_title='Energy (keV)',
+            yaxis_title='Counts',
+            title_text='EDX Spectrum',
+            dragmode='zoom',
+            xaxis=dict(fixedrange=False),
+            yaxis=dict(fixedrange=False),
+        )
+        self.figures.append(
+            PlotlyFigure(label='EDX Spectrum', figure=json.loads(pio.to_json(fig)))
+        )
+
+
 m_package.__init_metainfo__()

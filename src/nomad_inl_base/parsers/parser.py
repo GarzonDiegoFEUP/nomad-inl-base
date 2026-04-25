@@ -1670,3 +1670,143 @@ class SEMZipParser(MatchingParser):
             file_=get_hash_ref(archive.m_context.upload_id, base_name),
         )
         archive.metadata.entry_name = base_name
+
+
+class EMSAEDXParser(MatchingParser):
+    """Parser for EDX/EDS spectra stored in EMSA/MAS Spectral Data format (.txt, .msa, .emsa).
+
+    The EMSA format uses a plain-text header of ``#KEY : value`` lines followed
+    by a ``#SPECTRUM :`` marker and then ``energy, counts`` data pairs, one per
+    line.  Vendor-specific ``##`` double-hash lines are preserved verbatim in
+    ``vendor_annotations``.
+    """
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        import re
+
+        from nomad_inl_base.schema_packages.characterization import (
+            EDXSpectrumResult,
+            INLEDXSpectrum,
+        )
+
+        filetype = 'yaml'
+        data_file = (
+            mainfile.rsplit('/', maxsplit=1)[-1]
+            .rsplit('.', maxsplit=1)[0]
+            .replace(' ', '_')
+        )
+
+        header = {}
+        vendor_lines = []
+        energy_vals = []
+        count_vals = []
+        in_spectrum = False
+
+        with open(mainfile, encoding='utf-8', errors='replace') as fh:
+            for raw_line in fh:
+                line = raw_line.strip()
+                if not line:
+                    continue
+                if line.upper().startswith('#SPECTRUM'):
+                    in_spectrum = True
+                    continue
+                if line.upper() == '#ENDOFDATA':
+                    break
+                if in_spectrum:
+                    parts = line.split(',')
+                    if len(parts) == 2:
+                        try:
+                            energy_vals.append(float(parts[0]))
+                            count_vals.append(float(parts[1]))
+                        except ValueError:
+                            pass
+                    continue
+                # Vendor-specific double-hash lines
+                if line.startswith('##'):
+                    vendor_lines.append(line)
+                    continue
+                # Standard single-hash header lines
+                if line.startswith('#'):
+                    m = re.match(r'^#([A-Z0-9_]+)\s*[:\s]\s*(.*)', line, re.IGNORECASE)
+                    if m:
+                        header[m.group(1).upper()] = m.group(2).strip()
+
+        def _hfloat(key):
+            """Return header value as float, or None."""
+            val = header.get(key)
+            if val is None:
+                return None
+            try:
+                return float(val)
+            except ValueError:
+                return None
+
+        entry = INLEDXSpectrum()
+
+        # --- EMSA standard header fields ---
+        entry.signal_type = header.get('SIGNALTYPE')
+        entry.beam_energy = _hfloat('BEAMKV')
+        entry.live_time = _hfloat('LIVETIME')
+        entry.real_time = _hfloat('REALTIME')
+        entry.probe_current = _hfloat('PROBECUR')
+        entry.magnification = _hfloat('MAGCAM')
+        entry.tilt_angle = _hfloat('XTILTSTGE')
+        entry.elevation_angle = _hfloat('ELEVANGLE')
+        entry.azimuth_angle = _hfloat('AZIMANGLE')
+        entry.energy_per_channel = _hfloat('XPERCHAN')
+        entry.energy_offset = _hfloat('OFFSET')
+
+        npoints = _hfloat('NPOINTS')
+        if npoints is not None:
+            entry.n_channels = int(npoints)
+
+        # Stage position keys include the unit in the key name (e.g. "XPOSITION mm")
+        xpos = _hfloat('XPOSITION MM') or _hfloat('XPOSITION')
+        ypos = _hfloat('YPOSITION MM') or _hfloat('YPOSITION')
+        zpos = _hfloat('ZPOSITION MM') or _hfloat('ZPOSITION')
+        if xpos is not None:
+            entry.x_stage_position = xpos
+        if ypos is not None:
+            entry.y_stage_position = ypos
+        if zpos is not None:
+            entry.z_stage_position = zpos
+
+        # Date/time
+        date_str = header.get('DATE', '')
+        time_str = header.get('TIME', '')
+        if date_str:
+            entry.datetime = f'{date_str} {time_str}'.strip()
+
+        # Title → entry name
+        title = header.get('TITLE', data_file)
+
+        if vendor_lines:
+            entry.vendor_annotations = '\n'.join(vendor_lines)
+
+        # --- Spectral data ---
+        if energy_vals and count_vals:
+            result = EDXSpectrumResult()
+            result.energy_axis = np.array(energy_vals, dtype=np.float64)
+            result.counts = np.array(count_vals, dtype=np.float64)
+            entry.results = [result]
+
+        # --- Write sidecar archive ---
+        edx_filename = f'{data_file}.EDXSpectrum.archive.{filetype}'
+        if not archive.m_context.raw_path_exists(edx_filename):
+            edx_archive = EntryArchive(
+                data=entry,
+                metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
+            )
+            create_archive(
+                edx_archive.m_to_dict(),
+                archive.m_context,
+                edx_filename,
+                filetype,
+                logger,
+            )
+
+        archive.data = RawFile_(
+            name=data_file + '_edx_raw',
+            file_=get_hash_ref(archive.m_context.upload_id, data_file),
+        )
+        archive.metadata.entry_name = title

@@ -156,3 +156,19 @@ sem_zip_parser_entry_point = SEMZipParserEntryPoint(
     mainfile_name_re=r'(?i)(?:.*[/\\])?\d{6} - (?!.*_\d+\.tiff?$).*\.tiff?',
     mainfile_mime_re=r'image/tiff',
 )
+
+
+class EMSAEDXParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import EMSAEDXParser
+
+        return EMSAEDXParser(**self.dict())
+
+
+edx_emsa_parser_entry_point = EMSAEDXParserEntryPoint(
+    name='EMSAEDXParser',
+    description='Parser for EDX/EDS spectra in EMSA/MAS format (.txt, .msa, .emsa, .ems).',
+    mainfile_name_re=r'(?i).*\.(txt|msa|emsa|ems)$',
+    mainfile_mime_re=r'text/plain',
+    mainfile_contents_re=r'#FORMAT\s*[:\s].*EMSA',
+)
