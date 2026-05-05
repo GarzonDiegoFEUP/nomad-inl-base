@@ -28,6 +28,30 @@ from nomad_inl_base.schema_packages.entities import INLSampleReference, INLThinF
 m_package = SchemaPackage()
 
 
+def _coerce_string_floats(dct: dict) -> dict:
+    """Return a copy of *dct* with numeric-string values converted to Python floats.
+
+    When NOMAD's ELN saves a change the browser may serialise float quantities
+    in scientific notation as JSON strings (e.g. "5e-7" instead of 5e-7).
+    NOMAD's type normaliser then fails because str(np.float64("5e-7")) == "5e-07"
+    which does not compare equal to the original string "5e-7", and
+    np.isclose() raises DTypePromotionError when given a string operand.
+    Pre-converting the string to float avoids the round-trip check entirely.
+    Only top-level (non-nested) values are touched here; subsections are handled
+    by their own m_update_from_dict overrides when NOMAD recurses into them.
+    """
+    out = {}
+    for key, val in dct.items():
+        if isinstance(val, str):
+            try:
+                out[key] = float(val)
+            except (ValueError, TypeError):
+                out[key] = val
+        else:
+            out[key] = val
+    return out
+
+
 class INLCharacterizationCategory(EntryDataCategory):
     m_def = Category(label='INL Characterization', categories=[EntryDataCategory])
 
@@ -51,6 +75,9 @@ class INLCharacterization(Measurement, EntryData):
         repeats=True,
         description='Sample(s) measured in this characterization.',
     )
+
+    def m_update_from_dict(self, dct, **kwargs):
+        return super().m_update_from_dict(_coerce_string_floats(dct), **kwargs)
 
 
 class INLXRayDiffraction(INLCharacterization, ELNXRayDiffraction):
@@ -438,6 +465,9 @@ class INLFourPointProbeResults(MeasurementResult, PlotSection):
             PlotlyFigure(label='Sheet Resistance Map', figure=fig.to_plotly_json())
         )
 
+    def m_update_from_dict(self, dct, **kwargs):
+        return super().m_update_from_dict(_coerce_string_floats(dct), **kwargs)
+
 
 class INLFourPointProbe(INLCharacterization):
     """Sheet resistance and resistivity map measured by a 4-point probe system."""
@@ -614,6 +644,9 @@ class INLKLATencorProfilerResults(MeasurementResult):
         ),
     )
 
+    def m_update_from_dict(self, dct, **kwargs):
+        return super().m_update_from_dict(_coerce_string_floats(dct), **kwargs)
+
 
 class INLKLATencorProfiler(INLCharacterization):
     """Stylus profilometry measurement from the KLA-Tencor P-series profiler."""
@@ -755,6 +788,9 @@ class EQEResult(MeasurementResult):
         ),
     )
 
+    def m_update_from_dict(self, dct, **kwargs):
+        return super().m_update_from_dict(_coerce_string_floats(dct), **kwargs)
+
 
 class INLEQE(INLCharacterization, PlotSection):
     m_def = Section(
@@ -894,6 +930,9 @@ class SolarCellIVResult(MeasurementResult):
         description='Date and time of the measurement.',
     )
 
+    def m_update_from_dict(self, dct, **kwargs):
+        return super().m_update_from_dict(_coerce_string_floats(dct), **kwargs)
+
 
 class SolarCellIVCurve(ArchiveSection):
     """I-V curve data for a single cell measurement."""
@@ -914,6 +953,9 @@ class SolarCellIVCurve(ArchiveSection):
         shape=['*'],
         unit='ampere',
     )
+
+    def m_update_from_dict(self, dct, **kwargs):
+        return super().m_update_from_dict(_coerce_string_floats(dct), **kwargs)
 
 
 class INLSolarCellIV(INLCharacterization, PlotSection):
@@ -1049,6 +1091,9 @@ class GDOESElementProfile(ArchiveSection):
         description='Concentration values (mol %).',
         shape=['*'],
     )
+
+    def m_update_from_dict(self, dct, **kwargs):
+        return super().m_update_from_dict(_coerce_string_floats(dct), **kwargs)
 
 
 class INLGDOES(INLCharacterization, PlotSection):
@@ -1280,6 +1325,9 @@ class INLSEMImage(MeasurementResult, PlotSection):
         description='Operator username (User/User).',
         a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
     )
+
+    def m_update_from_dict(self, dct, **kwargs):
+        return super().m_update_from_dict(_coerce_string_floats(dct), **kwargs)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
