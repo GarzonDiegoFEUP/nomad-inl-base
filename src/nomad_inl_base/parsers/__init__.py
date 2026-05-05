@@ -172,3 +172,22 @@ edx_emsa_parser_entry_point = EMSAEDXParserEntryPoint(
     mainfile_mime_re=r'text/plain',
     mainfile_contents_re=r'#FORMAT\s*[:\s].*EMSA',
 )
+
+
+class BrukerAFMParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import BrukerAFMParser
+
+        return BrukerAFMParser(**self.dict())
+
+
+bruker_afm_parser_entry_point = BrukerAFMParserEntryPoint(
+    name='BrukerAFMParser',
+    description=(
+        'Parser for Bruker NanoScope binary AFM/KPFM/cAFM files '
+        '(numbered extensions: .001, .002, …). '
+        'Technique is auto-detected from channel names.'
+    ),
+    mainfile_name_re=r'.*\.\d{3}$',
+    mainfile_contents_re=r'\\\*File list',
+)

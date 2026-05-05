@@ -35,6 +35,8 @@ from nomad_inl_base.schema_packages.batteries import (
 from nomad_inl_base.schema_packages.characterization import (
     ChronoamperometryMeasurement,
     CurrentTimeSeries,
+    INLAFMChannel,
+    INLAFMSession,
     INLFourPointProbe,
     INLFourPointProbeResults,
     INLKLATencorProfiler,
@@ -1175,6 +1177,11 @@ class EQEParser(MatchingParser):
 
         eqe_entry.results = [eqe_result]
 
+        # Optional date from footer
+        date_val = footer_str(r'Date')
+        if date_val:
+            eqe_entry.datetime = date_val
+
         eqe_filename = f'{data_file}.EQE.archive.{filetype}'
         eqe_archive = EntryArchive(
             data=eqe_entry,
@@ -1640,6 +1647,13 @@ class SEMZipParser(MatchingParser):
         session.raw_dir = raw_dir_rel
         session.images = images
 
+        # Set session-level datetime from the first image that has one.
+        first_dt = next(
+            (img.acquisition_datetime for img in images if img.acquisition_datetime), None
+        )
+        if first_dt:
+            session.datetime = first_dt
+
         sidecar_filename = f'{base_name}.SEMSession.archive.yaml'
         if not archive.m_context.raw_path_exists(sidecar_filename):
             sem_archive = EntryArchive(
@@ -1799,3 +1813,240 @@ class EMSAEDXParser(MatchingParser):
             file_=get_hash_ref(archive.m_context.upload_id, data_file),
         )
         archive.metadata.entry_name = title
+
+
+class BrukerAFMParser(MatchingParser):
+    """
+    Parser for Bruker NanoScope binary AFM files (.001, .002, …).
+
+    Technique is auto-detected from the channel names present in the file:
+      - KPFM  if any channel name contains "potential", "cpd", or "kelvin"
+      - cAFM  if any channel name contains "current"
+      - AFM   otherwise
+    All channels are extracted and stored as AFMChannel subsections.
+    """
+
+    _UNIT_TO_M = {'nm': 1e-9, 'um': 1e-6, 'µm': 1e-6, 'mm': 1e-3, 'm': 1.0}
+
+    @staticmethod
+    def _channel_names(spm, encoding='latin1'):
+        """Return list of (name, is_interleave) for all unique channels in the file.
+
+        Normal channels use @2:Image Data; interleave/KPFM channels use @3:Image Data.
+        """
+        import re
+
+        seen: list = []
+        for layer in spm.layers:
+            for data_key, is_mfm in ((b'@2:Image Data', False), (b'@3:Image Data', True)):
+                if data_key not in layer:
+                    continue
+                try:
+                    raw = layer[data_key][0].decode(encoding)
+                    m = re.match(r'([^ ]+) \[([^]]*)] "([^"]*)"', raw)
+                    if m:
+                        name = m.group(3)
+                        if not any(n == name for n, _ in seen):
+                            seen.append((name, is_mfm))
+                except (AttributeError, UnicodeDecodeError):
+                    pass
+        return seen
+
+    @staticmethod
+    def _read_scan_rate(path):
+        """Extract the scan rate (Hz) from the raw Bruker header."""
+        in_scan_list = False
+        with open(path, 'rb') as fh:
+            for raw_line in fh:
+                line = raw_line.rstrip()
+                if line == b'\\*Ciao scan list':
+                    in_scan_list = True
+                elif line.startswith(b'\\*') and in_scan_list:
+                    break
+                elif in_scan_list and line.lower().startswith(b'\\scan rate:'):
+                    parts = line.split(b':', 1)
+                    if len(parts) == 2:
+                        try:
+                            return float(parts[1].strip().split()[0])
+                        except (ValueError, IndexError):
+                            pass
+        return None
+
+    @staticmethod
+    def _read_bruker_datetime(path: str):
+        """Return the measurement datetime string from the \\*File list header.
+
+        NanoScope stores ``\\Date: MM/DD/YYYY HH:MM:SS AM/PM`` (combined) or
+        separate ``\\Date:`` and ``\\Time:`` lines.  Returns a single combined
+        string like ``'04/15/2024 4:52:15 PM'``, or ``None`` if not found.
+        """
+        date_s = time_s = None
+        try:
+            with open(path, 'rb') as fh:
+                for raw_line in fh:
+                    line = raw_line.rstrip()
+                    # Stop at the first non-File-list section
+                    if line.startswith(b'\\*') and line not in (
+                        b'\\*File list',
+                        b'\\*File list end',
+                    ):
+                        break
+                    if line.lower().startswith(b'\\date:'):
+                        date_s = line.split(b':', 1)[1].strip().decode('latin1')
+                    elif line.lower().startswith(b'\\time:'):
+                        time_s = line.split(b':', 1)[1].strip().decode('latin1')
+        except OSError:
+            pass
+        if not date_s:
+            return None
+        return f'{date_s} {time_s}'.strip() if time_s else date_s
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        import glob
+        import os
+        import re as _re
+        import types
+
+        import pySPM
+
+        # --- Only the lowest-numbered file for a stem is the session anchor ---
+        mainfile_stem = mainfile.rsplit('.', maxsplit=1)[0]
+        current_ext = int(mainfile.rsplit('.', maxsplit=1)[-1])
+        lower_siblings = [
+            p for p in glob.glob(mainfile_stem + '.*')
+            if _re.search(r'\.[0-9]{3}$', p) and int(p.rsplit('.', 1)[-1]) < current_ext
+        ]
+        if lower_siblings:
+            # A lower-numbered file will handle this stem; nothing to do here.
+            return
+
+        filetype = 'yaml'
+        data_file = mainfile.rsplit('/', maxsplit=1)[-1].replace(' ', '_')
+        stem = data_file.rsplit('.', maxsplit=1)[0]
+
+        spm = pySPM.Bruker(mainfile)
+
+        # Apply the same monkeypatch used in normalize() — fixes UnboundLocalError
+        # in _get_layer_val when a layer lacks the requested key.
+        def _fixed_get_layer_val(self, index, name, first=True):
+            lname = name.lower()
+            lname2 = name[0] + lname[1:]
+            layer = self.layers[index]
+            for key in (name.encode(), lname.encode(), lname2.encode()):
+                if key in layer:
+                    val = layer[key]
+                    return val[0] if first else val
+            raise KeyError(name)
+
+        spm._get_layer_val = types.MethodType(_fixed_get_layer_val, spm)
+
+        channel_names = self._channel_names(spm)
+
+        # --- Technique detection (deferred until sibling files are known) ---
+        ch_lower = [c.lower() for c, _ in channel_names]
+
+        # --- Scan parameters from first layer ---
+        scan_size_x = scan_size_y = None
+        scan_lines = samples_per_line = None
+
+        if spm.layers:
+            try:
+                size = spm._get_layer_size(0, 'latin1')
+                unit_m = self._UNIT_TO_M.get(size['unit'], 1e-9)
+                scan_size_x = size['x'] * unit_m
+                scan_size_y = size['y'] * unit_m
+            except Exception:
+                pass
+            try:
+                scan_lines = int(spm.layers[0][b'Number of lines'][0])
+            except (KeyError, ValueError):
+                pass
+            try:
+                samples_per_line = int(spm.layers[0][b'Samps/line'][0])
+            except (KeyError, ValueError):
+                pass
+
+        scan_rate = self._read_scan_rate(mainfile)
+        afm_datetime = self._read_bruker_datetime(mainfile)
+
+        # --- Collect all sibling .NNN files (same stem, any numbered extension) ---
+        raw_root = archive.m_context.raw_path()
+        siblings = sorted(
+            p for p in glob.glob(mainfile_stem + '.*')
+            if _re.search(r'\.[0-9]{3}$', p)
+        )
+        source_files_rel = [os.path.relpath(p, raw_root) for p in siblings]
+
+        # --- Technique detection: check all sibling files ---
+        all_ch_lower = list(ch_lower)
+        for sibling in siblings[1:]:
+            try:
+                sib_spm = pySPM.Bruker(sibling)
+                sib_spm._get_layer_val = types.MethodType(_fixed_get_layer_val, sib_spm)
+                for n, _ in self._channel_names(sib_spm):
+                    all_ch_lower.append(n.lower())
+            except Exception:
+                pass
+        if any('potential' in c or 'cpd' in c or 'kelvin' in c for c in all_ch_lower):
+            technique = 'KPFM'
+        elif any('current' in c for c in all_ch_lower):
+            technique = 'cAFM'
+        else:
+            technique = 'AFM'
+
+        # --- Build entry ---
+        entry = INLAFMSession()
+        entry.technique = technique
+        entry.source_files = source_files_rel
+        if afm_datetime:
+            entry.datetime = afm_datetime
+        if scan_size_x is not None:
+            entry.scan_size_x = scan_size_x
+        if scan_size_y is not None:
+            entry.scan_size_y = scan_size_y
+        if scan_lines is not None:
+            entry.scan_lines = scan_lines
+        if samples_per_line is not None:
+            entry.samples_per_line = samples_per_line
+        if scan_rate is not None:
+            entry.scan_rate = scan_rate
+
+        # --- Channel metadata from all sibling files ---
+        for sibling_path in siblings:
+            sib_ext = sibling_path.rsplit('.', maxsplit=1)[-1]  # '001', '003', …
+            try:
+                sib_spm = pySPM.Bruker(sibling_path)
+                sib_spm._get_layer_val = types.MethodType(_fixed_get_layer_val, sib_spm)
+                for name, is_mfm in self._channel_names(sib_spm):
+                    try:
+                        img = sib_spm.get_channel(name, mfm=is_mfm)
+                        ch = INLAFMChannel()
+                        ch.name = f'[{sib_ext}] {name}'
+                        ch.unit = img.zscale
+                        ch.is_interleave = is_mfm
+                        entry.channels.append(ch)
+                    except Exception as exc:
+                        logger.warning(f'BrukerAFMParser: could not read [{sib_ext}] "{name}": {exc}')
+            except Exception as exc:
+                logger.warning(f'BrukerAFMParser: could not open {sibling_path}: {exc}')
+
+        # --- Create sidecar archive ---
+        afm_filename = f'{stem}.afm.archive.{filetype}'
+        if not archive.m_context.raw_path_exists(afm_filename):
+            afm_archive = EntryArchive(
+                data=entry,
+                metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
+            )
+            create_archive(
+                afm_archive.m_to_dict(),
+                archive.m_context,
+                afm_filename,
+                filetype,
+                logger,
+            )
+
+        archive.data = RawFile_(
+            name=data_file + '_raw',
+            file_=get_hash_ref(archive.m_context.upload_id, data_file),
+        )
+        archive.metadata.entry_name = stem

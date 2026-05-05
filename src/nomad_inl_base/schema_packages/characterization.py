@@ -1552,6 +1552,204 @@ class INLSEMSession(INLCharacterization, PlotSection):
 
 
 # ---------------------------------------------------------------------------
+# AFM (Bruker NanoScope)
+# ---------------------------------------------------------------------------
+
+
+class INLAFMChannel(ArchiveSection):
+    """Metadata for one image channel of a Bruker NanoScope AFM file."""
+
+    m_def = Section(label_quantity='name')
+
+    name = Quantity(
+        type=str,
+        description='Channel name as stored in the Bruker file (e.g. "Height Sensor", "Surface Potential").',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    unit = Quantity(
+        type=str,
+        description='Physical unit of the channel z-data (e.g. nm, V, A).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    is_interleave = Quantity(
+        type=bool,
+        description='True for interleave-pass channels stored under @3:Image Data (e.g. KPFM Potential).',
+    )
+
+
+class INLAFMSession(INLCharacterization, PlotSection):
+    """Bruker NanoScope AFM session: all channels from one numbered binary file (.001, .002, …).
+
+    Channel pixel data is NOT stored in the sidecar YAML — it is reloaded from
+    the original binary source file during normalize() to keep the archive small.
+    """
+
+    m_def = Section(
+        label='INL AFM Session',
+        categories=[INLCharacterizationCategory],
+        a_eln=dict(hide=['lab_id', 'location', 'steps', 'instruments']),
+    )
+
+    technique = Quantity(
+        type=str,
+        description='Detected AFM technique: AFM, KPFM, or cAFM.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    scan_size_x = Quantity(
+        type=np.float64,
+        unit='m',
+        description='Fast-scan axis physical size.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='nm',
+        ),
+    )
+
+    scan_size_y = Quantity(
+        type=np.float64,
+        unit='m',
+        description='Slow-scan axis physical size.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='nm',
+        ),
+    )
+
+    scan_lines = Quantity(
+        type=np.int64,
+        description='Number of scan lines (slow-scan pixels).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+    samples_per_line = Quantity(
+        type=np.int64,
+        description='Number of samples per line (fast-scan pixels).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+    scan_rate = Quantity(
+        type=np.float64,
+        unit='Hz',
+        description='Line scan rate.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+    source_files = Quantity(
+        type=str,
+        shape=['*'],
+        description=(
+            'Paths to all Bruker binary source files (.001, .002, …) for this session, '
+            'relative to the upload raw root. '
+            'Set by the parser; used by normalize() to reload channel data for plotting.'
+        ),
+    )
+
+    channels = SubSection(
+        section_def=INLAFMChannel,
+        repeats=True,
+        description='All image channels present in this file.',
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self.figures = []
+        if not self.source_files:
+            return
+
+        import os
+        import re
+        import types
+
+        import pySPM
+
+        raw_root = archive.m_context.raw_path()
+        _UNIT_TO_M = {'nm': 1e-9, 'um': 1e-6, 'µm': 1e-6, 'mm': 1e-3, 'm': 1.0}
+
+        def _fixed_get_layer_val(self, index, name, first=True):
+            lname = name.lower()
+            lname2 = name[0] + lname[1:]
+            layer = self.layers[index]
+            for key in (name.encode(), lname.encode(), lname2.encode()):
+                if key in layer:
+                    val = layer[key]
+                    return val[0] if first else val
+            raise KeyError(name)
+
+        for source_file in self.source_files:
+            full_path = os.path.join(raw_root, source_file)
+            if not os.path.exists(full_path):
+                logger.warning(f'INLAFMSession: source file not found: {full_path}')
+                continue
+
+            file_ext = os.path.splitext(source_file)[1].lstrip('.')  # '001', '003', …
+
+            try:
+                spm = pySPM.Bruker(full_path)
+                spm._get_layer_val = types.MethodType(_fixed_get_layer_val, spm)
+            except Exception as exc:
+                logger.warning(f'INLAFMSession: could not open {source_file}', exc_info=exc)
+                continue
+
+            seen_names: set = set()
+            for layer in spm.layers:
+                ch_name = None
+                is_mfm = False
+                for data_key, mfm_flag in ((b'@2:Image Data', False), (b'@3:Image Data', True)):
+                    if data_key not in layer:
+                        continue
+                    try:
+                        raw = layer[data_key][0].decode('latin1')
+                        m = re.match(r'[^ ]+ \[[^\]]*\] "([^"]*)"', raw)
+                        if m:
+                            ch_name = m.group(1)
+                            is_mfm = mfm_flag
+                    except (AttributeError, UnicodeDecodeError):
+                        pass
+                    break
+
+                if not ch_name or ch_name in seen_names:
+                    continue
+                seen_names.add(ch_name)
+
+                try:
+                    img = spm.get_channel(ch_name, mfm=is_mfm)
+                    data = img.pixels.astype(np.float64)
+                    real = img.size.get('real', {})
+                    x_size = float(real.get('x', data.shape[1]))
+                    y_size = float(real.get('y', data.shape[0]))
+                    size_unit = real.get('unit', 'nm')
+                    scale_m = _UNIT_TO_M.get(size_unit, 1e-9)
+                    x_um = np.linspace(0.0, x_size * scale_m * 1e6, data.shape[1], endpoint=False)
+                    y_um = np.linspace(0.0, y_size * scale_m * 1e6, data.shape[0], endpoint=False)
+                    unit = img.zscale or ''
+                    z_label = f'[{file_ext}] {ch_name} ({unit})' if unit else f'[{file_ext}] {ch_name}'
+                    fig = px.imshow(
+                        data,
+                        x=x_um,
+                        y=y_um,
+                        labels={'x': 'x (µm)', 'y': 'y (µm)', 'color': z_label},
+                        color_continuous_scale='viridis',
+                        aspect='equal',
+                        origin='upper',
+                    )
+                    fig.update_layout(
+                        template='plotly_white',
+                        height=500,
+                        width=600,
+                        title_text=z_label,
+                    )
+                    self.figures.append(PlotlyFigure(label=z_label, figure=fig.to_plotly_json()))
+                except Exception as exc:
+                    logger.warning(
+                        f'INLAFMSession: could not build figure for [{file_ext}] "{ch_name}"',
+                        exc_info=exc,
+                    )
+
+
+# ---------------------------------------------------------------------------
 # EDX / EDS Spectrum (EMSA/MAS format)
 # ---------------------------------------------------------------------------
 

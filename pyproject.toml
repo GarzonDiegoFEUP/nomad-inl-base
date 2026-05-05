@@ -32,6 +32,7 @@ dependencies = [
     "pdfplumber",
     "nomad-analysis",
     "Pillow",
+    "pySPM",
 ]
 
 [project.urls]
@@ -160,6 +161,7 @@ solar_cell_iv_parser_entry_point = "nomad_inl_base.parsers:solar_cell_iv_parser_
 gdoes_parser_entry_point = "nomad_inl_base.parsers:gdoes_parser_entry_point"
 sem_zip_parser_entry_point = "nomad_inl_base.parsers:sem_zip_parser_entry_point"
 analysis_entry_point = "nomad_inl_base.analysis:analysis_entry_point"
+bruker_afm_parser_entry_point = "nomad_inl_base.parsers:bruker_afm_parser_entry_point"
 
 
 
