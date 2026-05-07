@@ -117,8 +117,8 @@ class SolarCellIVParserEntryPoint(ParserEntryPoint):
 
 solar_cell_iv_parser_entry_point = SolarCellIVParserEntryPoint(
     name='SolarCellIVParser',
-    description='Parser for Solar Cell IV Results Table .txt files.',
-    mainfile_name_re=r'(?i).*Results\s*Table.*\.txt$',
+    description='Parser for Solar Cell IV Results Table and IV Graph .txt files.',
+    mainfile_name_re=r'(?i).*(Results\s*Table|IV\s*Graph).*\.txt$',
     mainfile_mime_re=r'text/plain',
 )
 

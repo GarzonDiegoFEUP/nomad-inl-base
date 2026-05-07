@@ -379,7 +379,6 @@ class FourPointProbeParser(MatchingParser):
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
         import re
 
-        filetype = 'yaml'
         data_file = (
             mainfile.rsplit('/', maxsplit=1)[-1]
             .rsplit('.', maxsplit=1)[0]
@@ -599,25 +598,7 @@ class FourPointProbeParser(MatchingParser):
             result.resistivity = rho_arr * self._OHM_CM_TO_OHM_M
         entry.results.append(result)
 
-        # --- Create archive ---
-        fpp_filename = f'{data_file}.four_point_probe.archive.{filetype}'
-        fpp_archive = EntryArchive(
-            data=entry,
-            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
-        )
-        create_archive(
-            fpp_archive.m_to_dict(),
-            archive.m_context,
-            fpp_filename,
-            filetype,
-            logger,
-        )
-
-        file_reference = get_hash_ref(archive.m_context.upload_id, data_file)
-        archive.data = RawFile_(
-            name=data_file + '_raw',
-            file_=file_reference,
-        )
+        archive.data = entry
         archive.metadata.entry_name = data_file
 
 
@@ -1244,12 +1225,15 @@ class SolarCellIVParser(MatchingParser):
         import os
         import re
 
-        filetype = 'yaml'
         basename = mainfile.rsplit('/', maxsplit=1)[-1]
         directory = mainfile.rsplit('/', maxsplit=1)[0] if '/' in mainfile else '.'
 
-        # Extract sample prefix: everything before "Results Table"
-        match = re.match(r'^(.+?)\s*Results\s*Table', basename, re.IGNORECASE)
+        # Extract sample prefix: everything before "Results Table" or "IV Graph"
+        match = re.match(
+            r'^(.+?)\s*(Results\s*Table|IV\s*Graph)',
+            basename,
+            re.IGNORECASE,
+        )
         if not match:
             logger.error(f'Could not extract sample prefix from {basename}')
             return
@@ -1304,9 +1288,9 @@ class SolarCellIVParser(MatchingParser):
                 if 'Pmax mW' in df.columns:
                     result.pmax = ureg.Quantity(float(row['Pmax mW']), ureg.milliwatt)
                 if 'Fill Factor' in df.columns:
-                    result.fill_factor = float(row['Fill Factor'])
+                    result.fill_factor = float(row['Fill Factor']) / 100.0
                 if 'Efficiency' in df.columns:
-                    result.efficiency = float(row['Efficiency'])
+                    result.efficiency = float(row['Efficiency']) / 100.0
                 if 'R at Voc' in df.columns:
                     result.r_at_voc = ureg.Quantity(float(row['R at Voc']), ureg.ohm)
                 if 'R at Isc' in df.columns:
@@ -1411,26 +1395,8 @@ class SolarCellIVParser(MatchingParser):
         entry.results = all_results
         entry.iv_curves = all_curves
 
-        safe_prefix = sample_prefix.replace(' ', '_')
-        sc_filename = f'{safe_prefix}.SolarCellIV.archive.{filetype}'
-        sc_archive = EntryArchive(
-            data=entry,
-            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
-        )
-        create_archive(
-            sc_archive.m_to_dict(),
-            archive.m_context,
-            sc_filename,
-            filetype,
-            logger,
-        )
-
-        data_file = basename.rsplit('.', maxsplit=1)[0].replace(' ', '_')
-        archive.data = RawFile_(
-            name=data_file + '_raw',
-            file_=get_hash_ref(archive.m_context.upload_id, data_file),
-        )
-        archive.metadata.entry_name = data_file
+        archive.data = entry
+        archive.metadata.entry_name = sample_prefix
 
 
 # ---------------------------------------------------------------------------
