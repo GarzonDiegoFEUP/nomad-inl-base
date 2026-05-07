@@ -183,13 +183,42 @@ are recomputed automatically. If any threshold is exceeded,
 2. A gallery figure is generated with all images stacked vertically.
 3. Set **Label** on individual `INLSEMImage` sub-sections to annotate images.
 
+### Bruker AFM/KPFM/cAFM session
+
+1. Upload a Bruker NanoScope binary file with a numbered extension
+   (e.g. `sample.001`, `sample.002`, …) — the parser creates an
+   `INLAFMSession` entry automatically.
+2. The technique (`AFM`, `KPFM`, or `cAFM`) is detected from the channel
+   names in the file and stored in the **Technique** field.
+3. Each image channel (Height Sensor, Amplitude, Surface Potential, etc.)
+   becomes an `INLAFMChannel` sub-section, and a calibrated Plotly heatmap
+   with µm axes is generated for every channel.
+
+### EIS (Electrochemical Impedance Spectroscopy)
+
+1. Upload a Bio-Logic `.mpr` file containing a PEIS or GEIS experiment —
+   the parser creates an `EISMeasurement` entry automatically.
+2. Fill in **Area electrode**, **Electrode material**, **Electrolyte**, and
+   **Reference electrode** as needed.
+3. Nyquist and Bode plots are generated automatically on normalization.
+
+### Bio-Logic CV and IV (`.mpr`)
+
+1. Upload a Bio-Logic `.mpr` file containing a cyclic voltammetry or
+   linear-sweep / IV experiment — the parser creates a
+   `PotentiostatMeasurement` entry automatically.
+2. CV files (containing a `cycle number` column) display a current vs.
+   voltage curve for scan 3 (or 2 as fallback).
+3. IV/LSV files (no cycle column) display a full current vs. voltage sweep.
+4. Set **Area electrode** to switch the y-axis to current density.
+
 ---
 
 ## File naming for automatic parsing
 
 | Measurement type | Required file name pattern | Produces |
 |-----------------|---------------------------|---------|
-| Cyclic voltammetry | `*mVs.xlsx` | `PotentiostatMeasurement` |
+| Cyclic voltammetry (xlsx) | `*mVs.xlsx` | `PotentiostatMeasurement` |
 | Chronoamperometry | `*ED.xlsx` | `ChronoamperometryMeasurement` |
 | 4-Point probe | `*4pp.xls` or `*4pp.xlsx` | `INLFourPointProbe` |
 | KLA-Tencor profilometry | `*[Pp]rofile.pdf` | `INLKLATencorProfiler` |
@@ -198,3 +227,5 @@ are recomputed automatically. If any threshold is exceeded,
 | GDOES | `*gdoes*.txt` *(case-insensitive)* | `INLGDOES` |
 | SEM session | `YYMMDD - <name>.tif` *(base image, no `_NNN` suffix)* | `INLSEMSession` |
 | EDX/EDS spectrum | `.txt`/`.msa`/`.emsa`/`.ems` with `#FORMAT : EMSA` header | `INLEDXSpectrum` |
+| Bruker AFM/KPFM/cAFM | `*.001`, `*.002`, … *(numbered Bruker binary)* | `INLAFMSession` |
+| EIS / CV / IV (Bio-Logic) | `*.mpr` *(technique auto-detected from data columns)* | `EISMeasurement` or `PotentiostatMeasurement` |

@@ -116,7 +116,7 @@ without any manual steps.
 
 | Measurement type | Required file name pattern | Example |
 |-----------------|---------------------------|---------|
-| Cyclic voltammetry | `*mVs.xlsx` | `sample_50mVs.xlsx` |
+| Cyclic voltammetry (xlsx) | `*mVs.xlsx` | `sample_50mVs.xlsx` |
 | Chronoamperometry | `*ED.xlsx` | `sample_ED.xlsx` |
 | 4-Point probe | `*4pp.xls` or `*4pp.xlsx` | `sample_4pp.xlsx` |
 | KLA-Tencor profilometry | `*[Pp]rofile.pdf` | `sample_Profile.pdf` |
@@ -125,6 +125,8 @@ without any manual steps.
 | GDOES depth profile | `*gdoes*.txt` *(case-insensitive)* | `sample_GDOES.txt` |
 | SEM session (FEI/TFS TIFF) | `YYMMDD - <name>.tif` *(base image, no `_NNN` suffix)* | `250115 - sample.tif` |
 | EDX/EDS spectrum (EMSA) | `.txt`, `.msa`, `.emsa`, or `.ems` with `#FORMAT : EMSA` in header | `sample_edx.msa` |
+| Bruker AFM/KPFM/cAFM | `*.001`, `*.002`, … *(numbered Bruker binary)* | `sample.001` |
+| EIS / CV / IV (Bio-Logic) | `*.mpr` *(technique auto-detected)* | `sample EIS.mpr` |
 
 > **Note:** For XRD (`.xrdml`, `.rasx`, `.brml`, `.raw`) and UV-Vis (`.asc`),
 > file naming is handled by `nomad-measurements` — no special naming is required.
