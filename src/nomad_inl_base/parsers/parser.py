@@ -1281,9 +1281,9 @@ class SolarCellIVParser(MatchingParser):
                 if 'Pmax mW' in df.columns:
                     result.pmax = ureg.Quantity(float(row['Pmax mW']), ureg.milliwatt)
                 if 'Fill Factor' in df.columns:
-                    result.fill_factor = float(row['Fill Factor']) / 100.0
+                    result.fill_factor = float(row['Fill Factor'])
                 if 'Efficiency' in df.columns:
-                    result.efficiency = float(row['Efficiency']) / 100.0
+                    result.efficiency = float(row['Efficiency'])
                 if 'R at Voc' in df.columns:
                     result.r_at_voc = ureg.Quantity(float(row['R at Voc']), ureg.ohm)
                 if 'R at Isc' in df.columns:

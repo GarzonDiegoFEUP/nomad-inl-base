@@ -892,11 +892,11 @@ class SolarCellIVResult(MeasurementResult):
     )
     fill_factor = Quantity(
         type=np.float64,
-        description='Fill factor (fraction, 0–1).',
+        description='Fill factor (%, 0–100).',
     )
     efficiency = Quantity(
         type=np.float64,
-        description='Power conversion efficiency (fraction, 0–1).',
+        description='Power conversion efficiency (%, 0–100).',
     )
     cell_area = Quantity(
         type=np.float64,

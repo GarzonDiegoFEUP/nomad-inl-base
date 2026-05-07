@@ -69,9 +69,9 @@ def test_solar_iv_results_table(parsed_archive, caplog):
     assert r0.voc is not None
     assert 0.4 < r0.voc.magnitude < 0.7
     assert r0.efficiency is not None
-    assert 0.0 < r0.efficiency < 1.0
+    assert 0.0 < r0.efficiency < 100.0
     assert r0.fill_factor is not None
-    assert 0.0 < r0.fill_factor < 1.0
+    assert 0.0 < r0.fill_factor < 100.0
     assert r0.jsc is not None
     assert r0.jsc.magnitude > 0
 
