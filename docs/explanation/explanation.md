@@ -119,14 +119,29 @@ This automates target lifecycle management without requiring manual bookkeeping.
 
 ## Electrochemistry schemas
 
-The cyclic voltammetry schema (`PotentiostatMeasurement`) and chronoamperometry
-schema (`ChronoamperometryMeasurement`) store raw time-series data and
-auto-generate Plotly figures during normalization.
+Three electrochemical measurement schemas are supported, all parsed from
+Bio-Logic EC-Lab `.mpr` binary files:
 
-Both schemas optionally accept an **area electrode** value (in m²).
-When provided, the displayed y-axis quantity switches from raw current (mA)
-to current density (mA cm⁻²), enabling direct comparison across different
-electrode sizes.
+- **`PotentiostatMeasurement`** – used for both Cyclic Voltammetry (CV) and
+  linear-sweep IV experiments. When a `scan` sub-section is present the entry
+  is treated as CV and the CV curve for the highest available scan number is
+  plotted. When no `scan` sub-section is present (IV/LSV mode) all data points
+  are plotted as a single sweep.
+- **`ChronoamperometryMeasurement`** – constant-potential experiment; plots
+  current (density) vs. time.
+- **`EISMeasurement`** – Potentio- or Galvano-EIS; stores the full impedance
+  spectrum and auto-generates a Nyquist plot and a two-panel Bode plot.
+
+All three schemas optionally accept an **area electrode** value (in m²).
+When provided, displayed y-axis quantities switch from raw current (mA) to
+current density (mA cm⁻²), enabling direct comparison across electrode sizes.
+
+A single **MPR parser** handles all three experiment types. Technique is
+auto-detected from the column names present in the `.mpr` data block
+(`freq/Hz` → EIS; `cycle number` → CV; otherwise IV). Instrument metadata
+(electrode area, material, electrolyte, reference electrode, scan rate) is
+extracted via **yadg** where possible, with an automatic fallback to reading
+the binary `VMP Set` module for techniques yadg does not yet support (EIS).
 
 The working electrode (`WorkingElectrode`) extends `INLThinFilmStack` so the
 exact sample geometry (substrate, layer stack) used in the measurement is

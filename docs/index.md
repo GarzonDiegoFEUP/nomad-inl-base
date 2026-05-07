@@ -7,7 +7,7 @@ It provides ELN (Electronic Lab Notebook) schemas and automatic normalization ro
 
 - **STAR magnetron sputtering** – DC and RF deposition with target inventory tracking
 - **Wet deposition** – spin coating, slot-die coating, blade coating, inkjet printing, spray pyrolysis, dip coating, and chemical bath deposition
-- **Characterization** – XRD, UV-Vis transmission, 4-point probe, KLA-Tencor profilometry, EQE, solar cell IV, GDOES, SEM, EDX/EDS spectra, cyclic voltammetry, and chronoamperometry
+- **Characterization** – XRD, UV-Vis transmission, 4-point probe, KLA-Tencor profilometry, EQE, solar cell IV, GDOES, SEM, EDX/EDS spectra, Bruker AFM/KPFM/cAFM, cyclic voltammetry (CV), linear-sweep voltammetry (IV), electrochemical impedance spectroscopy (EIS), and chronoamperometry
 - **Shared entities** – substrates, thin films, thin-film stacks, instruments, and sample fragments referenced across all schemas
 
 <div markdown="block" class="home-grid">

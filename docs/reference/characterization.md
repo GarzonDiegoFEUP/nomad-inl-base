@@ -133,8 +133,11 @@ Records a cyclic voltammetry experiment and auto-generates a CV curve.
 
 ### Normalization behavior
 
-- Plots the CV curve for **scan 3**; falls back to **scan 2** if scan 3 is
-  entirely `NaN`
+- When a `scan` sub-section is present (CV mode): plots the CV curve for
+  **scan 3**, falling back to **scan 2** and then to all data if earlier scans
+  are empty or entirely `NaN`
+- When no `scan` sub-section is present (IV / LSV mode): plots all data points
+  as a single I–V sweep
 - If `area_electrode` is set, the y-axis shows current density (mA cm⁻²)
 - Generates a Plotly scatter figure (voltage on x-axis)
 
@@ -479,3 +482,109 @@ entry automatically.
 ### Normalization behavior
 
 - Plots counts vs. energy (keV) for the first `EDXSpectrumResult`
+
+---
+
+## INLAFMSession
+
+**Base class:** `INLCharacterization`, `PlotSection`  
+**Label:** `INL AFM Session`
+
+Bruker NanoScope AFM/KPFM/cAFM session from a single numbered binary file.
+Technique is auto-detected from channel names.
+
+**File format:** upload a Bruker binary file with a numbered extension
+(`.001`, `.002`, …) — the parser creates the entry automatically.
+
+### Quantities
+
+| Quantity | Type | Unit | Description |
+|----------|------|------|-------------|
+| `technique` | `str` | – | Auto-detected technique: `AFM`, `KPFM`, or `cAFM` |
+| `scan_size_x` | `float` | nm | Fast-scan axis physical size |
+| `scan_size_y` | `float` | nm | Slow-scan axis physical size |
+| `scan_lines` | `int` | – | Number of scan lines (slow-scan pixels) |
+| `samples_per_line` | `int` | – | Number of samples per line (fast-scan pixels) |
+| `scan_rate` | `float` | Hz | Line scan rate |
+
+### Sub-sections
+
+| Sub-section | Type | Description |
+|-------------|------|-------------|
+| `channels` | `INLAFMChannel` (repeats) | All image channels in the file |
+
+### INLAFMChannel
+
+| Quantity | Description |
+|----------|-------------|
+| `name` | Channel name (e.g. `Height Sensor`, `Surface Potential`) |
+| `unit` | Physical unit of z-data (e.g. `nm`, `V`, `A`) |
+| `is_interleave` | `True` for interleave-pass channels (e.g. KPFM Potential) |
+
+### Normalization behavior
+
+- Channel pixel data is reloaded from the original binary source file on every
+  normalization (not stored in the YAML archive, to keep file sizes small)
+- A calibrated Plotly heatmap (µm axes) is generated for each channel
+- Technique detection: `KPFM` if any channel name contains `Potential`;
+  `cAFM` if any channel contains `Current`; otherwise `AFM`
+
+---
+
+## EISMeasurement
+
+**Base class:** `INLCharacterization`, `PlotSection`  
+**Label:** `INL EIS Measurement`  
+**Ontology:** [voc4cat:0007206](https://w3id.org/nfdi4cat/voc4cat_0007206)
+
+Potentio- or Galvano-EIS measurement from a Bio-Logic potentiostat. Stores the
+full impedance spectrum and auto-generates Nyquist and Bode plots.
+
+**File format:** upload a Bio-Logic `.mpr` file containing a PEIS or GEIS
+experiment — the parser creates the entry automatically.
+
+### Quantities
+
+| Quantity | Type | Unit | Description |
+|----------|------|------|-------------|
+| `area_electrode` | `float` | cm² | Active working electrode area |
+| `electrode_material` | `str` | – | Working electrode material |
+| `electrolyte` | `str` | – | Electrolyte description |
+| `reference_electrode` | `str` | – | Reference electrode used |
+| `frequency_initial` | `float` | Hz | Highest frequency of the sweep |
+| `frequency_final` | `float` | Hz | Lowest frequency of the sweep |
+| `amplitude` | `float` | mV | AC perturbation amplitude |
+| `description` | `str` | – | Free-text comments from the instrument file |
+
+### Data arrays
+
+| Quantity | Unit | Description |
+|----------|------|-------------|
+| `frequency` | Hz | Frequency axis |
+| `real_impedance` | Ω | Real part Re(Z) |
+| `imaginary_impedance` | Ω | Imaginary part −Im(Z) (positive in capacitive region) |
+| `modulus` | Ω | Impedance modulus \|Z\| |
+| `phase` | ° | Impedance phase angle |
+
+### Normalization behavior
+
+- Generates a **Nyquist plot**: −Im(Z) vs. Re(Z) with equal-axis scaling
+- Generates a **Bode plot**: \|Z\| and phase vs. log-frequency (two stacked panels)
+
+---
+
+## MPR parser (CV, IV, EIS auto-detection)
+
+A single parser handles all Bio-Logic `.mpr` binary files. The technique is
+auto-detected from column presence in the data:
+
+| Columns present | Detected technique | Schema created |
+|-----------------|--------------------|----------------|
+| `freq/Hz` | EIS | `EISMeasurement` |
+| `cycle number` | CV | `PotentiostatMeasurement` (with `scan`) |
+| neither | IV / LSV | `PotentiostatMeasurement` (no `scan`) |
+
+Metadata (electrode area, material, electrolyte, reference electrode, scan rate)
+is read via **yadg** where supported, with automatic fallback to reading the
+binary `VMP Set` module directly (used for EIS files, which yadg does not yet
+support).
