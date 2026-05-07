@@ -242,7 +242,9 @@ class WetDepositionRecipeReference(EntityReference):
 class INLSlotDieCoatingRecipe(WetDepositionRecipe):
     """Recipe template for INL slot-die coating."""
 
-    m_def = Section(label='INL Slot-Die Coating Recipe', categories=[INLWetDepositionCategory])
+    m_def = Section(
+        label='INL Slot-Die Coating Recipe', categories=[INLWetDepositionCategory]
+    )
 
     properties = SubSection(
         section_def=SlotDieCoatingProperties,
@@ -263,7 +265,9 @@ class INLSlotDieCoatingRecipeReference(WetDepositionRecipeReference):
 class INLBladeCoatingRecipe(WetDepositionRecipe):
     """Recipe template for INL blade coating."""
 
-    m_def = Section(label='INL Blade Coating Recipe', categories=[INLWetDepositionCategory])
+    m_def = Section(
+        label='INL Blade Coating Recipe', categories=[INLWetDepositionCategory]
+    )
 
     properties = SubSection(
         section_def=BladeCoatingProperties,
@@ -284,7 +288,9 @@ class INLBladeCoatingRecipeReference(WetDepositionRecipeReference):
 class INLInkjetPrintingRecipe(WetDepositionRecipe):
     """Recipe template for INL inkjet printing."""
 
-    m_def = Section(label='INL Inkjet Printing Recipe', categories=[INLWetDepositionCategory])
+    m_def = Section(
+        label='INL Inkjet Printing Recipe', categories=[INLWetDepositionCategory]
+    )
 
     properties = SubSection(
         section_def=InkjetPrintingProperties,
@@ -305,7 +311,9 @@ class INLInkjetPrintingRecipeReference(WetDepositionRecipeReference):
 class INLSprayPyrolysisRecipe(WetDepositionRecipe):
     """Recipe template for INL spray pyrolysis."""
 
-    m_def = Section(label='INL Spray Pyrolysis Recipe', categories=[INLWetDepositionCategory])
+    m_def = Section(
+        label='INL Spray Pyrolysis Recipe', categories=[INLWetDepositionCategory]
+    )
 
     properties = SubSection(
         section_def=SprayPyrolysisProperties,
@@ -326,7 +334,9 @@ class INLSprayPyrolysisRecipeReference(WetDepositionRecipeReference):
 class INLDipCoatingRecipe(WetDepositionRecipe):
     """Recipe template for INL dip coating."""
 
-    m_def = Section(label='INL Dip Coating Recipe', categories=[INLWetDepositionCategory])
+    m_def = Section(
+        label='INL Dip Coating Recipe', categories=[INLWetDepositionCategory]
+    )
 
     properties = SubSection(
         section_def=DipCoatingProperties,
@@ -512,9 +522,7 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         ),
     )
 
-    def _update_sample(
-        self, archive: 'EntryArchive', logger: 'BoundLogger'
-    ) -> None:
+    def _update_sample(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         """Create a new ThinFilm and register it with the sample stack.
 
         Case B — sample is None, substrate is set:
@@ -651,7 +659,10 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         )
 
     def _apply_recipe(
-        self, recipe: 'WetDepositionRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+        self,
+        recipe: 'WetDepositionRecipe',
+        archive: 'EntryArchive',
+        logger: 'BoundLogger',
     ) -> None:
         """Copy shared recipe fields. Override in subclasses to add technique-specific fields."""
         if recipe.instrument is not None and self.instrument is None:
@@ -767,7 +778,10 @@ class INLSlotDieCoating(INLThinFilmDeposition):
     properties = SubSection(section_def=SlotDieCoatingProperties)
 
     def _apply_recipe(
-        self, recipe: 'INLSlotDieCoatingRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+        self,
+        recipe: 'INLSlotDieCoatingRecipe',
+        archive: 'EntryArchive',
+        logger: 'BoundLogger',
     ) -> None:
         super()._apply_recipe(recipe, archive, logger)
         if recipe.properties is not None and self.properties is None:
@@ -793,7 +807,10 @@ class INLBladeCoating(INLThinFilmDeposition):
     properties = SubSection(section_def=BladeCoatingProperties)
 
     def _apply_recipe(
-        self, recipe: 'INLBladeCoatingRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+        self,
+        recipe: 'INLBladeCoatingRecipe',
+        archive: 'EntryArchive',
+        logger: 'BoundLogger',
     ) -> None:
         super()._apply_recipe(recipe, archive, logger)
         if recipe.properties is not None and self.properties is None:
@@ -819,7 +836,10 @@ class INLInkjetPrinting(INLThinFilmDeposition):
     properties = SubSection(section_def=InkjetPrintingProperties)
 
     def _apply_recipe(
-        self, recipe: 'INLInkjetPrintingRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+        self,
+        recipe: 'INLInkjetPrintingRecipe',
+        archive: 'EntryArchive',
+        logger: 'BoundLogger',
     ) -> None:
         super()._apply_recipe(recipe, archive, logger)
         if recipe.properties is not None and self.properties is None:
@@ -845,7 +865,10 @@ class INLSprayPyrolysis(INLThinFilmDeposition):
     properties = SubSection(section_def=SprayPyrolysisProperties)
 
     def _apply_recipe(
-        self, recipe: 'INLSprayPyrolysisRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+        self,
+        recipe: 'INLSprayPyrolysisRecipe',
+        archive: 'EntryArchive',
+        logger: 'BoundLogger',
     ) -> None:
         super()._apply_recipe(recipe, archive, logger)
         if recipe.properties is not None and self.properties is None:
@@ -871,7 +894,10 @@ class INLDipCoating(INLThinFilmDeposition):
     properties = SubSection(section_def=DipCoatingProperties)
 
     def _apply_recipe(
-        self, recipe: 'INLDipCoatingRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+        self,
+        recipe: 'INLDipCoatingRecipe',
+        archive: 'EntryArchive',
+        logger: 'BoundLogger',
     ) -> None:
         super()._apply_recipe(recipe, archive, logger)
         if recipe.properties is not None and self.properties is None:
@@ -945,7 +971,10 @@ class INLChemicalBathDeposition(INLThinFilmDeposition):
     )
 
     def _apply_recipe(
-        self, recipe: 'INLChemicalBathDepositionRecipe', archive: 'EntryArchive', logger: 'BoundLogger'
+        self,
+        recipe: 'INLChemicalBathDepositionRecipe',
+        archive: 'EntryArchive',
+        logger: 'BoundLogger',
     ) -> None:
         super()._apply_recipe(recipe, archive, logger)
         if recipe.bath_temperature is not None and self.bath_temperature is None:

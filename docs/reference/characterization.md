@@ -2,6 +2,42 @@
 
 This page documents all ELN entry types in the **INL Characterization** category.
 
+| Schema | Label | Technique |
+|--------|-------|-----------|
+| `INLXRayDiffraction` | INL XRD | X-Ray Diffraction |
+| `INLUVVisTransmission` | INL UV-Vis Transmission | UV-Vis-NIR Transmission |
+| `ChronoamperometryMeasurement` | INL Chronoamperometry | Chronoamperometry |
+| `PotentiostatMeasurement` | INL Cyclic Voltammetry | Cyclic Voltammetry / IV sweep |
+| `INLFourPointProbe` | INL 4-Point Probe | Sheet resistance mapping |
+| `INLKLATencorProfiler` | INL KLA-Tencor Profiler | Stylus profilometry |
+| `INLEQE` | INL EQE | External Quantum Efficiency |
+| `INLSolarCellIV` | INL Solar Cell IV | Solar cell current–voltage |
+| `INLGDOES` | INL GDOES | Glow Discharge OES depth profile |
+| `INLSEMSession` | INL SEM Session | Scanning Electron Microscopy |
+| `INLEDXSpectrum` | INL EDX Spectrum | Energy-Dispersive X-ray spectroscopy |
+| `INLAFMSession` | INL AFM Session | Atomic Force Microscopy (AFM / KPFM / cAFM) |
+| `EISMeasurement` | INL EIS Measurement | Electrochemical Impedance Spectroscopy |
+
+---
+
+## INLCharacterization
+
+**Base class:** `Measurement`, `EntryData`
+
+Abstract base class inherited by all INL characterization schemas (except
+`ChronoamperometryMeasurement`, `PotentiostatMeasurement`, `WorkingElectrode`,
+and `ElectrolyteSolution`, which have their own base classes).
+
+All `INLCharacterization` subclasses inherit the following fields:
+
+| Quantity / Sub-section | Type | Description |
+|------------------------|------|-------------|
+| `operator` | `str` | Person who ran the measurement |
+| `samples` | `INLSampleReference` (repeats) | Thin-film stacks or substrates measured |
+
+`INLSampleReference` references an `INLThinFilmStack` entry, linking each
+measurement to the sample provenance chain.
+
 ---
 
 ## INLXRayDiffraction
@@ -79,7 +115,7 @@ Extends the solution schema with electrochemistry-specific concentration fields.
 
 ## ChronoamperometryMeasurement
 
-**Base class:** `PlotSection`, `Measurement`, `EntryData`  
+**Base class:** `INLCharacterization`, `PlotSection`  
 **Label:** `INL Chronoamperometry`  
 **Ontology:** [voc4cat:0007206](https://w3id.org/nfdi4cat/voc4cat_0007206)
 
@@ -110,7 +146,7 @@ current (density) vs. time plot.
 
 ## PotentiostatMeasurement
 
-**Base class:** `PlotSection`, `Measurement`, `EntryData`  
+**Base class:** `INLCharacterization`, `PlotSection`  
 **Label:** `INL Cyclic Voltammetry`  
 **Ontology:** [voc4cat:0007206](https://w3id.org/nfdi4cat/voc4cat_0007206)
 

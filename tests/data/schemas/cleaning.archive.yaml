@@ -1,0 +1,9 @@
+data:
+  m_def: nomad_inl_base.schema_packages.cleaning.INLCleaning
+  substrate_material: SLG
+  number_of_substrates: 3
+  create_substrates: false
+  steps:
+    - name: Acetone
+    - name: IPA
+    - name: DI Water

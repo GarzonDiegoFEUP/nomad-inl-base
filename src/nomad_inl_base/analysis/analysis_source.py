@@ -22,32 +22,103 @@ def eqe_am15g_spectrum():
 
     # AM1.5G reference spectrum (ASTM G-173-03)
     # Subset covering 280-1200 nm relevant for EQE calculations
-    data = np.array([
-        [280, 8.20E-02], [290, 5.71E-01], [300, 5.98E-01], [310, 5.14E-01],
-        [320, 1.07E+00], [330, 6.35E-01], [340, 1.34E+00], [350, 1.04E+00],
-        [360, 1.26E+00], [370, 1.23E+00], [380, 1.21E+00], [390, 1.14E+00],
-        [400, 1.51E+00], [410, 1.67E+00], [420, 1.62E+00], [430, 1.61E+00],
-        [440, 1.78E+00], [450, 1.75E+00], [460, 1.75E+00], [470, 1.72E+00],
-        [480, 1.68E+00], [490, 1.70E+00], [500, 1.67E+00], [510, 1.63E+00],
-        [520, 1.64E+00], [530, 1.58E+00], [540, 1.55E+00], [550, 1.53E+00],
-        [560, 1.50E+00], [570, 1.46E+00], [580, 1.43E+00], [590, 1.38E+00],
-        [600, 1.40E+00], [610, 1.36E+00], [620, 1.37E+00], [630, 1.34E+00],
-        [640, 1.31E+00], [650, 1.28E+00], [660, 1.26E+00], [670, 1.24E+00],
-        [680, 1.19E+00], [690, 1.18E+00], [700, 1.17E+00], [710, 1.13E+00],
-        [720, 1.07E+00], [730, 1.07E+00], [740, 9.51E-01], [750, 1.04E+00],
-        [760, 1.03E+00], [770, 9.11E-01], [780, 9.85E-01], [790, 9.28E-01],
-        [800, 9.31E-01], [810, 9.15E-01], [820, 9.07E-01], [830, 8.82E-01],
-        [840, 8.60E-01], [850, 8.68E-01], [860, 8.50E-01], [870, 7.50E-01],
-        [880, 7.53E-01], [890, 7.79E-01], [900, 6.24E-01], [910, 6.52E-01],
-        [920, 4.83E-01], [930, 7.09E-01], [940, 6.01E-01], [950, 4.97E-01],
-        [960, 4.58E-01], [970, 5.83E-01], [980, 5.18E-01], [990, 5.08E-01],
-        [1000, 4.69E-01], [1010, 4.57E-01], [1020, 4.24E-01], [1030, 4.74E-01],
-        [1040, 4.32E-01], [1050, 3.73E-01], [1060, 3.53E-01], [1070, 3.79E-01],
-        [1080, 2.95E-01], [1090, 2.29E-01], [1100, 2.68E-01], [1110, 3.40E-01],
-        [1120, 3.04E-01], [1130, 2.64E-01], [1140, 2.51E-01], [1150, 2.83E-01],
-        [1160, 2.61E-01], [1170, 2.07E-01], [1180, 1.26E-01], [1190, 7.47E-02],
-        [1200, 1.70E-01],
-    ])
+    data = np.array(
+        [
+            [280, 8.20e-02],
+            [290, 5.71e-01],
+            [300, 5.98e-01],
+            [310, 5.14e-01],
+            [320, 1.07e00],
+            [330, 6.35e-01],
+            [340, 1.34e00],
+            [350, 1.04e00],
+            [360, 1.26e00],
+            [370, 1.23e00],
+            [380, 1.21e00],
+            [390, 1.14e00],
+            [400, 1.51e00],
+            [410, 1.67e00],
+            [420, 1.62e00],
+            [430, 1.61e00],
+            [440, 1.78e00],
+            [450, 1.75e00],
+            [460, 1.75e00],
+            [470, 1.72e00],
+            [480, 1.68e00],
+            [490, 1.70e00],
+            [500, 1.67e00],
+            [510, 1.63e00],
+            [520, 1.64e00],
+            [530, 1.58e00],
+            [540, 1.55e00],
+            [550, 1.53e00],
+            [560, 1.50e00],
+            [570, 1.46e00],
+            [580, 1.43e00],
+            [590, 1.38e00],
+            [600, 1.40e00],
+            [610, 1.36e00],
+            [620, 1.37e00],
+            [630, 1.34e00],
+            [640, 1.31e00],
+            [650, 1.28e00],
+            [660, 1.26e00],
+            [670, 1.24e00],
+            [680, 1.19e00],
+            [690, 1.18e00],
+            [700, 1.17e00],
+            [710, 1.13e00],
+            [720, 1.07e00],
+            [730, 1.07e00],
+            [740, 9.51e-01],
+            [750, 1.04e00],
+            [760, 1.03e00],
+            [770, 9.11e-01],
+            [780, 9.85e-01],
+            [790, 9.28e-01],
+            [800, 9.31e-01],
+            [810, 9.15e-01],
+            [820, 9.07e-01],
+            [830, 8.82e-01],
+            [840, 8.60e-01],
+            [850, 8.68e-01],
+            [860, 8.50e-01],
+            [870, 7.50e-01],
+            [880, 7.53e-01],
+            [890, 7.79e-01],
+            [900, 6.24e-01],
+            [910, 6.52e-01],
+            [920, 4.83e-01],
+            [930, 7.09e-01],
+            [940, 6.01e-01],
+            [950, 4.97e-01],
+            [960, 4.58e-01],
+            [970, 5.83e-01],
+            [980, 5.18e-01],
+            [990, 5.08e-01],
+            [1000, 4.69e-01],
+            [1010, 4.57e-01],
+            [1020, 4.24e-01],
+            [1030, 4.74e-01],
+            [1040, 4.32e-01],
+            [1050, 3.73e-01],
+            [1060, 3.53e-01],
+            [1070, 3.79e-01],
+            [1080, 2.95e-01],
+            [1090, 2.29e-01],
+            [1100, 2.68e-01],
+            [1110, 3.40e-01],
+            [1120, 3.04e-01],
+            [1130, 2.64e-01],
+            [1140, 2.51e-01],
+            [1150, 2.83e-01],
+            [1160, 2.61e-01],
+            [1170, 2.07e-01],
+            [1180, 1.26e-01],
+            [1190, 7.47e-02],
+            [1200, 1.70e-01],
+        ]
+    )
     df = pd.DataFrame(data, columns=['wavelength', 'irradiance'])
     df = df.set_index('wavelength')
     return df
@@ -92,11 +163,11 @@ def eqe_calculate_jsc(wavelength_nm, qe_fraction, am_spectrum=None):
     # then integrate using Simpson's rule
     # Using: EQE * AM * lambda / (hc) with proper unit conversion
     q = 1.602176634e-19  # C
-    h = 6.62607015e-34   # J·s
-    c = 2.99792458e8      # m/s
+    h = 6.62607015e-34  # J·s
+    c = 2.99792458e8  # m/s
 
     photon_flux = am_irr * (am_wl * 1e-9) / (h * c)  # photons/m²/s/nm
-    jsc_integrand = eqe_interp * photon_flux * q       # A/m²/nm
+    jsc_integrand = eqe_interp * photon_flux * q  # A/m²/nm
 
     jsc = integrate.simpson(jsc_integrand, x=am_wl) / 10  # mA/cm²
     return jsc
@@ -143,7 +214,9 @@ def eqe_sigmoid_fit(wavelength_nm, qe_fraction, low_limit=850, high_limit=1100):
 
     try:
         popt, _ = curve_fit(
-            sigmoid, wl_fit, qe_fit,
+            sigmoid,
+            wl_fit,
+            qe_fit,
             p0=[qe_fit.max(), (low_limit + high_limit) / 2, 50],
             maxfev=10000,
         )
@@ -289,12 +362,14 @@ def eqe_analysis(inputs):
         keller_result = eqe_keller_bandgap(wl, qe)
         Eg_keller = keller_result['Eg_eV'] if keller_result else None
 
-        results_list.append({
-            'Name': name,
-            'Jsc (mA/cm²)': round(jsc, 2),
-            'Eg sigmoid (eV)': round(Eg_sigmoid, 3) if Eg_sigmoid else None,
-            'Eg Keller (eV)': round(Eg_keller, 3) if Eg_keller else None,
-        })
+        results_list.append(
+            {
+                'Name': name,
+                'Jsc (mA/cm²)': round(jsc, 2),
+                'Eg sigmoid (eV)': round(Eg_sigmoid, 3) if Eg_sigmoid else None,
+                'Eg Keller (eV)': round(Eg_keller, 3) if Eg_keller else None,
+            }
+        )
 
         # Plot EQE
         fig, ax = plt.subplots(figsize=(8, 5))
@@ -305,10 +380,13 @@ def eqe_analysis(inputs):
         ax.grid(True, alpha=0.3)
 
         # Add secondary x-axis (energy in eV)
-        ax2 = ax.secondary_xaxis('top', functions=(
-            lambda x: 1239.84193 / np.where(x > 0, x, 1),
-            lambda x: 1239.84193 / np.where(x > 0, x, 1),
-        ))
+        ax2 = ax.secondary_xaxis(
+            'top',
+            functions=(
+                lambda x: 1239.84193 / np.where(x > 0, x, 1),
+                lambda x: 1239.84193 / np.where(x > 0, x, 1),
+            ),
+        )
         ax2.set_xlabel('Energy (eV)')
 
         plt.tight_layout()
@@ -375,14 +453,24 @@ def solar_cell_iv_analysis(inputs):
         # Collect results
         if hasattr(entry, 'results') and entry.results:
             for r in entry.results:
-                all_results.append({
-                    'Entry': name,
-                    'Measurement': r.measurement_name or '',
-                    'Voc (V)': round(float(r.voc), 3) if r.voc is not None else None,
-                    'Jsc (mA/cm²)': round(float(r.jsc), 2) if r.jsc is not None else None,
-                    'FF': round(float(r.fill_factor), 3) if r.fill_factor is not None else None,
-                    'Eff': round(float(r.efficiency), 4) if r.efficiency is not None else None,
-                })
+                all_results.append(
+                    {
+                        'Entry': name,
+                        'Measurement': r.measurement_name or '',
+                        'Voc (V)': round(float(r.voc), 3)
+                        if r.voc is not None
+                        else None,
+                        'Jsc (mA/cm²)': round(float(r.jsc), 2)
+                        if r.jsc is not None
+                        else None,
+                        'FF': round(float(r.fill_factor), 3)
+                        if r.fill_factor is not None
+                        else None,
+                        'Eff': round(float(r.efficiency), 4)
+                        if r.efficiency is not None
+                        else None,
+                    }
+                )
 
     if all_results:
         df = pd.DataFrame(all_results)
@@ -481,9 +569,21 @@ def gdoes_analysis(inputs):
     import pandas as pd
 
     COLORS = [
-        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
-        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
-        '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5',
+        '#1f77b4',
+        '#ff7f0e',
+        '#2ca02c',
+        '#d62728',
+        '#9467bd',
+        '#8c564b',
+        '#e377c2',
+        '#7f7f7f',
+        '#bcbd22',
+        '#17becf',
+        '#aec7e8',
+        '#ffbb78',
+        '#98df8a',
+        '#ff9896',
+        '#c5b0d5',
     ]
 
     for entry_input in inputs:
@@ -520,8 +620,10 @@ def gdoes_analysis(inputs):
                 results[col] = {
                     'Max': round(y_max, 4) if np.isfinite(y_max) else y_max,
                     '50%': round(y_max / 2, 4) if np.isfinite(y_max) else y_max,
-                    'y1': None, 'y2': None,
-                    'X1': None, 'X2': None,
+                    'y1': None,
+                    'y2': None,
+                    'X1': None,
+                    'X2': None,
                     'thickness [µm]': None,
                 }
 

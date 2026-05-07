@@ -50,12 +50,16 @@ class INLSample(CompositeSystem):
     location = Quantity(
         type=str,
         description='Physical location of the sample (e.g. fridge, glovebox, characterization lab).',
-        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity, label='Location'),
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity, label='Location'
+        ),
     )
     status = Quantity(
         type=MEnum('active', 'in use', 'consumed', 'broken', 'archived'),
         description='Current status of the sample.',
-        a_eln=ELNAnnotation(component=ELNComponentEnum.EnumEditQuantity, label='Status'),
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.EnumEditQuantity, label='Status'
+        ),
     )
 
 
@@ -303,13 +307,17 @@ class INLInstrument(Instrument, EntryData):
     supplier = Quantity(
         type=str,
         description='Manufacturer or supplier of the instrument.',
-        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity, label='Supplier'),
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity, label='Supplier'
+        ),
     )
 
     lab_id = Quantity(
         type=str,
         description='Lab identifier where the instrument is located.',
-        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity, label='Lab ID'),
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity, label='Lab ID'
+        ),
     )
 
     maintenance_log = SubSection(
@@ -356,7 +364,9 @@ class INLSampleFragment(INLSample, EntryData):
     fraction = Quantity(
         type=str,
         description='Fraction label describing the piece size (e.g. "1/2", "1/4", "triangle").',
-        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity, label='Fraction'),
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity, label='Fraction'
+        ),
     )
     cut_date = Quantity(
         type=Datetime,

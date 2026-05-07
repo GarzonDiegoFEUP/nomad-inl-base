@@ -187,7 +187,10 @@ class INLCleaning(Cleaning):
             self.steps = recipe.steps
         if recipe.material is not None and self.substrate_material is None:
             self.substrate_material = recipe.material
-        if recipe.substrate_side_length is not None and self.substrate_side_length is None:
+        if (
+            recipe.substrate_side_length is not None
+            and self.substrate_side_length is None
+        ):
             self.substrate_side_length = recipe.substrate_side_length
         if recipe.instruments is not None and self.instruments is None:
             self.instruments = recipe.instruments
@@ -197,9 +200,7 @@ class INLCleaning(Cleaning):
         """Overwrite self.duration with the sum of all non-None step durations (seconds)."""
         if not self.steps:
             return
-        total = sum(
-            step.duration for step in self.steps if step.duration is not None
-        )
+        total = sum(step.duration for step in self.steps if step.duration is not None)
         if total > 0:
             self.duration = total
 

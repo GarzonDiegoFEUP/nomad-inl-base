@@ -1,0 +1,4 @@
+data:
+  m_def: nomad_inl_base.schema_packages.entities.INLSubstrate
+  name: TestSubstrate
+  material: SLG

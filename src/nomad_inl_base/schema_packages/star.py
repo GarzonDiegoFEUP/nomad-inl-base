@@ -1234,9 +1234,15 @@ class StarSputtering(SputterDeposition, EntryData):
                     new_step.set_voltage = recipe_step.set_voltage
                 if hasattr(recipe_step, 'set_current'):
                     new_step.set_current = recipe_step.set_current
-                if hasattr(recipe_step, 'Ct_value') and recipe_step.Ct_value is not None:
+                if (
+                    hasattr(recipe_step, 'Ct_value')
+                    and recipe_step.Ct_value is not None
+                ):
                     new_step.Ct_value = recipe_step.Ct_value
-                if hasattr(recipe_step, 'Cl_value') and recipe_step.Cl_value is not None:
+                if (
+                    hasattr(recipe_step, 'Cl_value')
+                    and recipe_step.Cl_value is not None
+                ):
                     new_step.Cl_value = recipe_step.Cl_value
 
                 self.steps.append(new_step)
@@ -1301,7 +1307,9 @@ class StarSputtering(SputterDeposition, EntryData):
                     for c in deposited_system
                     if getattr(c, 'pure_substance', None) and c.pure_substance.name
                 ]
-                material_formula = '_'.join(material_parts) if material_parts else 'film'
+                material_formula = (
+                    '_'.join(material_parts) if material_parts else 'film'
+                )
                 film_label = f'{date_str}_{material_formula}'
 
                 new_thinFilm.name = film_label

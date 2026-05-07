@@ -1,0 +1,7 @@
+data:
+  m_def: nomad_inl_base.schema_packages.wet_deposition.INLSpinCoating
+  creates_new_thin_film: false
+  steps:
+    - m_def: nomad_inl_base.schema_packages.wet_deposition.INLSpinCoatingStep
+      speed: 2000
+      duration: 30

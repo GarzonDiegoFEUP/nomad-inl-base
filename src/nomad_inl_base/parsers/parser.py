@@ -70,7 +70,11 @@ class RawFile_(EntryData):
 class EDParser(MatchingParser):
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
         filetype = 'yaml'
-        data_file = mainfile.rsplit('/', maxsplit=1)[-1].split('.xlsx', maxsplit=1)[0].replace(' ', '_')
+        data_file = (
+            mainfile.rsplit('/', maxsplit=1)[-1]
+            .split('.xlsx', maxsplit=1)[0]
+            .replace(' ', '_')
+        )
         xlsx = pd.ExcelFile(mainfile)
 
         data = pd.read_excel(xlsx)
@@ -126,7 +130,11 @@ class EDParser(MatchingParser):
 class CVParser(MatchingParser):
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
         filetype = 'yaml'
-        data_file = mainfile.rsplit('/', maxsplit=1)[-1].split('.xlsx', maxsplit=1)[0].replace(' ', '_')
+        data_file = (
+            mainfile.rsplit('/', maxsplit=1)[-1]
+            .split('.xlsx', maxsplit=1)[0]
+            .replace(' ', '_')
+        )
         xlsx = pd.ExcelFile(mainfile)
 
         data = pd.read_excel(xlsx)
@@ -480,14 +488,13 @@ class FourPointProbeParser(MatchingParser):
                 for k in col_map:
                     if key_hint.lower() in k.lower():
                         raw_col = df_data[col_map[k]]
-                        return (
-                            raw_col.apply(
-                                lambda v: float(str(v).replace(',', '.'))
+                        return raw_col.apply(
+                            lambda v: (
+                                float(str(v).replace(',', '.'))
                                 if pd.notna(v)
                                 else np.nan
                             )
-                            .to_numpy(dtype=np.float64)
-                        )
+                        ).to_numpy(dtype=np.float64)
                 return None
 
             x_pos = _arr('x (mm')
@@ -500,9 +507,7 @@ class FourPointProbeParser(MatchingParser):
         if date_str and time_str:
             for fmt in ('%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S'):
                 try:
-                    measurement_dt = datetime.strptime(
-                        f'{date_str} {time_str}', fmt
-                    )
+                    measurement_dt = datetime.strptime(f'{date_str} {time_str}', fmt)
                     break
                 except ValueError:
                     continue
@@ -674,7 +679,12 @@ class _BaseSputteringChamberParser(MatchingParser):
             """Return bool array, treating 1/0 as True/False."""
             if name not in df.columns:
                 return None
-            return pd.to_numeric(df[name], errors='coerce').fillna(0).astype(bool).to_numpy()
+            return (
+                pd.to_numeric(df[name], errors='coerce')
+                .fillna(0)
+                .astype(bool)
+                .to_numpy()
+            )
 
         def col_str(name):
             if name not in df.columns:
@@ -690,7 +700,12 @@ class _BaseSputteringChamberParser(MatchingParser):
         def col_int(name):
             if name not in df.columns:
                 return None
-            return pd.to_numeric(df[name], errors='coerce').fillna(0).astype(np.int64).to_numpy()
+            return (
+                pd.to_numeric(df[name], errors='coerce')
+                .fillna(0)
+                .astype(np.int64)
+                .to_numpy()
+            )
 
         # --- Timestamps ---
         ts_fmt = '%b-%d-%Y %I:%M:%S.%f %p'
@@ -880,10 +895,20 @@ class _BaseSputteringChamberParser(MatchingParser):
             rf_col, dc_col = _ps_switch_cols.get(src_idx, (None, None))
             ps_type = 'unknown'
             if rf_col and rf_col in df.columns:
-                if pd.to_numeric(df[rf_col], errors='coerce').fillna(0).astype(bool).any():
+                if (
+                    pd.to_numeric(df[rf_col], errors='coerce')
+                    .fillna(0)
+                    .astype(bool)
+                    .any()
+                ):
                     ps_type = 'RF'
             if dc_col and dc_col in df.columns:
-                if pd.to_numeric(df[dc_col], errors='coerce').fillna(0).astype(bool).any():
+                if (
+                    pd.to_numeric(df[dc_col], errors='coerce')
+                    .fillna(0)
+                    .astype(bool)
+                    .any()
+                ):
                     ps_type = 'DC-pulsed'
             src.power_supply_type = ps_type
 
@@ -955,7 +980,9 @@ class PC04ChamberParser(_BaseSputteringChamberParser):
     - Otherwise (heater-only log) → :class:`PC04SubstrateAnnealing`
     """
 
-    _ENTRY_CLASS = PC04ElectrolyteChamberDeposition  # fallback for base class super() call
+    _ENTRY_CLASS = (
+        PC04ElectrolyteChamberDeposition  # fallback for base class super() call
+    )
     _KELVIN_OFFSET = 273.15
 
     # Column that unambiguously identifies a sputtering log
@@ -970,9 +997,7 @@ class PC04ChamberParser(_BaseSputteringChamberParser):
         else:
             self._parse_annealing(mainfile, archive, logger)
 
-    def _parse_annealing(
-        self, mainfile: str, archive: EntryArchive, logger
-    ) -> None:
+    def _parse_annealing(self, mainfile: str, archive: EntryArchive, logger) -> None:
         """Parse a heater-only PC04 CSV into a :class:`PC04SubstrateAnnealing` entry."""
         from datetime import datetime
 
@@ -1277,9 +1302,7 @@ class SolarCellIVParser(MatchingParser):
                 if 'Imax A' in df.columns:
                     result.imax = ureg.Quantity(float(row['Imax A']), ureg.ampere)
                 if 'Pmax mW' in df.columns:
-                    result.pmax = ureg.Quantity(
-                        float(row['Pmax mW']), ureg.milliwatt
-                    )
+                    result.pmax = ureg.Quantity(float(row['Pmax mW']), ureg.milliwatt)
                 if 'Fill Factor' in df.columns:
                     result.fill_factor = float(row['Fill Factor'])
                 if 'Efficiency' in df.columns:
@@ -1289,16 +1312,16 @@ class SolarCellIVParser(MatchingParser):
                 if 'R at Isc' in df.columns:
                     result.r_at_isc = ureg.Quantity(float(row['R at Isc']), ureg.ohm)
                 if 'Exposure' in df.columns:
-                    result.exposure = ureg.Quantity(
-                        float(row['Exposure']), ureg.second
-                    )
+                    result.exposure = ureg.Quantity(float(row['Exposure']), ureg.second)
                 if 'Time' in df.columns and 'Date' in df.columns:
-                    result.datetime = f"{row.get('Date', '')} {row.get('Time', '')}"
+                    result.datetime = f'{row.get("Date", "")} {row.get("Time", "")}'
 
                 # Derived quantities -----------------------------------------
                 # Cell area [cm²] = Isc [A] / Jsc [mA/cm²] * 1000
                 isc_raw = float(row['Isc A']) if 'Isc A' in df.columns else None
-                jsc_raw = float(row['Jsc mA/cm2']) if 'Jsc mA/cm2' in df.columns else None
+                jsc_raw = (
+                    float(row['Jsc mA/cm2']) if 'Jsc mA/cm2' in df.columns else None
+                )
                 area_cm2 = None
                 if isc_raw and jsc_raw and jsc_raw != 0:
                     area_cm2 = (isc_raw / jsc_raw) * 1000.0
@@ -1320,16 +1343,26 @@ class SolarCellIVParser(MatchingParser):
                 # Filter out unphysical measurements:
                 # Jsc and Voc must be > 0; fill factor must be ≤ 85 %
                 voc_val = float(row['Voc V']) if 'Voc V' in df.columns else None
-                jsc_val = float(row['Jsc mA/cm2']) if 'Jsc mA/cm2' in df.columns else None
-                ff_val = float(row['Fill Factor']) if 'Fill Factor' in df.columns else None
+                jsc_val = (
+                    float(row['Jsc mA/cm2']) if 'Jsc mA/cm2' in df.columns else None
+                )
+                ff_val = (
+                    float(row['Fill Factor']) if 'Fill Factor' in df.columns else None
+                )
                 if voc_val is not None and voc_val <= 0:
-                    logger.warning(f'Skipping row {row.get("Measurement", "")}: Voc={voc_val} ≤ 0')
+                    logger.warning(
+                        f'Skipping row {row.get("Measurement", "")}: Voc={voc_val} ≤ 0'
+                    )
                     continue
                 if jsc_val is not None and jsc_val <= 0:
-                    logger.warning(f'Skipping row {row.get("Measurement", "")}: Jsc={jsc_val} ≤ 0')
+                    logger.warning(
+                        f'Skipping row {row.get("Measurement", "")}: Jsc={jsc_val} ≤ 0'
+                    )
                     continue
                 if ff_val is not None and ff_val > 85:
-                    logger.warning(f'Skipping row {row.get("Measurement", "")}: FF={ff_val} > 85 %')
+                    logger.warning(
+                        f'Skipping row {row.get("Measurement", "")}: FF={ff_val} > 85 %'
+                    )
                     continue
                 all_results.append(result)
 
@@ -1418,7 +1451,9 @@ class GDOESParser(MatchingParser):
         # (Depth [µm], C 166, Se 196, ..., *Se/Sb!), data from row 2 on.
         # Read with header=0 (title row) so column alignment is stable, then
         # rename columns using the actual element-name row.
-        df = pd.read_csv(mainfile, sep='\t', encoding='utf-8', engine='python', header=0)
+        df = pd.read_csv(
+            mainfile, sep='\t', encoding='utf-8', engine='python', header=0
+        )
 
         # Extract proper column names from row 1 of the raw file
         with open(mainfile, encoding='utf-8', errors='replace') as _fh:
@@ -1460,7 +1495,11 @@ class GDOESParser(MatchingParser):
             # Skip ratio/derived columns: name contains '*' or '/', or
             # finite values exceed 100 mol% (not a real concentration)
             finite_vals = values[np.isfinite(values)]
-            if '*' in col_str or '/' in col_str or (len(finite_vals) > 0 and np.max(finite_vals) > 100):
+            if (
+                '*' in col_str
+                or '/' in col_str
+                or (len(finite_vals) > 0 and np.max(finite_vals) > 100)
+            ):
                 continue
             # Replace remaining non-finite values (NaN/inf mid-column) with 0.0
             values = np.where(np.isfinite(values), values, 0.0)
@@ -1507,7 +1546,11 @@ def _parse_tfs_tiff_metadata(path: str) -> dict:
         if 34682 not in img.tag_v2:
             return meta
         blob = img.tag_v2[34682]
-        text = blob.decode('utf-8', errors='replace') if isinstance(blob, bytes) else str(blob)
+        text = (
+            blob.decode('utf-8', errors='replace')
+            if isinstance(blob, bytes)
+            else str(blob)
+        )
     current_section = None
     for line in (ln.strip() for ln in re.split(r'\r\n|\r|\n', text)):
         if not line:
@@ -1580,7 +1623,9 @@ class SEMZipParser(MatchingParser):
 
             # Capture session-level info from the first TIFF
             if microscope_model is None:
-                microscope_model = meta.get('System/SystemType') or meta.get('System/Type')
+                microscope_model = meta.get('System/SystemType') or meta.get(
+                    'System/Type'
+                )
                 source_type = meta.get('System/Source')
 
             res_x = int(meta.get('Image/ResolutionX', 0)) or None
@@ -1650,7 +1695,8 @@ class SEMZipParser(MatchingParser):
 
         # Set session-level datetime from the first image that has one.
         first_dt = next(
-            (img.acquisition_datetime for img in images if img.acquisition_datetime), None
+            (img.acquisition_datetime for img in images if img.acquisition_datetime),
+            None,
         )
         if first_dt:
             session.datetime = first_dt
@@ -1839,7 +1885,10 @@ class BrukerAFMParser(MatchingParser):
 
         seen: list = []
         for layer in spm.layers:
-            for data_key, is_mfm in ((b'@2:Image Data', False), (b'@3:Image Data', True)):
+            for data_key, is_mfm in (
+                (b'@2:Image Data', False),
+                (b'@3:Image Data', True),
+            ):
                 if data_key not in layer:
                     continue
                 try:
@@ -1914,7 +1963,8 @@ class BrukerAFMParser(MatchingParser):
         mainfile_stem = mainfile.rsplit('.', maxsplit=1)[0]
         current_ext = int(mainfile.rsplit('.', maxsplit=1)[-1])
         lower_siblings = [
-            p for p in glob.glob(mainfile_stem + '.*')
+            p
+            for p in glob.glob(mainfile_stem + '.*')
             if _re.search(r'\.[0-9]{3}$', p) and int(p.rsplit('.', 1)[-1]) < current_ext
         ]
         if lower_siblings:
@@ -1973,8 +2023,7 @@ class BrukerAFMParser(MatchingParser):
         # --- Collect all sibling .NNN files (same stem, any numbered extension) ---
         raw_root = archive.m_context.raw_path()
         siblings = sorted(
-            p for p in glob.glob(mainfile_stem + '.*')
-            if _re.search(r'\.[0-9]{3}$', p)
+            p for p in glob.glob(mainfile_stem + '.*') if _re.search(r'\.[0-9]{3}$', p)
         )
         source_files_rel = [os.path.relpath(p, raw_root) for p in siblings]
 
@@ -2027,7 +2076,9 @@ class BrukerAFMParser(MatchingParser):
                         ch.is_interleave = is_mfm
                         entry.channels.append(ch)
                     except Exception as exc:
-                        logger.warning(f'BrukerAFMParser: could not read [{sib_ext}] "{name}": {exc}')
+                        logger.warning(
+                            f'BrukerAFMParser: could not read [{sib_ext}] "{name}": {exc}'
+                        )
             except Exception as exc:
                 logger.warning(f'BrukerAFMParser: could not open {sibling_path}: {exc}')
 
@@ -2058,12 +2109,12 @@ class BrukerAFMParser(MatchingParser):
 # ---------------------------------------------------------------------------
 
 _DEDT_UNIT_TO_VS = {
-    0: 1.0,       # V/s
-    1: 1e-3,      # mV/s
-    2: 1e-6,      # µV/s
-    3: 1e-3 / 60, # mV/min
+    0: 1.0,  # V/s
+    1: 1e-3,  # mV/s
+    2: 1e-6,  # µV/s
+    3: 1e-3 / 60,  # mV/min
     4: 1.0 / 60,  # V/min
-    5: 1.0 / 3600,# V/h
+    5: 1.0 / 3600,  # V/h
 }
 
 
@@ -2074,7 +2125,11 @@ class MPRParser(MatchingParser):
         """Read a Pascal-style length-prefixed string from a bytes buffer."""
         try:
             length = data[offset]
-            return data[offset + 1 : offset + 1 + length].decode('latin1', errors='replace').strip()
+            return (
+                data[offset + 1 : offset + 1 + length]
+                .decode('latin1', errors='replace')
+                .strip()
+            )
         except Exception:
             return ''
 
@@ -2089,12 +2144,17 @@ class MPRParser(MatchingParser):
             # Technique ID map (subset of known EC-Lab technique bytes)
             tid = data[0x0000]
             TID_MAP = {
-                0x06: 'CV', 0x30: 'CV', 0x6C: 'LSV',
-                0x1D: 'PEIS', 0x1E: 'GEIS', 0x2D: 'PEIS',
+                0x06: 'CV',
+                0x30: 'CV',
+                0x6C: 'LSV',
+                0x1D: 'PEIS',
+                0x1E: 'GEIS',
+                0x2D: 'PEIS',
             }
             settings['technique'] = TID_MAP.get(tid, f'unknown_0x{tid:02X}')
             # Electrode area: float32 LE at offset 0x0211
             import struct
+
             settings['electrode_area'] = struct.unpack_from('<f', data, 0x0211)[0]
             # Pascal strings
             settings['comments'] = self._read_pascal_string(data, 0x0007)
@@ -2148,11 +2208,17 @@ class MPRParser(MatchingParser):
             yadg_cv = yadg_tech in ('CV', 'CVA', 'CV Advanced')
             yadg_iv = yadg_tech in ('LSV', 'Linear Sweep Voltammetry')
             if technique == 'EIS' and not yadg_eis:
-                logger.warning(f'MPRParser: columns suggest EIS but yadg reports {yadg_tech}')
+                logger.warning(
+                    f'MPRParser: columns suggest EIS but yadg reports {yadg_tech}'
+                )
             elif technique == 'CV' and not yadg_cv:
-                logger.warning(f'MPRParser: columns suggest CV but yadg reports {yadg_tech}')
+                logger.warning(
+                    f'MPRParser: columns suggest CV but yadg reports {yadg_tech}'
+                )
             elif technique == 'IV' and not yadg_iv:
-                logger.warning(f'MPRParser: columns suggest IV but yadg reports {yadg_tech}')
+                logger.warning(
+                    f'MPRParser: columns suggest IV but yadg reports {yadg_tech}'
+                )
 
         # --- Shared metadata ---
         electrode_area = settings.get('electrode_area') or None
@@ -2167,15 +2233,27 @@ class MPRParser(MatchingParser):
         if technique == 'EIS':
             measurement = EISMeasurement()
             measurement.frequency = ureg.Quantity(df['freq/Hz'].to_numpy(), ureg('Hz'))
-            measurement.real_impedance = ureg.Quantity(df['Re(Z)/Ohm'].to_numpy(), ureg('ohm'))
-            measurement.imaginary_impedance = ureg.Quantity(df['-Im(Z)/Ohm'].to_numpy(), ureg('ohm'))
+            measurement.real_impedance = ureg.Quantity(
+                df['Re(Z)/Ohm'].to_numpy(), ureg('ohm')
+            )
+            measurement.imaginary_impedance = ureg.Quantity(
+                df['-Im(Z)/Ohm'].to_numpy(), ureg('ohm')
+            )
             measurement.modulus = ureg.Quantity(df['|Z|/Ohm'].to_numpy(), ureg('ohm'))
-            measurement.phase = ureg.Quantity(df['Phase(Z)/deg'].to_numpy(), ureg('degree'))
+            measurement.phase = ureg.Quantity(
+                df['Phase(Z)/deg'].to_numpy(), ureg('degree')
+            )
             # Frequency range from data
-            measurement.frequency_initial = ureg.Quantity(float(df['freq/Hz'].max()), ureg('Hz'))
-            measurement.frequency_final = ureg.Quantity(float(df['freq/Hz'].min()), ureg('Hz'))
+            measurement.frequency_initial = ureg.Quantity(
+                float(df['freq/Hz'].max()), ureg('Hz')
+            )
+            measurement.frequency_final = ureg.Quantity(
+                float(df['freq/Hz'].min()), ureg('Hz')
+            )
             if electrode_area is not None:
-                measurement.area_electrode = ureg.Quantity(float(electrode_area), ureg('m**2'))
+                measurement.area_electrode = ureg.Quantity(
+                    float(electrode_area), ureg('m**2')
+                )
             if electrode_material:
                 measurement.electrode_material = electrode_material
             if electrolyte:
@@ -2191,7 +2269,9 @@ class MPRParser(MatchingParser):
             measurement.current = CurrentTimeSeries()
             measurement.scan = ScanTimeSeries()
             t = ureg.Quantity(df['time/s'].to_numpy(), ureg('second'))
-            measurement.voltage.value = ureg.Quantity(df['Ewe/V'].to_numpy(), ureg('volt'))
+            measurement.voltage.value = ureg.Quantity(
+                df['Ewe/V'].to_numpy(), ureg('volt')
+            )
             measurement.current.value = ureg.Quantity(
                 (df['<I>/mA'].to_numpy() / 1000.0), ureg('ampere')
             )
@@ -2203,17 +2283,25 @@ class MPRParser(MatchingParser):
             dEdt_vals = params.get('dE/dt', [])
             dEdt_units = params.get('dE/dt unit', [])
             if dEdt_vals:
-                scale = _DEDT_UNIT_TO_VS.get(int(dEdt_units[0]) if dEdt_units else 1, 1e-3)
-                measurement.rate = ureg.Quantity(float(dEdt_vals[0]) * scale, ureg('volt/second'))
+                scale = _DEDT_UNIT_TO_VS.get(
+                    int(dEdt_units[0]) if dEdt_units else 1, 1e-3
+                )
+                measurement.rate = ureg.Quantity(
+                    float(dEdt_vals[0]) * scale, ureg('volt/second')
+                )
             if electrode_area is not None:
-                measurement.area_electrode = ureg.Quantity(float(electrode_area), ureg('m**2'))
+                measurement.area_electrode = ureg.Quantity(
+                    float(electrode_area), ureg('m**2')
+                )
 
         else:  # IV / LSV
             measurement = PotentiostatMeasurement()
             measurement.voltage = VoltageTimeSeries()
             measurement.current = CurrentTimeSeries()
             t = ureg.Quantity(df['time/s'].to_numpy(), ureg('second'))
-            measurement.voltage.value = ureg.Quantity(df['Ewe/V'].to_numpy(), ureg('volt'))
+            measurement.voltage.value = ureg.Quantity(
+                df['Ewe/V'].to_numpy(), ureg('volt')
+            )
             measurement.current.value = ureg.Quantity(
                 (df['<I>/mA'].to_numpy() / 1000.0), ureg('ampere')
             )
@@ -2221,7 +2309,9 @@ class MPRParser(MatchingParser):
             measurement.current.time = t
             # No scan subsection — IV branch in normalize() will plot all data
             if electrode_area is not None:
-                measurement.area_electrode = ureg.Quantity(float(electrode_area), ureg('m**2'))
+                measurement.area_electrode = ureg.Quantity(
+                    float(electrode_area), ureg('m**2')
+                )
 
         # --- Create child archive for the measurement ---
         child_filename = f'{stem}.MPR_measurement.archive.{filetype}'

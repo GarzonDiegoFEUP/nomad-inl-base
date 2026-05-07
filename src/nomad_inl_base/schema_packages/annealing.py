@@ -163,7 +163,9 @@ class INLAnnealingStep(AnnealingStep):
             t_start = self.starting_temperature
             t_end = self.ending_temperature
             rate = self.heating_rate
-            t_start = t_start.magnitude if hasattr(t_start, 'magnitude') else float(t_start)
+            t_start = (
+                t_start.magnitude if hasattr(t_start, 'magnitude') else float(t_start)
+            )
             t_end = t_end.magnitude if hasattr(t_end, 'magnitude') else float(t_end)
             rate = rate.magnitude if hasattr(rate, 'magnitude') else float(rate)
             if rate != 0 and t_start != t_end:
@@ -278,7 +280,10 @@ class INLTubeFurnaceAnnealing(Process, EntryData):
             self.tube_diameter = recipe.tube_diameter
         if recipe.boat_position and not self.boat_position:
             self.boat_position = recipe.boat_position
-        if recipe.tube_pressure is not None and self.tube_pressure == _DEFAULT_TUBE_PRESSURE_MBAR:
+        if (
+            recipe.tube_pressure is not None
+            and self.tube_pressure == _DEFAULT_TUBE_PRESSURE_MBAR
+        ):
             self.tube_pressure = recipe.tube_pressure
         if recipe.chalcogen_sources and not self.chalcogen_sources:
             self.chalcogen_sources = recipe.chalcogen_sources
@@ -306,11 +311,18 @@ class INLTubeFurnaceAnnealingRecipe(INLTubeFurnaceAnnealing, EntryData):
     m_def = Section(
         label='INL Tube Furnace Annealing Recipe',
         categories=[INLAnnealingCategory],
-        a_eln=dict(hide=[
-            'instruments', 'lab_id', 'location',
-            'samples', 'datetime', 'end_time', 'apply_recipe',
-            'recipe',
-        ]),
+        a_eln=dict(
+            hide=[
+                'instruments',
+                'lab_id',
+                'location',
+                'samples',
+                'datetime',
+                'end_time',
+                'apply_recipe',
+                'recipe',
+            ]
+        ),
     )
 
 

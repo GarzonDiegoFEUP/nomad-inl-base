@@ -34,8 +34,10 @@ configuration = config.get_plugin_entry_point(
 
 m_package = SchemaPackage()
 
+
 class CrystaLLMCategory(EntryDataCategory):
     m_def = Category(label='CrystaLLM', categories=[EntryDataCategory])
+
 
 class crystal_material(EntryData):
     m_def = Section(
@@ -321,5 +323,6 @@ class crystal_material(EntryData):
 
         logger.info('NewSchema.normalize', parameter=configuration.parameter)
         self.message = f'Hello {self.name}!'
+
 
 m_package.__init_metainfo__()

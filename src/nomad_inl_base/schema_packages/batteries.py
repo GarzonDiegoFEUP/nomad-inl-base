@@ -617,18 +617,23 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
         # --- Chamber environment ---
         env = self.chamber_environment
         if env is not None:
-            for p_attr in ('pressure', 'ion_gauge_pressure', 'wide_range_gauge_pressure', 'roughing_pressure'):
+            for p_attr in (
+                'pressure',
+                'ion_gauge_pressure',
+                'wide_range_gauge_pressure',
+                'roughing_pressure',
+            ):
                 p = getattr(env, p_attr, None)
                 if p is not None:
                     p.value = trim(p.value)
                     p.set_value = trim(p.set_value)
-            for gf in (env.gas_flow or []):
+            for gf in env.gas_flow or []:
                 if gf.flow_rate is not None:
                     gf.flow_rate.value = trim(gf.flow_rate.value)
                     gf.flow_rate.set_value = trim(gf.flow_rate.set_value)
 
         # --- Sources ---
-        for src in (self.sources or []):
+        for src in self.sources or []:
             src.active = trim(src.active)
             src.shutter_open = trim(src.shutter_open)
             src.deposition_rate = trim(src.deposition_rate)
@@ -636,7 +641,7 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
             src.accumulated_thickness = trim(src.accumulated_thickness)
 
         # --- RF power supplies ---
-        for ps in (self.rf_power_supplies or []):
+        for ps in self.rf_power_supplies or []:
             ps.forward_power = trim(ps.forward_power)
             ps.reflected_power = trim(ps.reflected_power)
             ps.dc_bias = trim(ps.dc_bias)
@@ -675,7 +680,12 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
 
         ts = self.timestamps
         shutter = self.substrate_shutter_open
-        if ts is not None and shutter is not None and len(ts) > 1 and len(shutter) == len(ts):
+        if (
+            ts is not None
+            and shutter is not None
+            and len(ts) > 1
+            and len(shutter) == len(ts)
+        ):
             ts_raw = ts.magnitude if hasattr(ts, 'magnitude') else np.asarray(ts)
             dt = np.diff(ts_raw)
             self.deposition_time = float(np.sum(dt[shutter[:-1].astype(bool)]))
@@ -716,11 +726,15 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
         # ── Figure: Pressure [+ MFC flows] ────────────────────────────────────────────
         if show_pressure:
             capman = mag(env.pressure.value if (env and env.pressure) else None)
-            ion = mag(env.ion_gauge_pressure.value if (env and env.ion_gauge_pressure) else None)
+            ion = mag(
+                env.ion_gauge_pressure.value
+                if (env and env.ion_gauge_pressure)
+                else None
+            )
 
             mfc_rows = []
             if show_mfc_flows and env:
-                for gf in (env.gas_flow or []):
+                for gf in env.gas_flow or []:
                     if gf.flow_rate is not None:
                         fv = mag(gf.flow_rate.value)
                         if fv is not None and len(fv) == len(ts_raw):
@@ -741,18 +755,28 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
                 fig = make_subplots(rows=n_rows, cols=1, shared_xaxes=True)
                 for r_i, (arr, lbl, log_scale) in enumerate(pressure_rows, start=1):
                     fig.add_trace(
-                        go.Scatter(x=ts_raw, y=arr, name=lbl, showlegend=False,
-                                   line=dict(color=colours[(r_i - 1) % len(colours)])),
-                        row=r_i, col=1,
+                        go.Scatter(
+                            x=ts_raw,
+                            y=arr,
+                            name=lbl,
+                            showlegend=False,
+                            line=dict(color=colours[(r_i - 1) % len(colours)]),
+                        ),
+                        row=r_i,
+                        col=1,
                     )
                     fig.update_yaxes(title_text=lbl, row=r_i, col=1)
                     if log_scale:
                         fig.update_yaxes(type='log', row=r_i, col=1)
                 fig.update_xaxes(title_text='Time (s)', row=n_rows, col=1)
                 fig.update_layout(
-                    template='plotly_white', height=max(300, 200 * n_rows), showlegend=False,
+                    template='plotly_white',
+                    height=max(300, 200 * n_rows),
+                    showlegend=False,
                 )
-                self.figures.append(PlotlyFigure(label='Pressure', figure=fig.to_plotly_json()))
+                self.figures.append(
+                    PlotlyFigure(label='Pressure', figure=fig.to_plotly_json())
+                )
 
         # ── Figures: one per active sputtering source ──────────────────────────────────
         if show_sources:
@@ -763,7 +787,7 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
             }
             ps4 = self.dc_power_supply
 
-            for src in (self.sources or []):
+            for src in self.sources or []:
                 if src.active is None or not np.any(src.active.astype(bool)):
                     continue
 
@@ -815,16 +839,21 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
                 for r_i, (arr, lbl, log_scale) in enumerate(supply_rows, start=1):
                     fig.add_trace(
                         go.Scatter(x=ts_raw, y=arr, name=lbl, showlegend=False),
-                        row=r_i, col=1,
+                        row=r_i,
+                        col=1,
                     )
                     fig.update_yaxes(title_text=lbl, row=r_i, col=1)
                     if log_scale:
                         fig.update_yaxes(type='log', row=r_i, col=1)
                 fig.update_xaxes(title_text='Time (s)', row=n_rows, col=1)
                 fig.update_layout(
-                    template='plotly_white', height=max(300, 200 * n_rows), showlegend=False,
+                    template='plotly_white',
+                    height=max(300, 200 * n_rows),
+                    showlegend=False,
                 )
-                self.figures.append(PlotlyFigure(label=src_label, figure=fig.to_plotly_json()))
+                self.figures.append(
+                    PlotlyFigure(label=src_label, figure=fig.to_plotly_json())
+                )
 
         # ── Figure: Substrate Bias (only if bias was active) ──────────────────────────
         if show_substrate_bias:
@@ -844,14 +873,21 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
                     for r_i, (arr, lbl) in enumerate(bias_rows, start=1):
                         fig.add_trace(
                             go.Scatter(x=ts_raw, y=arr, name=lbl, showlegend=False),
-                            row=r_i, col=1,
+                            row=r_i,
+                            col=1,
                         )
                         fig.update_yaxes(title_text=lbl, row=r_i, col=1)
                     fig.update_xaxes(title_text='Time (s)', row=n_rows, col=1)
                     fig.update_layout(
-                        template='plotly_white', height=max(300, 200 * n_rows), showlegend=False,
+                        template='plotly_white',
+                        height=max(300, 200 * n_rows),
+                        showlegend=False,
                     )
-                    self.figures.append(PlotlyFigure(label='Substrate Bias', figure=fig.to_plotly_json()))
+                    self.figures.append(
+                        PlotlyFigure(
+                            label='Substrate Bias', figure=fig.to_plotly_json()
+                        )
+                    )
 
         # ── Figure: Temperatures ──────────────────────────────────────────────────────
         if show_temperatures:
@@ -859,22 +895,35 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
             temp_series = [
                 (self.substrate_temperature, 'Substrate T', True),
                 (self.substrate_temperature_2, 'Substrate T2', 'legendonly'),
-                (self.substrate_temperature_setpoint, 'Substrate T setpoint', 'legendonly'),
+                (
+                    self.substrate_temperature_setpoint,
+                    'Substrate T setpoint',
+                    'legendonly',
+                ),
             ]
             for arr, label, visible in temp_series:
                 raw = mag(arr)
                 if raw is not None and len(raw) == len(ts_raw):
-                    temp_traces.append(go.Scatter(
-                        x=ts_raw, y=raw - _KELVIN_TO_C, name=label, visible=visible,
-                    ))
+                    temp_traces.append(
+                        go.Scatter(
+                            x=ts_raw,
+                            y=raw - _KELVIN_TO_C,
+                            name=label,
+                            visible=visible,
+                        )
+                    )
             if temp_traces:
                 fig = go.Figure(data=temp_traces)
                 fig.update_layout(
-                    template='plotly_white', height=350,
-                    xaxis_title='Time (s)', yaxis_title='Temperature (°C)',
+                    template='plotly_white',
+                    height=350,
+                    xaxis_title='Time (s)',
+                    yaxis_title='Temperature (°C)',
                     showlegend=True,
                 )
-                self.figures.append(PlotlyFigure(label='Temperatures', figure=fig.to_plotly_json()))
+                self.figures.append(
+                    PlotlyFigure(label='Temperatures', figure=fig.to_plotly_json())
+                )
 
     def _create_thin_film(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         if not self.sources:
@@ -909,10 +958,9 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
             return
 
         filetype = 'yaml'
-        data_file = (
-            archive.metadata.mainfile.rsplit('/', maxsplit=1)[-1]
-            .rsplit('.', maxsplit=1)[0]
-        )
+        data_file = archive.metadata.mainfile.rsplit('/', maxsplit=1)[-1].rsplit(
+            '.', maxsplit=1
+        )[0]
 
         if self.start_datetime:
             date_str = self.start_datetime.strftime('%y%m%d')
@@ -1057,7 +1105,9 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
         type=np.float64,
         unit='kelvin',
         description='Maximum substrate heater temperature reached during the run. Auto-computed during file import.',
-        a_eln=ELNAnnotation(component='NumberEditQuantity', defaultDisplayUnit='celsius'),
+        a_eln=ELNAnnotation(
+            component='NumberEditQuantity', defaultDisplayUnit='celsius'
+        ),
     )
 
     # --- Sample references (user-set) ---
@@ -1129,32 +1179,44 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
 
     # --- Thermocouples TC1–6 ---
     tc1_temperature = Quantity(
-        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='kelvin',
         description='TC1 temperature as a time series.',
         a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
     )
     tc2_temperature = Quantity(
-        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='kelvin',
         description='TC2 temperature as a time series.',
         a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
     )
     tc3_temperature = Quantity(
-        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='kelvin',
         description='TC3 temperature as a time series.',
         a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
     )
     tc4_temperature = Quantity(
-        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='kelvin',
         description='TC4 temperature as a time series.',
         a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
     )
     tc5_temperature = Quantity(
-        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='kelvin',
         description='TC5 temperature as a time series.',
         a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
     )
     tc6_temperature = Quantity(
-        type=np.dtype(np.float64), shape=['*'], unit='kelvin',
+        type=np.dtype(np.float64),
+        shape=['*'],
+        unit='kelvin',
         description='TC6 temperature as a time series.',
         a_eln=ELNAnnotation(defaultDisplayUnit='celsius'),
     )
@@ -1193,7 +1255,11 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
         if ts is None or len(ts) == 0:
             return
 
-        cfg = self.plot_config if self.plot_config is not None else PlotConfig(plot_mode='Thermal Treatment')
+        cfg = (
+            self.plot_config
+            if self.plot_config is not None
+            else PlotConfig(plot_mode='Thermal Treatment')
+        )
 
         _KELVIN_TO_C = 273.15
         _PA_TO_MBAR = 1e-2
@@ -1211,55 +1277,82 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
             temp_series = [
                 (self.substrate_temperature, 'Substrate T', True),
                 (self.substrate_temperature_2, 'Substrate T2', 'legendonly'),
-                (self.substrate_temperature_setpoint, 'Substrate T setpoint', 'legendonly'),
+                (
+                    self.substrate_temperature_setpoint,
+                    'Substrate T setpoint',
+                    'legendonly',
+                ),
             ]
             for arr, label, visible in temp_series:
                 raw = mag(arr)
                 if raw is not None and len(raw) == len(ts_raw):
-                    temp_traces.append(go.Scatter(
-                        x=ts_raw, y=raw - _KELVIN_TO_C, name=label, visible=visible,
-                    ))
+                    temp_traces.append(
+                        go.Scatter(
+                            x=ts_raw,
+                            y=raw - _KELVIN_TO_C,
+                            name=label,
+                            visible=visible,
+                        )
+                    )
             if temp_traces:
                 fig = go.Figure(data=temp_traces)
                 fig.update_layout(
-                    template='plotly_white', height=400,
-                    xaxis_title='Time (s)', yaxis_title='Temperature (°C)',
+                    template='plotly_white',
+                    height=400,
+                    xaxis_title='Time (s)',
+                    yaxis_title='Temperature (°C)',
                     showlegend=True,
                 )
-                self.figures.append(PlotlyFigure(label='Temperatures', figure=fig.to_plotly_json()))
+                self.figures.append(
+                    PlotlyFigure(label='Temperatures', figure=fig.to_plotly_json())
+                )
 
         # ── Figure: Pressure ─────────────────────────────────────────────────────────
         if cfg.show_pressure:
             p_raw = mag(self.wide_range_pressure)
             if p_raw is not None and len(p_raw) == len(ts_raw):
                 fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    x=ts_raw, y=p_raw * _PA_TO_MBAR, name='Wide Range Gauge',
-                    line=dict(color='darkorange'),
-                ))
+                fig.add_trace(
+                    go.Scatter(
+                        x=ts_raw,
+                        y=p_raw * _PA_TO_MBAR,
+                        name='Wide Range Gauge',
+                        line=dict(color='darkorange'),
+                    )
+                )
                 fig.update_yaxes(type='log', title_text='Pressure (mbar)')
                 fig.update_layout(
-                    template='plotly_white', height=300,
+                    template='plotly_white',
+                    height=300,
                     xaxis_title='Time (s)',
                     showlegend=False,
                 )
-                self.figures.append(PlotlyFigure(label='Pressure', figure=fig.to_plotly_json()))
+                self.figures.append(
+                    PlotlyFigure(label='Pressure', figure=fig.to_plotly_json())
+                )
 
         # ── Figure: Heater Current ────────────────────────────────────────────────────
         i_raw = mag(self.substrate_heater_current)
         if i_raw is not None and len(i_raw) == len(ts_raw):
             fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=ts_raw, y=i_raw, name='Heater Current',
-                line=dict(color='crimson'),
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    x=ts_raw,
+                    y=i_raw,
+                    name='Heater Current',
+                    line=dict(color='crimson'),
+                )
+            )
             fig.update_yaxes(title_text='Current (A)')
             fig.update_layout(
-                template='plotly_white', height=280,
+                template='plotly_white',
+                height=280,
                 xaxis_title='Time (s)',
                 showlegend=False,
             )
-            self.figures.append(PlotlyFigure(label='Heater Current', figure=fig.to_plotly_json()))
+            self.figures.append(
+                PlotlyFigure(label='Heater Current', figure=fig.to_plotly_json())
+            )
 
 
 m_package.__init_metainfo__()

@@ -31,9 +31,17 @@ class EQEJupyterAnalysis(JupyterAnalysis, EntryData):
         description='Jupyter notebook analysis for External Quantum Efficiency data.',
         a_display=SectionDisplayAnnotation(
             order=[
-                'name', 'datetime', 'lab_id', 'location', 'description',
-                'method', 'template', 'notebook', 'trigger_generate_notebook',
-                'query_for_inputs', 'trigger_reset_inputs',
+                'name',
+                'datetime',
+                'lab_id',
+                'location',
+                'description',
+                'method',
+                'template',
+                'notebook',
+                'trigger_generate_notebook',
+                'query_for_inputs',
+                'trigger_reset_inputs',
             ],
         ),
     )
@@ -74,9 +82,17 @@ class SolarCellJupyterAnalysis(JupyterAnalysis, EntryData):
         description='Jupyter notebook analysis for Solar Cell IV data.',
         a_display=SectionDisplayAnnotation(
             order=[
-                'name', 'datetime', 'lab_id', 'location', 'description',
-                'method', 'template', 'notebook', 'trigger_generate_notebook',
-                'query_for_inputs', 'trigger_reset_inputs',
+                'name',
+                'datetime',
+                'lab_id',
+                'location',
+                'description',
+                'method',
+                'template',
+                'notebook',
+                'trigger_generate_notebook',
+                'query_for_inputs',
+                'trigger_reset_inputs',
             ],
         ),
     )
@@ -117,9 +133,17 @@ class GDOESJupyterAnalysis(JupyterAnalysis, EntryData):
         description='Jupyter notebook analysis for GDOES depth profile data.',
         a_display=SectionDisplayAnnotation(
             order=[
-                'name', 'datetime', 'lab_id', 'location', 'description',
-                'method', 'template', 'notebook', 'trigger_generate_notebook',
-                'query_for_inputs', 'trigger_reset_inputs',
+                'name',
+                'datetime',
+                'lab_id',
+                'location',
+                'description',
+                'method',
+                'template',
+                'notebook',
+                'trigger_generate_notebook',
+                'query_for_inputs',
+                'trigger_reset_inputs',
             ],
         ),
     )

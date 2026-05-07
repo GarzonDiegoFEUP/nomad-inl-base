@@ -1,0 +1,5 @@
+data:
+  m_def: nomad_inl_base.schema_packages.entities.INLThinFilm
+  name: TestFilm
+  material: CIGS
+  thickness: 2.0e-6

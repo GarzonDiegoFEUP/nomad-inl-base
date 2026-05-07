@@ -31,6 +31,7 @@ star_entry_point = StarPackageEntryPoint(
     description='STAR processes entry point configuration.',
 )
 
+
 class CrystaLLMStructureEntryPoint(SchemaPackageEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
@@ -44,6 +45,7 @@ crystaLLM_entry_point = CrystaLLMStructureEntryPoint(
     name='CrystaLLM Structure',
     description='CrystaLLM Structure entry point configuration.',
 )
+
 
 class WetDepositionPackageEntryPoint(SchemaPackageEntryPoint):
     def load(self):
@@ -121,6 +123,3 @@ annealing_entry_point = INLAnnealingPackageEntryPoint(
     name='INL Annealing',
     description='ELN schemas for tube furnace annealing (selenization / sulfurization).',
 )
-
-
-

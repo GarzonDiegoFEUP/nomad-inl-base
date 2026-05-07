@@ -45,6 +45,7 @@ dev = [
     "ruff",
     "pytest",
     "structlog",
+    "python-logstash>=0.4.6",
     "mkdocs",
     "mkdocs-material==8.1.1",
     "pymdown-extensions",
@@ -140,6 +141,9 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [project.entry-points.'nomad.plugin']
 CVarser_entry_point = "nomad_inl_base.parsers:CV_parser_entry_point"

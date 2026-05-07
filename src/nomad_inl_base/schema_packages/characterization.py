@@ -296,7 +296,9 @@ class PotentiostatMeasurement(INLCharacterization, PlotSection):
                 x_voltage = voltage
                 y_current = current
                 scan_plotted = None
-            title = 'CV curve' + (f', scan {int(scan_plotted)}' if scan_plotted is not None else '')
+            title = 'CV curve' + (
+                f', scan {int(scan_plotted)}' if scan_plotted is not None else ''
+            )
 
         first_line = px.scatter(x=x_voltage, y=y_current)
         figure1 = make_subplots(rows=1, cols=1)
@@ -1008,7 +1010,11 @@ class INLSolarCellIV(INLCharacterization, PlotSection):
                 area_cm2 = None
                 if self.results:
                     matching = next(
-                        (r for r in self.results if r.measurement_name == curve.measurement_name),
+                        (
+                            r
+                            for r in self.results
+                            if r.measurement_name == curve.measurement_name
+                        ),
                         None,
                     )
                     if matching is None and best_idx < len(self.results):
@@ -1142,8 +1148,7 @@ class INLGDOES(INLCharacterization, PlotSection):
                     conc_arr = np.array(profile.concentration)
                     n = min(len(depth), len(conc_arr))
                     conc = [
-                        None if not np.isfinite(v) else float(v)
-                        for v in conc_arr[:n]
+                        None if not np.isfinite(v) else float(v) for v in conc_arr[:n]
                     ]
                     fig.add_trace(
                         go.Scatter(
@@ -1437,8 +1442,16 @@ class INLSEMSession(INLCharacterization, PlotSection):
                     tif_path = os.path.join(tif_dir, img.file_name)
                     if os.path.exists(tif_path):
                         try:
-                            res_x = int(img.width_pixels) if img.width_pixels is not None else None
-                            res_y = int(img.height_pixels) if img.height_pixels is not None else None
+                            res_x = (
+                                int(img.width_pixels)
+                                if img.width_pixels is not None
+                                else None
+                            )
+                            res_y = (
+                                int(img.height_pixels)
+                                if img.height_pixels is not None
+                                else None
+                            )
                             with _PilImage.open(tif_path) as pil_img:
                                 if res_x is None:
                                     res_x = pil_img.width
@@ -1703,14 +1716,19 @@ class INLAFMSession(INLCharacterization, PlotSection):
                 spm = pySPM.Bruker(full_path)
                 spm._get_layer_val = types.MethodType(_fixed_get_layer_val, spm)
             except Exception as exc:
-                logger.warning(f'INLAFMSession: could not open {source_file}', exc_info=exc)
+                logger.warning(
+                    f'INLAFMSession: could not open {source_file}', exc_info=exc
+                )
                 continue
 
             seen_names: set = set()
             for layer in spm.layers:
                 ch_name = None
                 is_mfm = False
-                for data_key, mfm_flag in ((b'@2:Image Data', False), (b'@3:Image Data', True)):
+                for data_key, mfm_flag in (
+                    (b'@2:Image Data', False),
+                    (b'@3:Image Data', True),
+                ):
                     if data_key not in layer:
                         continue
                     try:
@@ -1735,10 +1753,18 @@ class INLAFMSession(INLCharacterization, PlotSection):
                     y_size = float(real.get('y', data.shape[0]))
                     size_unit = real.get('unit', 'nm')
                     scale_m = _UNIT_TO_M.get(size_unit, 1e-9)
-                    x_um = np.linspace(0.0, x_size * scale_m * 1e6, data.shape[1], endpoint=False)
-                    y_um = np.linspace(0.0, y_size * scale_m * 1e6, data.shape[0], endpoint=False)
+                    x_um = np.linspace(
+                        0.0, x_size * scale_m * 1e6, data.shape[1], endpoint=False
+                    )
+                    y_um = np.linspace(
+                        0.0, y_size * scale_m * 1e6, data.shape[0], endpoint=False
+                    )
                     unit = img.zscale or ''
-                    z_label = f'[{file_ext}] {ch_name} ({unit})' if unit else f'[{file_ext}] {ch_name}'
+                    z_label = (
+                        f'[{file_ext}] {ch_name} ({unit})'
+                        if unit
+                        else f'[{file_ext}] {ch_name}'
+                    )
                     fig = px.imshow(
                         data,
                         x=x_um,
@@ -1754,7 +1780,9 @@ class INLAFMSession(INLCharacterization, PlotSection):
                         width=600,
                         title_text=z_label,
                     )
-                    self.figures.append(PlotlyFigure(label=z_label, figure=fig.to_plotly_json()))
+                    self.figures.append(
+                        PlotlyFigure(label=z_label, figure=fig.to_plotly_json())
+                    )
                 except Exception as exc:
                     logger.warning(
                         f'INLAFMSession: could not build figure for [{file_ext}] "{ch_name}"',
@@ -1942,9 +1970,7 @@ class INLEDXSpectrum(INLCharacterization, PlotSection):
         energy = [float(v) for v in np.array(spectrum.energy_axis)]
         counts = [float(v) for v in np.array(spectrum.counts)]
         fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(x=energy, y=counts, mode='lines', name='EDX spectrum')
-        )
+        fig.add_trace(go.Scatter(x=energy, y=counts, mode='lines', name='EDX spectrum'))
         fig.update_layout(
             template='plotly_white',
             height=400,
@@ -1953,7 +1979,15 @@ class INLEDXSpectrum(INLCharacterization, PlotSection):
             yaxis_title='Counts',
             title_text='EDX Spectrum',
             dragmode='zoom',
-            xaxis=dict(fixedrange=False, range=[0, self.beam_energy.to('keV').magnitude * 1.1 if self.beam_energy else None]),
+            xaxis=dict(
+                fixedrange=False,
+                range=[
+                    0,
+                    self.beam_energy.to('keV').magnitude * 1.1
+                    if self.beam_energy
+                    else None,
+                ],
+            ),
             yaxis=dict(fixedrange=False),
         )
         self.figures.append(
@@ -2074,7 +2108,11 @@ class EISMeasurement(INLCharacterization, PlotSection):
 
         freq = np.array(self.frequency)
         re_z = np.array(self.real_impedance)
-        im_z = np.array(self.imaginary_impedance) if self.imaginary_impedance is not None else None
+        im_z = (
+            np.array(self.imaginary_impedance)
+            if self.imaginary_impedance is not None
+            else None
+        )
         mod_z = np.array(self.modulus) if self.modulus is not None else None
         phase = np.array(self.phase) if self.phase is not None else None
 
