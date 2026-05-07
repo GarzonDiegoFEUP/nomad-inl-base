@@ -106,6 +106,56 @@ def create_archive(
     return get_hash_ref(context.upload_id, filename)
 
 
+def create_child_entry(
+    entry,
+    archive,
+    child_filename: str,
+    filetype: str,
+    raw_name: str,
+    raw_ref: str,
+    logger,
+    *,
+    guard: bool = False,
+):
+    """Write a child archive and set ``archive.data`` appropriately.
+
+    In a server context the child ``.archive.yaml`` file is written and
+    ``archive.data`` is set to a :class:`RawFile_` pointer so the raw-file
+    entry and the editable measurement entry remain separate.  User edits
+    (e.g. adding sample references) are preserved because ``create_archive``
+    skips overwriting files whose content has changed.
+
+    When ``guard=True`` the child archive is only written if it does not yet
+    exist (used by parsers like MPR and SEM that want strict edit preservation).
+
+    In a local / test :class:`ClientContext` ``create_archive`` is a no-op so
+    the child file is never written.  In that case ``archive.data`` is set
+    directly to the entry object so tests can inspect the parsed data.
+    """
+    from nomad.datamodel.context import ClientContext
+    from nomad.datamodel.datamodel import EntryArchive, EntryMetadata
+
+    if not guard or not archive.m_context.raw_path_exists(child_filename):
+        child_archive = EntryArchive(
+            data=entry,
+            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
+        )
+        create_archive(
+            child_archive.m_to_dict(),
+            archive.m_context,
+            child_filename,
+            filetype,
+            logger,
+        )
+
+    if isinstance(archive.m_context, ClientContext):
+        archive.data = entry
+    else:
+        from nomad_inl_base.parsers.parser import RawFile_
+
+        archive.data = RawFile_(name=raw_name, file_=raw_ref)
+
+
 def fill_quantity(dataframe, column_header, read_unit=None):
     """
     Fetches a value from a DataFrame and optionally converts it to a specified unit.

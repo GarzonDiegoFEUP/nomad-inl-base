@@ -46,7 +46,12 @@ from nomad_inl_base.schema_packages.characterization import (
     ScanTimeSeries,
     VoltageTimeSeries,
 )
-from nomad_inl_base.utils import create_archive, fill_quantity, get_hash_ref
+from nomad_inl_base.utils import (
+    create_archive,
+    create_child_entry,
+    fill_quantity,
+    get_hash_ref,
+)
 
 
 class RawFile_(EntryData):
@@ -329,24 +334,13 @@ class KLATencorProfilerParser(MatchingParser):
             result.Rh = float(rh_a) * self._ANGSTROM_TO_M
         entry.results.append(result)
 
-        # --- Create archive ---
-        prof_filename = f'{data_file}.profiler.archive.{filetype}'
-        prof_archive = EntryArchive(
-            data=entry,
-            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
-        )
-        create_archive(
-            prof_archive.m_to_dict(),
-            archive.m_context,
-            prof_filename,
-            filetype,
-            logger,
-        )
-
-        file_reference = get_hash_ref(archive.m_context.upload_id, data_file)
-        archive.data = RawFile_(
-            name=data_file + '_raw',
-            file_=file_reference,
+        create_child_entry(
+            entry, archive,
+            child_filename=f'{data_file}.profiler.archive.{filetype}',
+            filetype=filetype,
+            raw_name=data_file + '_raw',
+            raw_ref=get_hash_ref(archive.m_context.upload_id, data_file),
+            logger=logger,
         )
         archive.metadata.entry_name = data_file
 
@@ -379,6 +373,7 @@ class FourPointProbeParser(MatchingParser):
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
         import re
 
+        filetype = 'yaml'
         data_file = (
             mainfile.rsplit('/', maxsplit=1)[-1]
             .rsplit('.', maxsplit=1)[0]
@@ -598,7 +593,14 @@ class FourPointProbeParser(MatchingParser):
             result.resistivity = rho_arr * self._OHM_CM_TO_OHM_M
         entry.results.append(result)
 
-        archive.data = entry
+        create_child_entry(
+            entry, archive,
+            child_filename=f'{data_file}.four_point_probe.archive.{filetype}',
+            filetype=filetype,
+            raw_name=data_file + '_raw',
+            raw_ref=get_hash_ref(archive.m_context.upload_id, data_file),
+            logger=logger,
+        )
         archive.metadata.entry_name = data_file
 
 
@@ -1189,22 +1191,13 @@ class EQEParser(MatchingParser):
         if date_val:
             eqe_entry.datetime = date_val
 
-        eqe_filename = f'{data_file}.EQE.archive.{filetype}'
-        eqe_archive = EntryArchive(
-            data=eqe_entry,
-            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
-        )
-        create_archive(
-            eqe_archive.m_to_dict(),
-            archive.m_context,
-            eqe_filename,
-            filetype,
-            logger,
-        )
-
-        archive.data = RawFile_(
-            name=data_file + '_raw',
-            file_=get_hash_ref(archive.m_context.upload_id, data_file),
+        create_child_entry(
+            eqe_entry, archive,
+            child_filename=f'{data_file}.EQE.archive.{filetype}',
+            filetype=filetype,
+            raw_name=data_file + '_raw',
+            raw_ref=get_hash_ref(archive.m_context.upload_id, data_file),
+            logger=logger,
         )
         archive.metadata.entry_name = data_file
 
@@ -1395,7 +1388,17 @@ class SolarCellIVParser(MatchingParser):
         entry.results = all_results
         entry.iv_curves = all_curves
 
-        archive.data = entry
+        filetype = 'yaml'
+        safe_prefix = sample_prefix.replace(' ', '_')
+        data_file = basename.rsplit('.', maxsplit=1)[0].replace(' ', '_')
+        create_child_entry(
+            entry, archive,
+            child_filename=f'{safe_prefix}.SolarCellIV.archive.{filetype}',
+            filetype=filetype,
+            raw_name=data_file + '_raw',
+            raw_ref=get_hash_ref(archive.m_context.upload_id, data_file),
+            logger=logger,
+        )
         archive.metadata.entry_name = sample_prefix
 
 
@@ -1406,6 +1409,8 @@ class SolarCellIVParser(MatchingParser):
 
 class GDOESParser(MatchingParser):
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        import re
+
         filetype = 'yaml'
         data_file = (
             mainfile.rsplit('/', maxsplit=1)[-1]
@@ -1470,28 +1475,21 @@ class GDOESParser(MatchingParser):
             # Replace remaining non-finite values (NaN/inf mid-column) with 0.0
             values = np.where(np.isfinite(values), values, 0.0)
             profile = GDOESElementProfile()
-            profile.element_name = col_str
+            # Strip wavelength suffix (e.g. 'Se 196' → 'Se')
+            elem_match = re.match(r'^([A-Z][a-z]?)', col_str)
+            profile.element_name = elem_match.group(1) if elem_match else col_str
             profile.concentration = values
             profiles.append(profile)
 
         gdoes_entry.element_profiles = profiles
 
-        gdoes_filename = f'{data_file}.GDOES.archive.{filetype}'
-        gdoes_archive = EntryArchive(
-            data=gdoes_entry,
-            metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
-        )
-        create_archive(
-            gdoes_archive.m_to_dict(),
-            archive.m_context,
-            gdoes_filename,
-            filetype,
-            logger,
-        )
-
-        archive.data = RawFile_(
-            name=data_file + '_raw',
-            file_=get_hash_ref(archive.m_context.upload_id, data_file),
+        create_child_entry(
+            gdoes_entry, archive,
+            child_filename=f'{data_file}.GDOES.archive.{filetype}',
+            filetype=filetype,
+            raw_name=data_file + '_raw',
+            raw_ref=get_hash_ref(archive.m_context.upload_id, data_file),
+            logger=logger,
         )
         archive.metadata.entry_name = data_file
 
@@ -1668,22 +1666,14 @@ class SEMZipParser(MatchingParser):
             session.datetime = first_dt
 
         sidecar_filename = f'{base_name}.SEMSession.archive.yaml'
-        if not archive.m_context.raw_path_exists(sidecar_filename):
-            sem_archive = EntryArchive(
-                data=session,
-                metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
-            )
-            create_archive(
-                sem_archive.m_to_dict(),
-                archive.m_context,
-                sidecar_filename,
-                'yaml',
-                logger,
-            )
-
-        archive.data = RawFile_(
-            name=base_name + '_sem_raw',
-            file_=get_hash_ref(archive.m_context.upload_id, base_name),
+        create_child_entry(
+            session, archive,
+            child_filename=sidecar_filename,
+            filetype='yaml',
+            raw_name=base_name + '_sem_raw',
+            raw_ref=get_hash_ref(archive.m_context.upload_id, base_name),
+            logger=logger,
+            guard=True,
         )
         archive.metadata.entry_name = base_name
 
@@ -2279,23 +2269,14 @@ class MPRParser(MatchingParser):
                     float(electrode_area), ureg('m**2')
                 )
 
-        # --- Create child archive for the measurement ---
         child_filename = f'{stem}.MPR_measurement.archive.{filetype}'
-        if not archive.m_context.raw_path_exists(child_filename):
-            child_archive = EntryArchive(
-                data=measurement,
-                metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
-            )
-            create_archive(
-                child_archive.m_to_dict(),
-                archive.m_context,
-                child_filename,
-                filetype,
-                logger,
-            )
-
-        archive.data = RawFile_(
-            name=stem + '_raw',
-            file_=file_reference,
+        create_child_entry(
+            measurement, archive,
+            child_filename=child_filename,
+            filetype=filetype,
+            raw_name=stem + '_raw',
+            raw_ref=file_reference,
+            logger=logger,
+            guard=True,
         )
         archive.metadata.entry_name = stem

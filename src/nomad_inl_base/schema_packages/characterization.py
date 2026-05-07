@@ -1435,7 +1435,9 @@ class INLSEMSession(INLCharacterization, PlotSection):
             from PIL import Image as _PilImage
 
             _MAX_PX = 1024
-            raw_root = archive.m_context.raw_path()
+            # ClientContext.raw_path() returns os.curdir, which reflects the cwd at
+            # call time (not the upload dir). Use local_dir when available.
+            raw_root = getattr(archive.m_context, 'local_dir', None) or archive.m_context.raw_path()
             tif_dir = os.path.join(raw_root, self.raw_dir)
             for img in self.images:
                 if img.file_name and os.path.isdir(tif_dir):

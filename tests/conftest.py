@@ -1,6 +1,5 @@
 import logging
 import os
-import zipfile
 
 import pytest
 import structlog
@@ -91,21 +90,22 @@ def fixture_parsed_archive(request):
 @pytest.fixture(name='sem_zip', scope='function')
 def fixture_sem_zip(tmp_path):
     """
-    Creates a temporary zip archive containing the SEM TIFF test file,
-    named so that ``SEMZipParser`` pattern ``YYMMDD - *.zip`` matches it.
+    Copies the SEM TIFF test file to a temp directory so that ``SEMZipParser``
+    can match and parse it.  (In OASIS, NOMAD auto-extracts ZIP uploads before
+    matching parsers, so the parser always sees the raw TIF.)
 
-    Returns the path to the created zip file.
+    Returns the path to the copied TIFF file.
     """
+    import shutil
+
     tif_src = os.path.join('tests', 'data', '250416 - sample.tif')
-    zip_path = str(tmp_path / '250416 - sample.zip')
+    tif_path = str(tmp_path / '250416 - sample.tif')
+    shutil.copy(tif_src, tif_path)
 
-    with zipfile.ZipFile(zip_path, 'w') as zf:
-        zf.write(tif_src, arcname='250416 - sample.tif')
+    yield tif_path
 
-    yield zip_path
-
-    if os.path.exists(zip_path):
-        os.remove(zip_path)
-    archive_json = zip_path.rsplit('.', 1)[0] + '.archive.json'
-    if os.path.exists(archive_json):
-        os.remove(archive_json)
+    archive_yaml = tif_path.rsplit('.', 1)[0] + '.SEMSession.archive.yaml'
+    archive_json = tif_path.rsplit('.', 1)[0] + '.archive.json'
+    for p in (tif_path, archive_yaml, archive_json):
+        if os.path.exists(p):
+            os.remove(p)
