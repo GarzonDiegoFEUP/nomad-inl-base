@@ -191,3 +191,21 @@ bruker_afm_parser_entry_point = BrukerAFMParserEntryPoint(
     mainfile_name_re=r'.*\.\d{3}$',
     mainfile_contents_re=r'\\\*File list',
 )
+
+
+class MPRParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import MPRParser
+
+        return MPRParser(**self.dict())
+
+
+mpr_parser_entry_point = MPRParserEntryPoint(
+    name='MPRParser',
+    description=(
+        'Parser for Bio-Logic EC-Lab binary .mpr files. '
+        'Technique (CV, IV/LSV, EIS) is auto-detected from file content.'
+    ),
+    mainfile_name_re=r'(?i).*\.mpr$',
+    mainfile_mime_re=r'application/(octet-stream|x-tar)',
+)

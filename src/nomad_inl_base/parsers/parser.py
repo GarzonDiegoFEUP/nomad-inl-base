@@ -35,6 +35,7 @@ from nomad_inl_base.schema_packages.batteries import (
 from nomad_inl_base.schema_packages.characterization import (
     ChronoamperometryMeasurement,
     CurrentTimeSeries,
+    EISMeasurement,
     INLAFMChannel,
     INLAFMSession,
     INLFourPointProbe,
@@ -2048,5 +2049,197 @@ class BrukerAFMParser(MatchingParser):
         archive.data = RawFile_(
             name=data_file + '_raw',
             file_=get_hash_ref(archive.m_context.upload_id, data_file),
+        )
+        archive.metadata.entry_name = stem
+
+
+# ---------------------------------------------------------------------------
+# Bio-Logic .mpr parser  (CV, IV / LSV, EIS)
+# ---------------------------------------------------------------------------
+
+_DEDT_UNIT_TO_VS = {
+    0: 1.0,       # V/s
+    1: 1e-3,      # mV/s
+    2: 1e-6,      # µV/s
+    3: 1e-3 / 60, # mV/min
+    4: 1.0 / 60,  # V/min
+    5: 1.0 / 3600,# V/h
+}
+
+
+class MPRParser(MatchingParser):
+    """Parse Bio-Logic EC-Lab .mpr files and create CV, IV, or EIS child entries."""
+
+    def _read_pascal_string(self, data: bytes, offset: int) -> str:
+        """Read a Pascal-style length-prefixed string from a bytes buffer."""
+        try:
+            length = data[offset]
+            return data[offset + 1 : offset + 1 + length].decode('latin1', errors='replace').strip()
+        except Exception:
+            return ''
+
+    def _read_galvani_settings(self, mpr) -> dict:
+        """Extract settings from the galvani VMP Set module binary data."""
+        settings = {}
+        for mod in mpr.modules:
+            name = mod.get('shortname', b'').decode('latin1').strip()
+            if name != 'VMP Set':
+                continue
+            data = mod['data']
+            # Technique ID map (subset of known EC-Lab technique bytes)
+            tid = data[0x0000]
+            TID_MAP = {
+                0x06: 'CV', 0x30: 'CV', 0x6C: 'LSV',
+                0x1D: 'PEIS', 0x1E: 'GEIS', 0x2D: 'PEIS',
+            }
+            settings['technique'] = TID_MAP.get(tid, f'unknown_0x{tid:02X}')
+            # Electrode area: float32 LE at offset 0x0211
+            import struct
+            settings['electrode_area'] = struct.unpack_from('<f', data, 0x0211)[0]
+            # Pascal strings
+            settings['comments'] = self._read_pascal_string(data, 0x0007)
+            settings['electrode_material'] = self._read_pascal_string(data, 0x011E)
+            settings['electrolyte'] = self._read_pascal_string(data, 0x01C0)
+            settings['reference_electrode'] = self._read_pascal_string(data, 0x0215)
+            break
+        return settings
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        import json
+        from pathlib import Path
+
+        import yadg
+        from galvani import MPRfile
+
+        filetype = 'yaml'
+        stem = Path(mainfile).stem.replace(' ', '_')
+
+        # --- Load measurement data via galvani ---
+        mpr = MPRfile(mainfile)
+        df = pd.DataFrame(mpr.data)
+        cols = set(df.columns)
+
+        # --- Load metadata via yadg (may fail for unsupported techniques) ---
+        settings: dict = {}
+        params: dict = {}
+        try:
+            dt = yadg.extractors.extract(
+                filetype='eclab.mpr', path=Path(mainfile), timezone='UTC'
+            )
+            meta = json.loads(dt.attrs['original_metadata'])
+            settings = meta.get('settings', {})
+            params = meta.get('params', {})
+        except Exception:
+            # Fall back to reading the galvani VMP Set module directly
+            settings = self._read_galvani_settings(mpr)
+
+        # --- Detect technique from column presence ---
+        if 'freq/Hz' in cols:
+            technique = 'EIS'
+        elif 'cycle number' in cols:
+            technique = 'CV'
+        else:
+            technique = 'IV'
+
+        # Log if yadg disagrees
+        yadg_tech = settings.get('technique', '')
+        if yadg_tech:
+            yadg_eis = yadg_tech in ('PEIS', 'GEIS')
+            yadg_cv = yadg_tech in ('CV', 'CVA', 'CV Advanced')
+            yadg_iv = yadg_tech in ('LSV', 'Linear Sweep Voltammetry')
+            if technique == 'EIS' and not yadg_eis:
+                logger.warning(f'MPRParser: columns suggest EIS but yadg reports {yadg_tech}')
+            elif technique == 'CV' and not yadg_cv:
+                logger.warning(f'MPRParser: columns suggest CV but yadg reports {yadg_tech}')
+            elif technique == 'IV' and not yadg_iv:
+                logger.warning(f'MPRParser: columns suggest IV but yadg reports {yadg_tech}')
+
+        # --- Shared metadata ---
+        electrode_area = settings.get('electrode_area') or None
+        electrode_material = settings.get('electrode_material') or None
+        reference_electrode = settings.get('reference_electrode') or None
+        electrolyte = settings.get('electrolyte') or None
+        description = settings.get('comments') or None
+
+        file_reference = get_hash_ref(archive.m_context.upload_id, Path(mainfile).name)
+
+        # --- Build technique-specific measurement object ---
+        if technique == 'EIS':
+            measurement = EISMeasurement()
+            measurement.frequency = ureg.Quantity(df['freq/Hz'].to_numpy(), ureg('Hz'))
+            measurement.real_impedance = ureg.Quantity(df['Re(Z)/Ohm'].to_numpy(), ureg('ohm'))
+            measurement.imaginary_impedance = ureg.Quantity(df['-Im(Z)/Ohm'].to_numpy(), ureg('ohm'))
+            measurement.modulus = ureg.Quantity(df['|Z|/Ohm'].to_numpy(), ureg('ohm'))
+            measurement.phase = ureg.Quantity(df['Phase(Z)/deg'].to_numpy(), ureg('degree'))
+            # Frequency range from data
+            measurement.frequency_initial = ureg.Quantity(float(df['freq/Hz'].max()), ureg('Hz'))
+            measurement.frequency_final = ureg.Quantity(float(df['freq/Hz'].min()), ureg('Hz'))
+            if electrode_area is not None:
+                measurement.area_electrode = ureg.Quantity(float(electrode_area), ureg('m**2'))
+            if electrode_material:
+                measurement.electrode_material = electrode_material
+            if electrolyte:
+                measurement.electrolyte = electrolyte
+            if reference_electrode and reference_electrode.lower() != '(unspecified)':
+                measurement.reference_electrode = reference_electrode
+            if description:
+                measurement.description = description
+
+        elif technique == 'CV':
+            measurement = PotentiostatMeasurement()
+            measurement.voltage = VoltageTimeSeries()
+            measurement.current = CurrentTimeSeries()
+            measurement.scan = ScanTimeSeries()
+            t = ureg.Quantity(df['time/s'].to_numpy(), ureg('second'))
+            measurement.voltage.value = ureg.Quantity(df['Ewe/V'].to_numpy(), ureg('volt'))
+            measurement.current.value = ureg.Quantity(
+                (df['<I>/mA'].to_numpy() / 1000.0), ureg('ampere')
+            )
+            measurement.scan.value = df['cycle number'].to_numpy().astype(float)
+            measurement.voltage.time = t
+            measurement.current.time = t
+            measurement.scan.time = t
+            # Scan rate from yadg params
+            dEdt_vals = params.get('dE/dt', [])
+            dEdt_units = params.get('dE/dt unit', [])
+            if dEdt_vals:
+                scale = _DEDT_UNIT_TO_VS.get(int(dEdt_units[0]) if dEdt_units else 1, 1e-3)
+                measurement.rate = ureg.Quantity(float(dEdt_vals[0]) * scale, ureg('volt/second'))
+            if electrode_area is not None:
+                measurement.area_electrode = ureg.Quantity(float(electrode_area), ureg('m**2'))
+
+        else:  # IV / LSV
+            measurement = PotentiostatMeasurement()
+            measurement.voltage = VoltageTimeSeries()
+            measurement.current = CurrentTimeSeries()
+            t = ureg.Quantity(df['time/s'].to_numpy(), ureg('second'))
+            measurement.voltage.value = ureg.Quantity(df['Ewe/V'].to_numpy(), ureg('volt'))
+            measurement.current.value = ureg.Quantity(
+                (df['<I>/mA'].to_numpy() / 1000.0), ureg('ampere')
+            )
+            measurement.voltage.time = t
+            measurement.current.time = t
+            # No scan subsection — IV branch in normalize() will plot all data
+            if electrode_area is not None:
+                measurement.area_electrode = ureg.Quantity(float(electrode_area), ureg('m**2'))
+
+        # --- Create child archive for the measurement ---
+        child_filename = f'{stem}.MPR_measurement.archive.{filetype}'
+        if not archive.m_context.raw_path_exists(child_filename):
+            child_archive = EntryArchive(
+                data=measurement,
+                metadata=EntryMetadata(upload_id=archive.m_context.upload_id),
+            )
+            create_archive(
+                child_archive.m_to_dict(),
+                archive.m_context,
+                child_filename,
+                filetype,
+                logger,
+            )
+
+        archive.data = RawFile_(
+            name=stem + '_raw',
+            file_=file_reference,
         )
         archive.metadata.entry_name = stem

@@ -271,20 +271,33 @@ class PotentiostatMeasurement(INLCharacterization, PlotSection):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
         self.figures = []
-        scan_plotted = 3.0
-        scan = np.array(self.scan.value)
         voltage = np.array(self.voltage.value)
         current = np.array(self.current.value) * 1000
-        x_voltage = voltage[scan == scan_plotted]
-        y_current = current[scan == scan_plotted]
         y_label = 'Current (mA)'
         if self.area_electrode is not None:
-            y_current /= self.area_electrode
+            current /= self.area_electrode
             y_label = 'Current density (mA cm' + r'$^{-2}$' + ')'
-        if np.isnan(y_current).all():
-            scan_plotted = 2.0
+
+        # If no scan subsection, plot all data (IV sweep mode)
+        if self.scan is None:
+            x_voltage = voltage
+            y_current = current
+            title = 'IV curve'
+        else:
+            scan = np.array(self.scan.value)
+            scan_plotted = 3.0
             x_voltage = voltage[scan == scan_plotted]
             y_current = current[scan == scan_plotted]
+            if len(y_current) == 0 or np.isnan(y_current).all():
+                scan_plotted = 2.0
+                x_voltage = voltage[scan == scan_plotted]
+                y_current = current[scan == scan_plotted]
+            if len(y_current) == 0 or np.isnan(y_current).all():
+                x_voltage = voltage
+                y_current = current
+                scan_plotted = None
+            title = 'CV curve' + (f', scan {int(scan_plotted)}' if scan_plotted is not None else '')
+
         first_line = px.scatter(x=x_voltage, y=y_current)
         figure1 = make_subplots(rows=1, cols=1)
         figure1.add_trace(first_line.data[0], row=1, col=1)
@@ -294,7 +307,7 @@ class PotentiostatMeasurement(INLCharacterization, PlotSection):
             width=716,
             xaxis_title='Voltage (V)',
             yaxis_title=y_label,
-            title_text='CV curve, scan ' + str(int(scan_plotted)),
+            title_text=title,
         )
         self.figures.append(
             PlotlyFigure(label='figure 1', figure=figure1.to_plotly_json())
@@ -1946,6 +1959,176 @@ class INLEDXSpectrum(INLCharacterization, PlotSection):
         self.figures.append(
             PlotlyFigure(label='EDX Spectrum', figure=json.loads(pio.to_json(fig)))
         )
+
+
+# ---------------------------------------------------------------------------
+# Electrochemical Impedance Spectroscopy (EIS)
+# ---------------------------------------------------------------------------
+
+
+class EISMeasurement(INLCharacterization, PlotSection):
+    """Potentio- or Galvano-EIS measurement from a Bio-Logic potentiostat."""
+
+    m_def = Section(
+        links=['https://w3id.org/nfdi4cat/voc4cat_0007206'],
+        categories=[INLCharacterizationCategory],
+        label='INL EIS Measurement',
+    )
+
+    # --- ELN-editable metadata ---
+    area_electrode = Quantity(
+        type=np.float64,
+        description='Area of the working electrode.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='centimeter**2',
+        ),
+        unit='meter**2',
+    )
+    electrode_material = Quantity(
+        type=str,
+        description='Material of the working electrode.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    electrolyte = Quantity(
+        type=str,
+        description='Electrolyte used in the measurement.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    reference_electrode = Quantity(
+        type=str,
+        description='Reference electrode used.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+    frequency_initial = Quantity(
+        type=np.float64,
+        description='Initial (highest) frequency of the sweep.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='Hz',
+        ),
+        unit='Hz',
+    )
+    frequency_final = Quantity(
+        type=np.float64,
+        description='Final (lowest) frequency of the sweep.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='Hz',
+        ),
+        unit='Hz',
+    )
+    amplitude = Quantity(
+        type=np.float64,
+        description='AC perturbation amplitude.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='millivolt',
+        ),
+        unit='volt',
+    )
+    description = Quantity(
+        type=str,
+        description='Free-text comments from the instrument file.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.RichTextEditQuantity),
+    )
+
+    # --- Data arrays ---
+    frequency = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Frequency axis of the impedance spectrum.',
+        unit='Hz',
+    )
+    real_impedance = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Real part of the impedance Re(Z).',
+        unit='ohm',
+    )
+    imaginary_impedance = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Imaginary part of the impedance -Im(Z) (positive in capacitive region).',
+        unit='ohm',
+    )
+    modulus = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Impedance modulus |Z|.',
+        unit='ohm',
+    )
+    phase = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Impedance phase angle Phase(Z).',
+        unit='degree',
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self.figures = []
+
+        if self.frequency is None or self.real_impedance is None:
+            return
+
+        freq = np.array(self.frequency)
+        re_z = np.array(self.real_impedance)
+        im_z = np.array(self.imaginary_impedance) if self.imaginary_impedance is not None else None
+        mod_z = np.array(self.modulus) if self.modulus is not None else None
+        phase = np.array(self.phase) if self.phase is not None else None
+
+        # --- Nyquist plot ---
+        fig_nyquist = make_subplots(rows=1, cols=1)
+        if im_z is not None:
+            trace = px.scatter(x=re_z, y=im_z).data[0]
+            fig_nyquist.add_trace(trace, row=1, col=1)
+        fig_nyquist.update_layout(
+            template='plotly_white',
+            height=450,
+            width=550,
+            xaxis_title='Re(Z) (Ω)',
+            yaxis_title='-Im(Z) (Ω)',
+            title_text='Nyquist Plot',
+            yaxis=dict(scaleanchor='x', scaleratio=1),
+        )
+        self.figures.append(
+            PlotlyFigure(label='Nyquist', figure=fig_nyquist.to_plotly_json())
+        )
+
+        # --- Bode plot (|Z| and Phase vs log-frequency) ---
+        if mod_z is not None and phase is not None:
+            fig_bode = make_subplots(
+                rows=2,
+                cols=1,
+                shared_xaxes=True,
+                subplot_titles=('|Z| vs Frequency', 'Phase vs Frequency'),
+                vertical_spacing=0.12,
+            )
+            fig_bode.add_trace(
+                px.scatter(x=freq, y=mod_z).data[0],
+                row=1,
+                col=1,
+            )
+            fig_bode.add_trace(
+                px.scatter(x=freq, y=phase).data[0],
+                row=2,
+                col=1,
+            )
+            fig_bode.update_xaxes(type='log', title_text='Frequency (Hz)', row=2, col=1)
+            fig_bode.update_xaxes(type='log', row=1, col=1)
+            fig_bode.update_yaxes(title_text='|Z| (Ω)', row=1, col=1)
+            fig_bode.update_yaxes(title_text='Phase (°)', row=2, col=1)
+            fig_bode.update_layout(
+                template='plotly_white',
+                height=600,
+                width=716,
+                title_text='Bode Plot',
+                showlegend=False,
+            )
+            self.figures.append(
+                PlotlyFigure(label='Bode', figure=fig_bode.to_plotly_json())
+            )
 
 
 m_package.__init_metainfo__()
