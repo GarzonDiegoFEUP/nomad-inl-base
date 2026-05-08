@@ -149,6 +149,91 @@ always recorded.
 
 ---
 
+## STAR reactive sputtering and selenization (SpuTtering for Advanced Research)
+
+The STAR sputtering schema was extended with two process types that involve a
+selenium effusion cell alongside (or instead of) standard sputtering targets.
+
+### STARDCReactiveSputtering
+
+Inherits all `StarDCSputtering` behavior (sources, target records, recipe
+application, thin film creation). Each `STARReactiveDCStep` carries a
+sibling `INLSeleniumPulseParameters` sub-section that describes the pulsed
+Se environment active during that step. Multiple steps can have different
+pulse parameters, or only a subset of steps may activate selenium.
+
+The `INLSeleniumPulseParameters` section auto-computes two derived quantities
+on normalization:
+
+- **Cracker power** = `cracker_current × cracker_voltage`
+- **Total Se on time** = `round(process_time / (time_on + time_off)) × time_on`
+
+This means the user only needs to set the four raw measurements; the derived
+values are always consistent.
+
+### STARSelenizationAnnealing
+
+Uses the same STAR chamber infrastructure (pressure control, substrate
+heating, rotation) as sputtering experiments, but without any active targets.
+The `sources` sub-section is hidden from the ELN. Each `STARSeAnnealingStep`
+still exposes the full Se pulse parameter block and the substrate
+temperature/rotation fields.
+
+### SeleniumCell entity
+
+`SeleniumCell` is a persistent entity entry that acts as a logbook for a
+physical selenium effusion cell. Weight records (`SeleniumCellWeightRecord`)
+accumulate over the life of the cell, and a `refill_date` marks when the
+cell was last replenished. This enables tracking of selenium consumption
+and cell lifetime without modifying individual experiment entries.
+
+---
+
+## METEOR e-beam evaporation (Metal EvaporaTion by Electron-beam for SOlar Research)
+
+### Schema design
+
+`METEORDeposition` inherits from both `Process` and `EntryData`. Rather than
+per-step modelling (as in the STAR sputtering schemas), METEOR uses a single
+process entry that holds the complete time series for the entire run. This
+matches how the Korvus `.nbl` log format works: one file = one run with
+continuous data from all channels.
+
+Four `METEORPocket` sub-sections represent the four e-beam evaporation pockets.
+Each pocket carries its own time-series arrays (filament current, set/measured
+power, flux, enabled state). Setting the `material` field on a pocket enables
+PubChem lookup and links the deposited material to the NOMAD substance database.
+
+A `METEORQCMMonitor` sub-section stores QCM data. The parsed `thickness` is
+filled automatically from the last row of the log; a `thickness_override` field
+lets the user supply a value from an independent measurement. During thin film
+creation the override takes precedence when set.
+
+### .nbl log format
+
+The Korvus `.nbl` log file has an unusual single-line preamble that fuses:
+
+```
+<machine name> <datetime> <all column headers concatenated without separator>
+```
+
+The `_parse_nbl_columns()` function extracts the datetime with a regex, then
+locates the `Time,` token to identify where column headers begin. Duplicate
+`Power N(W)` columns (Korvus logs both set and measured power under the same
+header name) are renamed: the second set becomes `Measured Power N(W)`.
+Rows have a trailing comma; a dummy `_trailing` column absorbs it.
+
+### Thin film creation
+
+`METEORDeposition.normalize()` follows the same pattern as wet deposition:
+when `creates_new_thin_film` is `True` it creates `INLThinFilm` and
+`INLThinFilmStack` entries, then resets the toggle. The film thickness is
+taken from `qcm.thickness_override` if set, otherwise from `qcm.thickness`.
+The material comes from the first `METEORPocket` whose `material` field is
+populated.
+
+---
+
 ## Shared entities vs. method-specific aliases
 
 The `INLThinFilm`, `INLThinFilmStack`, and related reference classes live in

@@ -5,10 +5,11 @@
 for the **Sadewasser Reasearch Group** (Previously know as Laboratory for Nanostructured Solar Cells - LaNaSC) group.
 It provides ELN (Electronic Lab Notebook) schemas and automatic normalization routines for thin-film research covering:
 
-- **STAR magnetron sputtering** – DC and RF deposition with target inventory tracking
+- **STAR (SpuTtering for Advanced Research) magnetron sputtering** – DC, RF, and reactive DC (pulsed Se) deposition; selenization annealing; substrate heating and rotation; target inventory tracking
+- **METEOR (Metal EvaporaTion by Electron-beam for SOlar Research) e-beam evaporation** – Korvus Technology METEOR system with `.nbl` log parser, four-pocket management, QCM thickness monitoring, and automatic thin film creation
 - **Wet deposition** – spin coating, slot-die coating, blade coating, inkjet printing, spray pyrolysis, dip coating, and chemical bath deposition
 - **Characterization** – XRD, UV-Vis transmission, 4-point probe, KLA-Tencor profilometry, EQE, solar cell IV, GDOES, SEM, EDX/EDS spectra, Bruker AFM/KPFM/cAFM, cyclic voltammetry (CV), linear-sweep voltammetry (IV), electrochemical impedance spectroscopy (EIS), and chronoamperometry
-- **Shared entities** – substrates, thin films, thin-film stacks, instruments, and sample fragments referenced across all schemas
+- **Shared entities** – substrates, thin films, thin-film stacks, instruments, selenium cells, and sample fragments referenced across all schemas
 
 <div markdown="block" class="home-grid">
 <div markdown="block">
@@ -55,6 +56,7 @@ each ELN entry type.
 
 - [Entities](reference/entities.md)
 - [STAR Sputtering](reference/sputtering.md)
+- [METEOR E-Beam](reference/meteor.md)
 - [Wet Deposition](reference/wet_deposition.md)
 - [Characterization](reference/characterization.md)
 
@@ -71,11 +73,17 @@ each ELN entry type.
 | `INLInstrument` | INL Entities | Entity |
 | `INLGraphiteBox` | INL Entities | Entity |
 | `INLSampleFragment` | INL Entities | Entity |
+| `SeleniumCell` | STAR | Entity |
 | `SputteringTarget` | STAR | Entity |
 | `StarCalibrationData` | STAR | Activity |
 | `StarSputteringRecipe` | STAR | Template |
 | `StarRFSputtering` | STAR | Activity |
 | `StarDCSputtering` | STAR | Activity |
+| `STARDCReactiveSputtering` | STAR | Activity |
+| `STARSelenizationAnnealing` | STAR | Activity |
+| `METEORDeposition` | METEOR | Activity |
+| `METEORPocket` | METEOR | Sub-section |
+| `METEORQCMMonitor` | METEOR | Sub-section |
 | `WetDepositionRecipe` | INL Wet Deposition | Template |
 | `INLSpinCoatingRecipe` | INL Wet Deposition | Template |
 | `INLSpinCoating` | INL Wet Deposition | Activity |
@@ -98,3 +106,4 @@ each ELN entry type.
 | `PotentiostatMeasurement` | INL Characterization | Measurement |
 | `INLEDXSpectrum` | INL Characterization | Measurement |
 | `ChronoamperometryMeasurement` | INL Characterization | Measurement |
+| `EISMeasurement` | INL Characterization | Measurement |

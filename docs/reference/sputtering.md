@@ -1,4 +1,4 @@
-# Reference – STAR Sputtering
+# Reference – STAR Sputtering (SpuTtering for Advanced Research)
 
 This page documents all ELN entry types in the **STAR** category, which covers
 magnetron sputtering experiments performed on the STAR deposition system at INL.
@@ -172,3 +172,109 @@ Common step quantities:
 | `set_current` / `current` | A | DC current (DC steps only) |
 | `Ct_value` / `Cl_value` | – | RF tuning capacitor values (RF steps only) |
 | `chamber_pressure` | mbar | Measured chamber pressure during step |
+| `substrate_temperature` | °C | Substrate heater set-point for this step |
+| `substrate_rotation_enabled` | bool | Whether substrate rotation is active |
+| `substrate_rotation_speed` | rpm | Target rotation speed |
+| `substrate_rotation_direction` | enum | `Clockwise` or `Counter-clockwise` |
+
+---
+
+## SeleniumCell
+
+**Category:** STAR  
+**Base class:** `EntryData`
+
+Persistent entity that tracks a physical selenium effusion cell: weight
+over time and refill history.
+
+| Quantity | Type | Unit | Description |
+|----------|------|------|-------------|
+| `refill_date` | `Datetime` | – | Date of the last selenium refill |
+
+**Sub-sections:**
+
+| Sub-section | Type | Description |
+|-------------|------|-------------|
+| `weight_records` | `SeleniumCellWeightRecord` (repeats) | Timestamped weight measurements |
+
+### SeleniumCellWeightRecord
+
+| Quantity | Type | Unit | Description |
+|----------|------|------|-------------|
+| `weight` | `float` | g | Measured weight of the cell |
+| `measurement_date` | `Datetime` | – | Date of the measurement |
+
+---
+
+## INLSeleniumPulseParameters
+
+**Base class:** `ArchiveSection`  
+**Label:** *Selenium Pulse Parameters*
+
+Describes the pulsed selenium environment used in reactive DC sputtering
+steps and selenization annealing steps.
+
+| Quantity | Type | Unit | Description |
+|----------|------|------|-------------|
+| `valve_opening` | `float` | mm | Valve aperture controlling Se flux |
+| `time_on` | `float` | s | Se pulse duration (valve open) |
+| `time_off` | `float` | s | Interval between pulses (valve closed) |
+| `cell_temperature` | `float` | °C | Effusion cell temperature |
+| `cracker_current` | `float` | A | Cracker supply current |
+| `cracker_voltage` | `float` | V | Cracker supply voltage |
+| `cracker_power` | `float` | W | Cracker power – auto-computed: `current × voltage` *(auto)* |
+| `cracker_power_percentage` | `float` | % | Cracker power as % of maximum |
+| `process_time` | `float` | min | Total duration of Se pulsing |
+| `total_se_on_time` | `float` | s | Total selenium exposure – auto-computed *(auto)* |
+
+**Sub-sections:**
+
+| Sub-section | Type | Description |
+|-------------|------|-------------|
+| `selenium_cell` | `SeleniumCellReference` | Reference to the `SeleniumCell` entity |
+
+**Normalization:**
+
+- `cracker_power = cracker_current × cracker_voltage`
+- `total_se_on_time = round(process_time / (time_on + time_off)) × time_on`
+
+---
+
+## STARDCReactiveSputtering
+
+**Category:** STAR  
+**Base class:** `StarDCSputtering`, `EntryData`  
+**Label:** *STAR DC Reactive Sputtering*
+
+DC sputtering with simultaneous pulsed selenium. Inherits all `StarDCSputtering`
+behavior (sources, target records, recipe application). Overrides `steps` with
+`STARReactiveDCStep`.
+
+### STARReactiveDCStep
+
+Extends `SputteringDCStep` with one additional sub-section:
+
+| Sub-section | Type | Description |
+|-------------|------|-------------|
+| `selenium_environment` | `INLSeleniumPulseParameters` | Se pulse parameters for this step |
+
+---
+
+## STARSelenizationAnnealing
+
+**Category:** STAR  
+**Base class:** `StarSputtering`, `EntryData`  
+**Label:** *STAR Selenization Annealing*
+
+Selenium atmosphere annealing in the STAR chamber without active sputtering
+targets. The `sources` field is hidden from the ELN. Steps use
+`STARSeAnnealingStep`.
+
+### STARSeAnnealingStep
+
+Extends `StarStep` with one additional sub-section. The `voltage` and `power`
+fields are hidden from the ELN (not relevant without a plasma).
+
+| Sub-section | Type | Description |
+|-------------|------|-------------|
+| `selenium_environment` | `INLSeleniumPulseParameters` | Se pulse parameters for this step |

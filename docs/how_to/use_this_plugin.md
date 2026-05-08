@@ -66,7 +66,7 @@ After one successful application the **Apply recipe** toggle resets to `False`.
 
 ---
 
-## STAR sputtering { #star-sputtering }
+## STAR sputtering (SpuTtering for Advanced Research) { #star-sputtering }
 
 ### Recording a sputtering experiment
 
@@ -78,6 +78,74 @@ After one successful application the **Apply recipe** toggle resets to `False`.
    reference inside each `SputteringSource`.
 5. Tick **Creates new thin film** on any step to auto-generate the film/stack
    entries after normalization.
+
+### Substrate heating and rotation
+
+All STAR step types (RF, DC, reactive DC, and Se annealing) expose four
+optional fields for each step:
+
+| Field | Unit | Description |
+|-------|------|-------------|
+| **Substrate set temperature** | °C | Set-point temperature on the substrate heater |
+| **Rotation enabled** | bool | Whether substrate rotation is active |
+| **Rotation speed** | rpm | Target rotation speed |
+| **Rotation direction** | enum | `Clockwise` or `Counter-clockwise` |
+
+Set these on any step where the substrate is heated or rotated during that
+particular phase.
+
+### Reactive DC sputtering (with pulsed selenium)
+
+Use **STAR DC Reactive Sputtering** when a pulsed selenium environment is
+required simultaneously with metal sputtering (e.g. CIGS co-deposition).
+
+1. Create a new entry → **STAR DC Reactive Sputtering**.
+2. Fill in sources and standard DC parameters as usual.
+3. For each step that needs selenium, expand the **Selenium Pulse Parameters**
+   sub-section (**Selenium environment**) and set:
+
+   | Field | Description |
+   |-------|-------------|
+   | **Selenium cell** | Reference to a `Selenium Cell` entity |
+   | **Valve opening** | Valve aperture controlling Se flux (mm) |
+   | **Time on / Time off** | Pulse duty cycle (s) |
+   | **Cell temperature** | Effusion cell temperature (°C) |
+   | **Cracker current / Cracker voltage** | Cracker supply parameters |
+   | **Cracker power** | Auto-computed from current × voltage |
+   | **Cracker power percentage** | % of maximum cracker power |
+   | **Process time** | Total step duration for Se pulsing (min) |
+   | **Total Se on time** | Auto-computed total selenium exposure (s) |
+
+   !!! tip
+       **Cracker power** and **Total Se on time** are filled automatically
+       on normalization – no manual entry needed.
+
+### Selenization annealing
+
+Use **STAR Selenization Annealing** to anneal a sample in a selenium
+atmosphere inside the STAR chamber without activating any sputtering targets.
+
+1. Create a new entry → **STAR Selenization Annealing**.
+2. Set **Name**, **Operator**, **Base pressure**, and **Samples**. The
+   **Sources** field is hidden (not applicable).
+3. Add one or more **Se Annealing Step** sub-sections. Each step exposes
+   the same **Selenium Pulse Parameters** as reactive DC steps, plus the
+   substrate heating and rotation fields.
+
+### Selenium cell entity
+
+`Selenium Cell` is a shared entity that tracks the state of a physical
+selenium effusion cell over time.
+
+1. Create a new entry → **Selenium Cell** (under the *STAR* category).
+2. Add a **Weight Record** for each time the cell is weighed:
+   - **Weight** (g)
+   - **Measurement date**
+3. Set **Refill date** when the cell is refilled.
+
+Reference this entry from the **Selenium cell** field inside any
+`INLSeleniumPulseParameters` sub-section to link a process to the specific
+cell used.
 
 ### Using sputtering recipes
 
@@ -198,6 +266,79 @@ are recomputed automatically. If any threshold is exceeded,
 
 1. Upload a Bio-Logic `.mpr` file containing a PEIS or GEIS experiment —
    the parser creates an `EISMeasurement` entry automatically.
+
+---
+
+## METEOR e-beam evaporation (Metal EvaporaTion by Electron-beam for SOlar Research) { #meteor }
+
+The **METEOR** instrument (Korvus Technology) is an e-beam evaporator with
+four independent pockets and a QCM thickness monitor. Log files (`.nbl`)
+are parsed automatically on upload.
+
+### Uploading a log file
+
+1. Upload a `*.nbl` Korvus log file to your NOMAD upload.
+2. The parser creates a **METEOR E-Beam Evaporation** entry named
+   `<filename>.METEORDeposition` automatically.
+3. All time-series data (elapsed time, chamber pressure, substrate
+   temperature, e-beam power, rotation speed, per-pocket currents/power/flux,
+   QCM frequency and rate) are imported. The log datetime is extracted from
+   the file header.
+
+### Configuring the entry
+
+After the parser run, open the created entry and fill in the following
+fields manually:
+
+| Field | Description |
+|-------|-------------|
+| **Mask** | Description of the contact shadow mask (e.g. `"shadow mask A, 2 mm circular contacts"`) |
+| **Samples** | Reference(s) to existing `INLThinFilmStack` sample entries |
+| **Substrate** | Reference to an `INLSubstrate` entry (used for new film creation if no sample is set) |
+| **Pockets → Material** | For each active pocket, type the material name (e.g. `"Gold"`) to trigger a PubChem lookup |
+| **QCM Monitor → Thickness override** | Override the parser-read QCM thickness with a manually measured value (Å) |
+
+### Auto-creating a thin film entry
+
+1. Set the **Material** on at least one `METEORPocket` (the first pocket
+   with a material set is used).
+2. Ensure either **Samples** or **Substrate** is filled.
+3. Tick **Creates new thin film** and click **Process** (or save and
+   re-normalize).
+
+During normalization:
+
+- An `INLThinFilm` entry is created with the pocket material and the
+  QCM thickness (`Thickness override` takes precedence over the parsed value).
+- An `INLThinFilmStack` entry is created, linking the film and substrate.
+- The `Creates new thin film` toggle resets to `False` automatically.
+
+### Understanding per-pocket data
+
+Each of the four `METEORPocket` sub-sections contains:
+
+| Field | Description |
+|-------|-------------|
+| **Pocket index** | 1–4 |
+| **Material** | `PureSubstanceSection` (PubChem lookup) |
+| **Filament current** | Fil N(A) time series |
+| **Set power** | Target power (first `Power N(W)` column) |
+| **Measured power** | Actual power (second `Power N(W)` column, logged by Korvus) |
+| **Flux** | Ion flux (nA) |
+| **Enabled** | Shutter open/closed state per time point |
+
+### Understanding QCM data
+
+The `METEORQCMMonitor` sub-section captures:
+
+| Field | Description |
+|-------|-------------|
+| **Frequency** | Crystal oscillation frequency (Hz) |
+| **Deposition rate** | Instantaneous rate (Å/s) |
+| **QCM thickness** | Final cumulative thickness from the last log row (Å) |
+| **Thickness override** | User value; takes precedence over QCM thickness for film creation |
+| **Density** | Material density in the QCM controller (g/cm³) |
+| **Tooling factor** | QCM tooling correction factor (%) |
 2. Fill in **Area electrode**, **Electrode material**, **Electrolyte**, and
    **Reference electrode** as needed.
 3. Nyquist and Bode plots are generated automatically on normalization.

@@ -18,6 +18,7 @@ nav:
       - Overview: reference/references.md
       - Entities: reference/entities.md
       - STAR Sputtering: reference/sputtering.md
+      - METEOR E-Beam: reference/meteor.md
       - Wet Deposition: reference/wet_deposition.md
       - Characterization: reference/characterization.md
 plugins:

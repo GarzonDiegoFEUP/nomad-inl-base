@@ -127,6 +127,7 @@ without any manual steps.
 | EDX/EDS spectrum (EMSA) | `.txt`, `.msa`, `.emsa`, or `.ems` with `#FORMAT : EMSA` in header | `sample_edx.msa` |
 | Bruker AFM/KPFM/cAFM | `*.001`, `*.002`, … *(numbered Bruker binary)* | `sample.001` |
 | EIS / CV / IV (Bio-Logic) | `*.mpr` *(technique auto-detected)* | `sample EIS.mpr` |
+| METEOR (Metal EvaporaTion by Electron-beam for SOlar Research) e-beam evaporation (Korvus) | `*.nbl` | `260508_Au_contacts.nbl` |
 
 > **Note:** For XRD (`.xrdml`, `.rasx`, `.brml`, `.raw`) and UV-Vis (`.asc`),
 > file naming is handled by `nomad-measurements` — no special naming is required.
