@@ -78,6 +78,10 @@ ORDER_RF_STEPS = [
     'name',
     'chamber_pressure',
     'duration',
+    'substrate_temperature',
+    'substrate_rotation_enabled',
+    'substrate_rotation_speed',
+    'substrate_rotation_direction',
     'set_power',
     'power',
     'voltage',
@@ -91,6 +95,10 @@ ORDER_DC_STEPS = [
     'name',
     'chamber_pressure',
     'duration',
+    'substrate_temperature',
+    'substrate_rotation_enabled',
+    'substrate_rotation_speed',
+    'substrate_rotation_direction',
     'set_voltage',
     'set_current',
     'voltage',
@@ -686,6 +694,46 @@ class StarStep(VaporDepositionStep):
             defaultDisplayUnit='minute',
         ),
         unit='s',
+    )
+
+    substrate_temperature = Quantity(
+        type=np.float64,
+        description='The set temperature of the substrate during this step.',
+        unit='K',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Substrate set temperature',
+            defaultDisplayUnit='°C',
+        ),
+    )
+
+    substrate_rotation_speed = Quantity(
+        type=np.float64,
+        description='The rotation speed of the substrate holder.',
+        unit='rpm',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='rpm',
+            label='Rotation speed',
+        ),
+    )
+
+    substrate_rotation_direction = Quantity(
+        type=MEnum('Clockwise', 'Counter-clockwise'),
+        description='Direction of substrate rotation.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.RadioEnumEditQuantity,
+            label='Rotation direction',
+        ),
+    )
+
+    substrate_rotation_enabled = Quantity(
+        type=bool,
+        description='Whether substrate rotation is enabled during this step.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.BoolEditQuantity,
+            label='Rotation enabled',
+        ),
     )
 
     voltage = Quantity(
@@ -1524,6 +1572,300 @@ class StarDCSputtering(StarSputtering):
 
     steps = SubSection(
         section_def=StarDCStep,
+        repeats=True,
+    )
+
+
+# ── Selenium Cell Entity ─────────────────────────────────────────────────────
+
+
+class SeleniumCellWeightRecord(ArchiveSection):
+    """A single weight measurement of a selenium cell."""
+
+    m_def = Section(label='Weight Record')
+
+    weight = Quantity(
+        type=np.float64,
+        unit='g',
+        description='Measured weight of the selenium cell.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='g',
+            label='Weight',
+        ),
+    )
+
+    measurement_date = Quantity(
+        type=Datetime,
+        description='Date of this weight measurement.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.DateEditQuantity,
+            label='Measurement date',
+        ),
+    )
+
+
+class SeleniumCell(EntryData):
+    """
+    Tracks the selenium effusion cell used in reactive sputtering and
+    selenization annealing. Stores a history of weight measurements and
+    the date of the last refill.
+    """
+
+    m_def = Section(
+        label='Selenium Cell',
+        categories=[STARCategory],
+    )
+
+    weight_records = SubSection(
+        section_def=SeleniumCellWeightRecord,
+        repeats=True,
+        description='History of weight measurements for this selenium cell.',
+    )
+
+    refill_date = Quantity(
+        type=Datetime,
+        description='Date of the last selenium refill.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.DateEditQuantity,
+            label='Refill date',
+        ),
+    )
+
+
+class SeleniumCellReference(EntityReference):
+    """A reference to a SeleniumCell entry."""
+
+    m_def = Section(hide=['name', 'lab_id'])
+
+    reference = Quantity(
+        type=SeleniumCell,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Selenium cell',
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # SeleniumCell is not an Entity — skip EntityReference.normalize()
+        pass
+
+
+# ── Selenium Pulse Parameters ────────────────────────────────────────────────
+
+
+class INLSeleniumPulseParameters(ArchiveSection):
+    """
+    Parameters describing a pulsed selenium environment.
+    Used in both reactive DC sputtering steps and standalone selenization
+    annealing steps.
+    """
+
+    m_def = Section(label='Selenium Pulse Parameters')
+
+    selenium_cell = SubSection(
+        section_def=SeleniumCellReference,
+        description='Reference to the selenium cell used in this process.',
+    )
+
+    valve_opening = Quantity(
+        type=np.float64,
+        unit='mm',
+        description='Valve opening controlling selenium flux.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='mm',
+            label='Valve opening',
+        ),
+    )
+
+    time_on = Quantity(
+        type=np.float64,
+        unit='s',
+        description='Duration of each selenium pulse (valve open time).',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='s',
+            label='Time on',
+        ),
+    )
+
+    time_off = Quantity(
+        type=np.float64,
+        unit='s',
+        description='Duration between selenium pulses (valve closed time).',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='s',
+            label='Time off',
+        ),
+    )
+
+    cell_temperature = Quantity(
+        type=np.float64,
+        unit='K',
+        description='Temperature of the selenium effusion cell.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='°C',
+            label='Cell temperature',
+        ),
+    )
+
+    cracker_current = Quantity(
+        type=np.float64,
+        unit='A',
+        description='Current supplied to the selenium cracker.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Cracker current',
+        ),
+    )
+
+    cracker_voltage = Quantity(
+        type=np.float64,
+        unit='V',
+        description='Voltage applied to the selenium cracker.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Cracker voltage',
+        ),
+    )
+
+    cracker_power = Quantity(
+        type=np.float64,
+        unit='W',
+        description=(
+            'Power delivered to the selenium cracker '
+            '(auto-computed from cracker current × cracker voltage).'
+        ),
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Cracker power',
+        ),
+    )
+
+    cracker_power_percentage = Quantity(
+        type=np.float64,
+        description='Cracker power as a percentage of maximum (0–100).',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            label='Cracker power percentage',
+        ),
+    )
+
+    process_time = Quantity(
+        type=np.float64,
+        unit='s',
+        description='Total duration of the selenium pulsing process.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='minute',
+            label='Process time',
+        ),
+    )
+
+    total_se_on_time = Quantity(
+        type=np.float64,
+        unit='s',
+        description=(
+            'Total selenium exposure time (auto-computed). '
+            'Formula: round(process_time / (time_on + time_off)) × time_on.'
+        ),
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='s',
+            label='Total Se on time',
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.cracker_current is not None and self.cracker_voltage is not None:
+            self.cracker_power = self.cracker_current * self.cracker_voltage
+
+        if (
+            self.process_time is not None
+            and self.time_on is not None
+            and self.time_off is not None
+        ):
+            cycle_time = self.time_on + self.time_off
+            if cycle_time > 0:
+                n_pulses = round(self.process_time / cycle_time)
+                self.total_se_on_time = n_pulses * self.time_on
+
+
+# ── Reactive DC Sputtering (Ar background + pulsed Se) ──────────────────────
+
+
+class STARReactiveDCStep(SputteringDCStep):
+    """
+    A DC sputtering step with simultaneous pulsed selenium exposure.
+    Combines all standard DC sputtering parameters (voltage, current, power)
+    with selenium pulse parameters in a sibling SubSection alongside the
+    Ar chamber environment.
+    """
+
+    m_def = Section(label='Reactive Sputtering DC Step')
+
+    selenium_environment = SubSection(
+        section_def=INLSeleniumPulseParameters,
+        description='Selenium pulse parameters active during this step.',
+    )
+
+
+class STARDCReactiveSputtering(StarDCSputtering):
+    """
+    STAR DC reactive sputtering process with simultaneous pulsed selenium.
+    Inherits all thin film creation, target records, and source handling
+    from StarDCSputtering. Selenium environment is configured per step.
+    """
+
+    m_def = Section(label='STAR DC Reactive Sputtering', categories=[STARCategory])
+
+    steps = SubSection(
+        section_def=STARReactiveDCStep,
+        repeats=True,
+    )
+
+
+# ── Selenization Annealing (same STAR chamber, no sputtering targets) ────────
+
+
+class STARSeAnnealingStep(StarStep):
+    """
+    A step in a STAR selenization annealing process. No sputtering targets
+    are active; only the selenium cell and chamber environment are relevant.
+    """
+
+    m_def = Section(
+        label='Se Annealing Step',
+        a_eln=ELNAnnotation(hide=['voltage', 'power']),
+    )
+
+    selenium_environment = SubSection(
+        section_def=INLSeleniumPulseParameters,
+        description='Selenium pulse parameters active during this step.',
+    )
+
+
+class STARSelenizationAnnealing(StarSputtering):
+    """
+    Selenization annealing in the STAR sputtering chamber without active
+    targets. Uses the same chamber infrastructure (pressure, gas flow,
+    substrate heating and rotation) as standard STAR processes, with
+    pulsed selenium parameters configured per step.
+    """
+
+    m_def = Section(
+        label='STAR Selenization Annealing',
+        categories=[STARCategory],
+        a_eln=ELNAnnotation(hide=['sources']),
+    )
+
+    steps = SubSection(
+        section_def=STARSeAnnealingStep,
         repeats=True,
     )
 
