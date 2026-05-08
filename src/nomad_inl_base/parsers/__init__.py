@@ -209,3 +209,18 @@ mpr_parser_entry_point = MPRParserEntryPoint(
     mainfile_name_re=r'(?i).*\.mpr$',
     mainfile_mime_re=r'application/(octet-stream|x-tar)',
 )
+
+
+class METEORParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import METEORParser
+
+        return METEORParser(**self.dict())
+
+
+meteor_parser_entry_point = METEORParserEntryPoint(
+    name='METEORParser',
+    description='Parser for Korvus Technology e-beam evaporator .nbl log files.',
+    mainfile_name_re=r'.*\.nbl$',
+    mainfile_mime_re=r'(text/plain|application/octet-stream)',
+)

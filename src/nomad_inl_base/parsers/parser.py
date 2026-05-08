@@ -8,6 +8,8 @@ if TYPE_CHECKING:
         EntryArchive,
     )
 
+import re
+
 import numpy as np
 import pandas as pd
 from nomad.datamodel.data import EntryData
@@ -52,6 +54,52 @@ from nomad_inl_base.utils import (
     fill_quantity,
     get_hash_ref,
 )
+
+_MBAR_TO_PA = 100.0  # 1 mbar = 100 Pa
+_ANGSTROM_TO_M = 1e-10  # 1 Å = 1e-10 m
+_ANGSTROM_PER_S_TO_M_PER_S = 1e-10
+_G_CM3_TO_KG_M3 = 1000.0
+_KELVIN_OFFSET = 273.15
+
+
+def _parse_nbl_columns(line1: str):
+    """Parse the first line of a Korvus .nbl file.
+
+    Returns (datetime_str, column_names) where column_names is a list of
+    unique strings suitable for use as pandas DataFrame column headers.
+    The line has the form::
+
+        Korvus Technology Log File  DD/MM/YYYY HH:MM:SSTime, Col2, Col3, ...
+
+    i.e. the machine preamble and the column headers are on the same line
+    with no separator between the timestamp and "Time,".
+    """
+    dt_match = re.search(r'(\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2})', line1)
+    datetime_str = dt_match.group(1) if dt_match else None
+
+    time_start = line1.find('Time,')
+    header_str = line1[time_start:] if time_start != -1 else line1
+
+    raw_names = [c.strip() for c in header_str.split(',')]
+    raw_names = [n for n in raw_names if n]  # drop trailing empty tokens
+
+    # Deduplicate: keep first occurrence as-is; rename subsequent occurrences.
+    # The duplicate "Power N(W)" columns are renamed to "Measured Power N(W)".
+    seen: dict = {}
+    unique_names = []
+    for name in raw_names:
+        if name not in seen:
+            seen[name] = 0
+            unique_names.append(name)
+        else:
+            seen[name] += 1
+            pw_match = re.match(r'Power (\d+)\(W\)', name)
+            if pw_match:
+                unique_names.append(f'Measured Power {pw_match.group(1)}(W)')
+            else:
+                unique_names.append(f'{name}_{seen[name]}')
+
+    return datetime_str, unique_names
 
 
 class RawFile_(EntryData):
@@ -2280,3 +2328,188 @@ class MPRParser(MatchingParser):
             guard=True,
         )
         archive.metadata.entry_name = stem
+
+
+# ---------------------------------------------------------------------------
+# METEOR (Korvus Technology) e-beam evaporator .nbl parser
+# ---------------------------------------------------------------------------
+
+
+class METEORParser(MatchingParser):
+    """Parse Korvus Technology e-beam evaporator .nbl log files.
+
+    The .nbl format stores machine preamble (name + datetime) and all CSV
+    column headers concatenated on a single first line, followed by one
+    comma-separated data row per second.  Duplicate column names (two sets of
+    ``Power N(W)``) are handled by renaming the second set to
+    ``Measured Power N(W)``.
+    """
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        from nomad_inl_base.schema_packages.meteor import (
+            METEORDeposition,
+            METEORPocket,
+            METEORQCMMonitor,
+        )
+
+        filetype = 'yaml'
+        data_file = (
+            mainfile.rsplit('/', maxsplit=1)[-1]
+            .rsplit('.', maxsplit=1)[0]
+            .replace(' ', '_')
+        )
+
+        # ── Parse header line ────────────────────────────────────────────────
+        with open(mainfile, encoding='utf-8', errors='replace') as fh:
+            line1 = fh.readline()
+
+        datetime_str, col_names = _parse_nbl_columns(line1)
+
+        # Add a trailing dummy column to absorb the trailing comma present on
+        # every data row (prevents pandas column-count mismatch warnings).
+        col_names_padded = col_names + ['_trailing']
+
+        start_datetime = None
+        if datetime_str:
+            for fmt in ('%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S'):
+                try:
+                    start_datetime = datetime.strptime(datetime_str, fmt)
+                    break
+                except ValueError:
+                    continue
+
+        # ── Read time-series data ────────────────────────────────────────────
+        try:
+            df = pd.read_csv(
+                mainfile,
+                skiprows=1,
+                names=col_names_padded,
+                sep=r'\s*,\s*',
+                engine='python',
+                low_memory=False,
+            )
+        except Exception as exc:
+            logger.error(f'METEORParser: failed to read CSV body: {exc}')
+            return
+
+        def _col_float(name):
+            if name not in df.columns:
+                return None
+            arr = pd.to_numeric(df[name], errors='coerce').to_numpy(dtype=np.float64)
+            return arr if not np.all(np.isnan(arr)) else None
+
+        def _col_bool(name):
+            if name not in df.columns:
+                return None
+            return (
+                df[name]
+                .map(lambda v: str(v).strip().lower() == 'true')
+                .to_numpy(dtype=bool)
+            )
+
+        # ── Build METEORDeposition entry ─────────────────────────────────────
+        entry = METEORDeposition()
+
+        if start_datetime:
+            entry.log_datetime = start_datetime
+            entry.start_time = start_datetime
+
+        # Elapsed time (absolute counter → relative seconds)
+        time_arr = _col_float('Time')
+        if time_arr is not None:
+            entry.elapsed_time = time_arr - time_arr[0]
+
+        # Chamber pressure: mbar → Pa
+        pressure = _col_float('Pressure(mBar)')
+        if pressure is not None:
+            entry.chamber_pressure = pressure * _MBAR_TO_PA
+
+        # Substrate temperature: °C → K
+        temp = _col_float('Temp(C)')
+        if temp is not None:
+            entry.substrate_temperature = temp + _KELVIN_OFFSET
+
+        ebeam_pwr = _col_float('Power(W)')
+        if ebeam_pwr is not None:
+            entry.ebeam_power = ebeam_pwr
+
+        ebeam_pct = _col_float('% Current(%)')
+        if ebeam_pct is not None:
+            entry.ebeam_current_percentage = ebeam_pct
+
+        rotation = _col_float('Rotation speed(RPM)')
+        if rotation is not None:
+            entry.rotation_speed = rotation
+
+        # ── Pockets (4 fixed) ────────────────────────────────────────────────
+        pockets = []
+        for i in range(1, 5):
+            pocket = METEORPocket(pocket_index=i, name=f'Pocket {i}')
+
+            fil = _col_float(f'Fil {i}(A)')
+            if fil is not None:
+                pocket.filament_current = fil
+
+            set_pw = _col_float(f'Power {i}(W)')
+            if set_pw is not None:
+                pocket.set_power = set_pw
+
+            meas_pw = _col_float(f'Measured Power {i}(W)')
+            if meas_pw is not None:
+                pocket.measured_power = meas_pw
+
+            flux = _col_float(f'Flux {i}(nA)')
+            if flux is not None:
+                pocket.flux = flux
+
+            enabled = _col_bool(f'Enable {i}')
+            if enabled is not None:
+                pocket.enabled = enabled
+
+            pockets.append(pocket)
+
+        entry.pockets = pockets
+
+        # ── QCM monitor ──────────────────────────────────────────────────────
+        qcm = METEORQCMMonitor()
+
+        freq = _col_float('Frequency(Hz)')
+        if freq is not None:
+            qcm.frequency = freq
+
+        rate = _col_float('Rate(A/s)')
+        if rate is not None:
+            qcm.deposition_rate = rate * _ANGSTROM_PER_S_TO_M_PER_S
+
+        thickness_arr = _col_float('Thickness(A)')
+        if thickness_arr is not None:
+            valid = thickness_arr[~np.isnan(thickness_arr)]
+            if len(valid) > 0:
+                qcm.thickness = float(valid[-1]) * _ANGSTROM_TO_M
+
+        density_arr = _col_float('Density(g/cm3)')
+        if density_arr is not None:
+            valid = density_arr[~np.isnan(density_arr)]
+            if len(valid) > 0:
+                qcm.density = float(np.nanmedian(valid)) * _G_CM3_TO_KG_M3
+
+        tooling_arr = _col_float('Tooling factor(%)')
+        if tooling_arr is not None:
+            valid = tooling_arr[~np.isnan(tooling_arr)]
+            if len(valid) > 0:
+                qcm.tooling_factor = float(np.nanmedian(valid))
+
+        entry.qcm = qcm
+
+        # ── Write child archive (guard=True preserves user ELN edits) ────────
+        create_child_entry(
+            entry,
+            archive,
+            child_filename=f'{data_file}.METEORDeposition.archive.{filetype}',
+            filetype=filetype,
+            raw_name=data_file + '_raw',
+            raw_ref=get_hash_ref(archive.m_context.upload_id, data_file),
+            logger=logger,
+            guard=True,
+        )
+        archive.metadata.entry_name = data_file

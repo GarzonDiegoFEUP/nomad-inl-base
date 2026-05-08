@@ -123,3 +123,16 @@ annealing_entry_point = INLAnnealingPackageEntryPoint(
     name='INL Annealing',
     description='ELN schemas for tube furnace annealing (selenization / sulfurization).',
 )
+
+
+class METEORPackageEntryPoint(SchemaPackageEntryPoint):
+    def load(self):
+        from nomad_inl_base.schema_packages.meteor import m_package
+
+        return m_package
+
+
+meteor_entry_point = METEORPackageEntryPoint(
+    name='METEOR E-Beam Evaporation',
+    description='ELN schemas for the METEOR (Korvus Technology) e-beam evaporator.',
+)
