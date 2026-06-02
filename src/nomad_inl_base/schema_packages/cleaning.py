@@ -16,7 +16,11 @@ from nomad_material_processing.general import (
     RectangleCuboid,
 )
 
-from nomad_inl_base.schema_packages.entities import INLSubstrate, INLSubstrateReference
+from nomad_inl_base.schema_packages.entities import (
+    INLSampleReference,
+    INLSubstrate,
+    INLSubstrateReference,
+)
 from nomad_inl_base.utils import create_archive, create_filename, get_hash_ref
 
 m_package = SchemaPackage()
@@ -185,6 +189,8 @@ class INLCleaning(Cleaning):
         recipe = self.recipe
         if recipe.steps:
             self.steps = recipe.steps
+            for step in self.steps:
+                step.start_time = None
         if recipe.material is not None and self.substrate_material is None:
             self.substrate_material = recipe.material
         if (
@@ -300,6 +306,126 @@ class INLCleaning(Cleaning):
         super().normalize(archive, logger)
         self._sum_step_durations()
         self._create_substrates(archive, logger)
+
+
+class INLUVOzoneStep(CleaningStep):
+    """A single UV Ozone step with an optional descriptive name."""
+
+    m_def = Section(
+        label='UV Ozone Step',
+        a_eln=dict(hide=['agitation', 'cleaning_reagents']),
+    )
+
+    name = Quantity(
+        type=str,
+        default='Activation',
+        description='Name or description of this step.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity,
+            label='Step name',
+        ),
+    )
+
+
+class INLUVOzoneRecipe(CleaningRecipe):
+    """
+    Reusable UV Ozone recipe template.  Stores the step sequence used as
+    a reference when recording UV Ozone activation runs.
+    """
+
+    m_def = Section(
+        label='INL UV Ozone Recipe',
+        categories=[INLCleaningCategory],
+        a_eln={
+            'hide': [
+                'datetime',
+                'samples',
+                'starting_time',
+                'ending_time',
+                'location',
+                'recipe',
+            ]
+        },
+    )
+
+    steps = SubSection(section_def=INLUVOzoneStep, repeats=True)
+
+
+class INLUVOzone(Cleaning):
+    """
+    ELN schema for UV Ozone surface activation at INL.
+
+    Accepts both bare substrates and existing samples (thin film stacks),
+    since UV Ozone is used both before first deposition and between layers.
+    Supports recipe application and automatic total duration summing.
+    """
+
+    m_def = Section(
+        label='INL UV Ozone',
+        categories=[INLCleaningCategory],
+        a_eln={'hide': ['samples']},
+    )
+
+    recipe = Quantity(
+        type=INLUVOzoneRecipe,
+        description='Recipe template to apply to this UV Ozone run.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='Recipe',
+        ),
+    )
+
+    apply_recipe = Quantity(
+        type=bool,
+        default=False,
+        description='If True, copy steps from the recipe (once).',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.BoolEditQuantity,
+            label='Apply recipe',
+        ),
+    )
+
+    steps = SubSection(section_def=INLUVOzoneStep, repeats=True)
+
+    substrates = SubSection(
+        section_def=INLSampleReference,
+        repeats=True,
+        description='Substrates or samples (thin film stacks) being activated in this run.',
+    )
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    def _apply_recipe(self) -> None:
+        """Copy steps from the linked recipe (non-destructive)."""
+        if not (self.apply_recipe and self.recipe is not None):
+            return
+        recipe = self.recipe
+        if recipe.steps:
+            self.steps = recipe.steps
+            for step in self.steps:
+                step.start_time = None
+        if recipe.instruments is not None and self.instruments is None:
+            self.instruments = recipe.instruments
+        self.apply_recipe = False
+
+    def _sum_step_durations(self) -> None:
+        """Overwrite self.duration with the sum of all non-None step durations."""
+        if not self.steps:
+            return
+        total = sum(step.duration for step in self.steps if step.duration is not None)
+        if total > 0:
+            self.duration = total
+
+    # ------------------------------------------------------------------
+    # Normalization
+    # ------------------------------------------------------------------
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        self._apply_recipe()
+        super().normalize(archive, logger)
+        self._sum_step_durations()
 
 
 m_package.__init_metainfo__()

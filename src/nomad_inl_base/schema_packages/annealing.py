@@ -291,6 +291,8 @@ class INLTubeFurnaceAnnealing(Process, EntryData):
             self.gas_flow = recipe.gas_flow
         if recipe.steps and not self.steps:
             self.steps = recipe.steps
+            for step in self.steps:
+                step.start_time = None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.method = 'Tube Furnace Annealing'

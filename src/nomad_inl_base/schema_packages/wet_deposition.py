@@ -219,6 +219,30 @@ class WetDepositionRecipe(EntryData):
         description='Ordered process steps for this recipe.',
     )
 
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        if not self.steps:
+            return
+        existing_refs: set[str] = set()
+        if self.solution:
+            for sol in self.solution:
+                ref = getattr(sol, 'solution', None)
+                if ref is not None:
+                    existing_refs.add(
+                        getattr(ref, 'm_proxy_value', None) or str(ref)
+                    )
+        for step in self.steps:
+            for step_sol in getattr(step, 'solution', None) or []:
+                ref = getattr(step_sol, 'solution', None)
+                if ref is None:
+                    continue
+                val = getattr(ref, 'm_proxy_value', None) or str(ref)
+                if val not in existing_refs:
+                    existing_refs.add(val)
+                    if self.solution is None:
+                        self.solution = []
+                    self.solution.append(step_sol.m_copy(deep=True))
+
 
 class WetDepositionRecipeReference(EntityReference):
     """A reference to a WetDepositionRecipe entry."""
@@ -673,6 +697,32 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
             self.solution = recipe.solution
         if recipe.steps and not self.steps:
             self.steps = recipe.steps
+            for step in self.steps:
+                step.start_time = None
+
+    def _collect_step_solutions(self) -> None:
+        """Populate the entry-level solution list with any solutions defined on steps (cross-reference)."""
+        if not self.steps:
+            return
+        existing_refs: set[str] = set()
+        if self.solution:
+            for sol in self.solution:
+                ref = getattr(sol, 'solution', None)
+                if ref is not None:
+                    existing_refs.add(
+                        getattr(ref, 'm_proxy_value', None) or str(ref)
+                    )
+        for step in self.steps:
+            for step_sol in getattr(step, 'solution', None) or []:
+                ref = getattr(step_sol, 'solution', None)
+                if ref is None:
+                    continue
+                val = getattr(ref, 'm_proxy_value', None) or str(ref)
+                if val not in existing_refs:
+                    existing_refs.add(val)
+                    if self.solution is None:
+                        self.solution = []
+                    self.solution.append(step_sol.m_copy(deep=True))
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         if not self.method:
@@ -686,6 +736,8 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         ):
             self._apply_recipe(self.recipe.reference, archive, logger)
             self.apply_recipe = False
+
+        self._collect_step_solutions()
 
         if self.creates_new_thin_film:
             # Auto-fill deposited_material from solution solute name if not explicitly set
