@@ -1265,16 +1265,26 @@ class StarSputtering(SputterDeposition, EntryData):
             and (self.steps is None or len(self.steps) == 0)
         ):
             recipe = self.recipe.reference
-            if recipe.sources and not self.sources:
-                self.sources = recipe.sources
+            recipe_sources = getattr(recipe, 'sources', None)
+            if recipe_sources and not self.sources:
+                self.sources = recipe_sources
             self.steps = []
             for recipe_step in recipe.steps or []:
                 new_step = type(recipe_step)()
 
-                new_step.name = recipe_step.name
-                new_step.chamber_pressure = recipe_step.chamber_pressure
-                new_step.duration = recipe_step.duration
-                new_step.environment = recipe_step.environment
+                for attr in [
+                    'name',
+                    'chamber_pressure',
+                    'duration',
+                    'environment',
+                    'substrate_temperature',
+                    'substrate_rotation_speed',
+                    'substrate_rotation_direction',
+                    'substrate_rotation_enabled',
+                    'selenium_environment',
+                ]:
+                    if hasattr(recipe_step, attr):
+                        setattr(new_step, attr, getattr(recipe_step, attr))
 
                 if hasattr(recipe_step, 'set_power'):
                     new_step.set_power = recipe_step.set_power
@@ -1850,6 +1860,62 @@ class STARSeAnnealingStep(StarStep):
     )
 
 
+class STARSelenizationAnnealingRecipe(EntryData):
+    """A recipe template for STAR selenization annealing steps."""
+
+    m_def = Section(
+        label='STAR Selenization Annealing Recipe',
+        categories=[STARCategory],
+    )
+
+    name = Quantity(
+        type=str,
+        description='Recipe name.',
+        a_eln=ELNAnnotation(component='StringEditQuantity', label='Recipe name'),
+    )
+
+    description = Quantity(
+        type=str,
+        description='Recipe description.',
+        a_eln=ELNAnnotation(component='RichTextEditQuantity', label='Description'),
+    )
+
+    steps = SubSection(
+        section_def=STARSeAnnealingStep,
+        repeats=True,
+        description='The sequence of steps in the annealing recipe.',
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        for step in self.steps or []:
+            if step.environment is not None:
+                step.environment.step_name = step.name
+            elif step.name:
+                environment_ = StarChamberEnvironment()
+                environment_.step_name = step.name
+                step.environment = environment_
+
+
+class STARSelenizationAnnealingRecipeReference(EntityReference):
+    """A reference to a STARSelenizationAnnealingRecipe entry."""
+
+    m_def = Section(hide=['name', 'lab_id'])
+
+    reference = Quantity(
+        type=STARSelenizationAnnealingRecipe,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.ReferenceEditQuantity,
+            label='STAR selenization annealing recipe',
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # Skip EntityReference.normalize() — STARSelenizationAnnealingRecipe is
+        # not an Entity and does not have lab_id.
+        pass
+
+
 class STARSelenizationAnnealing(StarSputtering):
     """
     Selenization annealing in the STAR sputtering chamber without active
@@ -1862,6 +1928,11 @@ class STARSelenizationAnnealing(StarSputtering):
         label='STAR Selenization Annealing',
         categories=[STARCategory],
         a_eln=ELNAnnotation(hide=['sources']),
+    )
+
+    recipe = SubSection(
+        section_def=STARSelenizationAnnealingRecipeReference,
+        description='Reference to a STAR selenization annealing recipe.',
     )
 
     steps = SubSection(
