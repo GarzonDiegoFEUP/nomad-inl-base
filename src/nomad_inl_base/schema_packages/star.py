@@ -1615,7 +1615,7 @@ class SeleniumCellWeightRecord(ArchiveSection):
     )
 
 
-class SeleniumCell(EntryData):
+class SeleniumCell(CompositeSystem, EntryData):
     """
     Tracks the selenium effusion cell used in reactive sputtering and
     selenization annealing. Stores a history of weight measurements and
@@ -1642,13 +1642,31 @@ class SeleniumCell(EntryData):
         ),
     )
 
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
 
-class SeleniumCellReference(EntityReference):
-    """A reference to a SeleniumCell entry."""
+        # Keep SeleniumCell discoverable in reference pickers even when users do
+        # not manually fill identifiers.
+        if self.name is None and archive.metadata and archive.metadata.entry_name:
+            self.name = archive.metadata.entry_name
 
-    m_def = Section(hide=['name', 'lab_id'])
+        if self.lab_id is None and self.name is not None:
+            self.lab_id = self.name.replace(' ', '_')
 
-    reference = Quantity(
+class SeleniumCellReference(SystemComponent):
+    """Reference to a SeleniumCell entry."""
+
+    m_def = Section(a_eln={'hide': ['mass_fraction', 'mass']})
+
+    lab_id = Quantity(
+        type=str,
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.StringEditQuantity,
+            label='Selenium Cell ID',
+        ),
+    )
+
+    system = Quantity(
         type=SeleniumCell,
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.ReferenceEditQuantity,
@@ -1657,8 +1675,10 @@ class SeleniumCellReference(EntityReference):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        # SeleniumCell is not an Entity — skip EntityReference.normalize()
-        pass
+        super().normalize(archive, logger)
+
+        if self.system is not None and self.system.lab_id is not None:
+            self.lab_id = self.system.lab_id
 
 
 # ── Selenium Pulse Parameters ────────────────────────────────────────────────
