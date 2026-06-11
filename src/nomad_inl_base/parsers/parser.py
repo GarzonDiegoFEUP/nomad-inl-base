@@ -2386,7 +2386,7 @@ class METEORParser(MatchingParser):
                 names=col_names_padded,
                 sep=r'\s*,\s*',
                 engine='python',
-                low_memory=False,
+                #low_memory=False,
             )
         except Exception as exc:
             logger.error(f'METEORParser: failed to read CSV body: {exc}')

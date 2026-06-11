@@ -241,7 +241,9 @@ class WetDepositionRecipe(EntryData):
                     existing_refs.add(val)
                     if self.solution is None:
                         self.solution = []
-                    self.solution.append(step_sol.m_copy(deep=True))
+                    self.solution.append(
+                        INLPrecursorSolution.m_from_dict(step_sol.m_to_dict())
+                    )
 
 
 class WetDepositionRecipeReference(EntityReference):
@@ -722,7 +724,9 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
                     existing_refs.add(val)
                     if self.solution is None:
                         self.solution = []
-                    self.solution.append(step_sol.m_copy(deep=True))
+                    self.solution.append(
+                        INLPrecursorSolution.m_from_dict(step_sol.m_to_dict())
+                    )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         if not self.method:
