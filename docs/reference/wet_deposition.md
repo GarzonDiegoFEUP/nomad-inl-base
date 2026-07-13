@@ -40,9 +40,59 @@ fields on top of `WetDepositionRecipe`:
 | `INLSlotDieCoatingRecipe` | `WetDepositionRecipe` | `properties: SlotDieCoatingProperties` |
 | `INLBladeCoatingRecipe` | `WetDepositionRecipe` | `properties: BladeCoatingProperties` |
 | `INLInkjetPrintingRecipe` | `WetDepositionRecipe` | `properties: InkjetPrintingProperties` |
-| `INLSprayPyrolysisRecipe` | `WetDepositionRecipe` | `properties: SprayPyrolysisProperties` |
+| `INLSprayPyrolysisRecipe` | `WetDepositionRecipe` | `properties: SprayPyrolysisProperties` (hides `steps`) |
 | `INLDipCoatingRecipe` | `WetDepositionRecipe` | `properties: DipCoatingProperties` |
-| `INLChemicalBathDepositionRecipe` | `WetDepositionRecipe` | `bath_temperature`, `duration`, `ph`, `stirring_speed`, `deposited_material` |
+| `INLChemicalBathDepositionRecipe` | `WetDepositionRecipe` | `bath_composition`, `bath_temperature`, `duration`, `ph`, `stirring_speed`, `deposited_material` — see [CBD types](#cbd-types) below |
+
+### CBD types
+
+`INLChemicalBathDepositionRecipe` supports two preparation workflows:
+
+**Type 1 – In-situ preparation**
+Use the `steps` list with `INLCBDBathPreparationStep` entries.
+Each step can carry `reagents` (list of `INLCBDReagent`) describing what is
+added to the bath at that stage.
+
+**Type 2 – Pre-mixed solutions**
+Use the `bath_composition` list with `INLCBDComponentMixture` entries.
+Each component references a pre-made `Solution` entry and specifies the volume
+added to the bath.  
+Optionally, embed a `solution_template` inside each component so that
+`Solution` entries can be auto-created at deposition time (see
+[`INLChemicalBathDeposition`](#inlchemicalbathdeposition)).
+
+#### INLCBDComponentMixture
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `str` | Display name (e.g. "CdCl₂ solution") |
+| `solution` | `NMPSolution` ref | Pre-made `Solution` entry |
+| `volume` | `float` (ml) | Volume added to the bath |
+| `order` | `int` | Order of addition |
+| `notes` | `str` | Mixing conditions, notes |
+| `solution_template` | `INLCBDSolutionTemplate` | Inline template for auto-creating the solution entry |
+
+#### INLCBDSolutionTemplate
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `str` | Name for the `Solution` entry that will be created |
+| `solvent` | `str` | Solvent name used for PubChem lookup (defaults to `water`) |
+| `total_volume` | `float` (ml) | Total prepared volume |
+| `reagents` | `INLCBDReagent` (repeats) | Solutes dissolved in the solution |
+
+#### INLCBDReagent
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `str` | **PubChem lookup name** (e.g. `"cadmium acetate"`, `"thiourea"`) — used to retrieve molecular weight and calculate molar concentration |
+| `mass` | `float` (g) | Mass of solid reagent |
+| `volume` | `float` (ml) | Volume of liquid reagent |
+
+#### INLCBDBathPreparationStep
+
+Extends `INLWetDepositionStep` with a `reagents` sub-section (`INLCBDReagent`, repeats).
+Used in Type 1 recipes to document step-by-step in-situ bath preparation.
 
 ---
 
@@ -190,3 +240,35 @@ Additional quantities specific to CBD:
 | `ph` | `float` | – | pH of the bath |
 | `color_change_time` | `float` | min | Time at which a colour change was observed |
 | `stirring_speed` | `float` | rpm | Stirring speed during deposition |
+| `create_solutions` | `bool` | – | Trigger auto-creation of `Solution` entries from `bath_composition` templates (resets to `False` after one run) |
+| `ammonium_hydroxide_solution` | `NMPSolution` ref | – | Stock NH₄OH `Solution` entry — any template reagent whose name contains `"nh4oh"`, `"ammonium"`, or `"ammonia"` is linked to this via `SolutionComponentReference` instead of a plain component |
+
+**Sub-sections:**
+
+| Sub-section | Type | Description |
+|-------------|------|-------------|
+| `bath_composition` | `INLCBDComponentMixture` (repeats) | Bath components for Type 2 (pre-mixed) CBD |
+| `recipe` | `INLChemicalBathDepositionRecipeReference` | CBD recipe to apply |
+
+### Auto-creation of Solution entries (Type 2)
+
+When `create_solutions` is set to `True` on an `INLChemicalBathDeposition` entry:
+
+1. For each `bath_composition` component that has a `solution_template` but no
+   `solution` reference, a new `nomad-material-processing` `Solution` entry is
+   created in the same upload.
+2. Each reagent in the template becomes a `SolutionComponent` with
+   `component_role = "Solute"`, `mass` (g→kg), optional `volume` (ml→L), and
+   `substance_name` set to the reagent name for PubChem lookup.
+3. If `ammonium_hydroxide_solution` is set, reagents matching `"nh4oh"` /
+   `"ammonium"` / `"ammonia"` become a `SolutionComponentReference` pointing to
+   the stock solution, with the template volume applied.
+4. A `SolutionComponent` with `component_role = "Solvent"` is added using the
+   template `solvent` field (defaults to `"water"`); its volume is set to
+   `total_volume`.
+5. After creation, `component.solution` is wired to the new entry's reference.
+6. `create_solutions` resets to `False`.
+
+Molar concentrations are calculated automatically by NOMAD's
+`Solution.normalize()` once the `Solution` entries are processed (requires a
+valid PubChem substance name on each reagent).
