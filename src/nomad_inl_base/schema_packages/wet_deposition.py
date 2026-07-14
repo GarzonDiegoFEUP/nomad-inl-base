@@ -1271,6 +1271,10 @@ class INLChemicalBathDeposition(INLThinFilmDeposition):
             self.atmosphere = recipe.atmosphere
         if recipe.solution is not None and not self.solution:
             self.solution = recipe.solution
+        if recipe.steps and not self.steps:
+            self.steps = recipe.steps
+            for step in self.steps:
+                step.start_time = None
         # CBD-specific fields
         if recipe.bath_temperature is not None and self.bath_temperature is None:
             self.bath_temperature = recipe.bath_temperature
