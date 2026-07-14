@@ -8,6 +8,7 @@ import numpy as np
 from nomad.datamodel.data import ArchiveSection, EntryData, EntryDataCategory
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.basesections import Process, PureSubstanceSection
+from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
 from nomad.metainfo import (
     Category,
     Datetime,
@@ -113,13 +114,8 @@ class METEORQCMMonitor(ArchiveSection):
     deposition_rate = Quantity(
         type=np.float64,
         shape=['*'],
-        unit='m/s',
-        description='Instantaneous deposition rate time series (Å/s → m/s).',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            defaultDisplayUnit='angstrom/s',
-            label='Deposition rate',
-        ),
+        unit='angstrom/s',
+        description='Instantaneous deposition rate time series.',
     )
 
     thickness = Quantity(
@@ -168,7 +164,47 @@ class METEORQCMMonitor(ArchiveSection):
     )
 
 
-class METEORDeposition(Process, EntryData):
+class METEORProcessConditions(ArchiveSection):
+    """Time-series process conditions recorded during a METEOR e-beam evaporation run."""
+
+    m_def = Section(label='Process Conditions')
+
+    chamber_pressure = Quantity(
+        type=np.float64,
+        shape=['*'],
+        unit='Pa',
+        description='Chamber pressure time series (converted from mbar).',
+    )
+
+    substrate_temperature = Quantity(
+        type=np.float64,
+        shape=['*'],
+        unit='K',
+        description='Substrate temperature time series (converted from °C).',
+    )
+
+    ebeam_power = Quantity(
+        type=np.float64,
+        shape=['*'],
+        unit='W',
+        description='Global e-beam power time series.',
+    )
+
+    ebeam_current_percentage = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='E-beam emission current as a percentage of the maximum.',
+    )
+
+    rotation_speed = Quantity(
+        type=np.float64,
+        shape=['*'],
+        unit='rpm',
+        description='Substrate holder rotation speed time series.',
+    )
+
+
+class METEORDeposition(Process, EntryData, PlotSection):
     """
     E-beam evaporation in the METEOR (Korvus Technology) system.
 
@@ -228,7 +264,7 @@ class METEORDeposition(Process, EntryData):
         ),
     )
 
-    # ── Time-series quantities (filled by parser) ─────────────────────────────
+    # ── Time-series (filled by parser) ────────────────────────────────────────
 
     elapsed_time = Quantity(
         type=np.float64,
@@ -237,55 +273,12 @@ class METEORDeposition(Process, EntryData):
         description='Elapsed time from the first log entry (Time column minus first value).',
     )
 
-    chamber_pressure = Quantity(
-        type=np.float64,
-        shape=['*'],
-        unit='Pa',
-        description='Chamber pressure time series (converted from mbar).',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            defaultDisplayUnit='mbar',
-            label='Chamber pressure',
-        ),
-    )
-
-    substrate_temperature = Quantity(
-        type=np.float64,
-        shape=['*'],
-        unit='K',
-        description='Substrate temperature time series (converted from °C).',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            defaultDisplayUnit='°C',
-            label='Substrate temperature',
-        ),
-    )
-
-    ebeam_power = Quantity(
-        type=np.float64,
-        shape=['*'],
-        unit='W',
-        description='Global e-beam filament power time series.',
-    )
-
-    ebeam_current_percentage = Quantity(
-        type=np.float64,
-        shape=['*'],
-        description='E-beam emission current as a percentage of the maximum.',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            label='E-beam current (%)',
-        ),
-    )
-
-    rotation_speed = Quantity(
-        type=np.float64,
-        shape=['*'],
-        unit='rpm',
-        description='Substrate holder rotation speed time series.',
-    )
-
     # ── Sub-sections ──────────────────────────────────────────────────────────
+
+    process_conditions = SubSection(
+        section_def=METEORProcessConditions,
+        description='Time-series process conditions (pressure, temperature, power, rotation).',
+    )
 
     pockets = SubSection(
         section_def=METEORPocket,
@@ -303,6 +296,109 @@ class METEORDeposition(Process, EntryData):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.method = 'E-Beam Evaporation'
         super().normalize(archive, logger)
+
+        # ── Figures ────────────────────────────────────────────────────────────
+        import json
+
+        import plotly.graph_objects as go
+        import plotly.io as pio
+
+        self.figures = []
+
+        # Data was already trimmed at the venting cutoff by the parser.
+        t = np.array(self.elapsed_time).tolist() if self.elapsed_time is not None else None
+        pc = self.process_conditions
+
+        def _to_list(arr):
+            """Convert a schema quantity array to a plain Python list."""
+            return np.array(arr).tolist()
+
+        # 1. Chamber pressure vs time (log scale)
+        if t is not None and pc is not None and pc.chamber_pressure is not None:
+            pressure_mbar = _to_list(np.array(pc.chamber_pressure) * 0.01)
+            fig_p = go.Figure()
+            fig_p.add_trace(go.Scatter(x=t, y=pressure_mbar, mode='lines', name='Pressure'))
+            fig_p.update_layout(
+                template='plotly_white',
+                height=400,
+                width=716,
+                xaxis_title='Time (s)',
+                yaxis_title='Pressure (mbar)',
+                title_text='Chamber Pressure',
+                yaxis_type='log',
+            )
+            self.figures.append(
+                PlotlyFigure(label='Chamber Pressure', figure=json.loads(pio.to_json(fig_p)))
+            )
+
+        # 2. Pocket power vs time — interactive legend (click to toggle)
+        if t is not None and self.pockets:
+            fig_pw = go.Figure()
+            for pocket in self.pockets:
+                idx = pocket.pocket_index or ''
+                label = pocket.name or f'Pocket {idx}'
+                # Uncomment the following lines if you want to plot the set power as well
+                #if pocket.set_power is not None:
+                #    fig_pw.add_trace(go.Scatter(
+                #        x=t,
+                #        y=_to_list(pocket.set_power),
+                #        mode='lines',
+                #        name=f'{label} set',
+                #    ))
+                if pocket.measured_power is not None:
+                    fig_pw.add_trace(go.Scatter(
+                        x=t,
+                        y=_to_list(pocket.measured_power),
+                        mode='lines',
+                        name=f'{label}',
+                        line=dict(dash='dash'),
+                    ))
+            if fig_pw.data:
+                fig_pw.update_layout(
+                    template='plotly_white',
+                    height=400,
+                    width=716,
+                    xaxis_title='Time (s)',
+                    yaxis_title='Power (W)',
+                    title_text='Pocket Power',
+                    showlegend=True,
+                    legend=dict(
+                        itemclick='toggle',
+                        itemdoubleclick='toggleothers',
+                        bgcolor='rgba(255,255,255,0.8)',
+                        bordercolor='lightgrey',
+                        borderwidth=1,
+                    ),
+                )
+                self.figures.append(
+                    PlotlyFigure(label='Pocket Power', figure=json.loads(pio.to_json(fig_pw)))
+                )
+
+        # 3. Deposition rate vs time — outliers removed via IQR clipping
+        if t is not None and self.qcm is not None and self.qcm.deposition_rate is not None:
+            rate_arr = _to_list(self.qcm.deposition_rate)  # already in Å/s
+            rate_np = np.array(rate_arr, dtype=np.float64)
+            # Remove outliers: values outside [Q1 - 3*IQR, Q3 + 3*IQR]
+            if len(rate_np) > 4:
+                q1, q3 = np.percentile(rate_np, [25, 75])
+                iqr = q3 - q1
+                lo, hi = q1 - 3 * iqr, q3 + 3 * iqr
+                rate_clean = [None if not (lo <= v <= hi) else float(v) for v in rate_np]
+            else:
+                rate_clean = rate_arr
+            fig_r = go.Figure()
+            fig_r.add_trace(go.Scatter(x=t, y=rate_clean, mode='lines', name='Rate'))
+            fig_r.update_layout(
+                template='plotly_white',
+                height=400,
+                width=716,
+                xaxis_title='Time (s)',
+                yaxis_title='Deposition Rate (Å/s)',
+                title_text='Deposition Rate',
+            )
+            self.figures.append(
+                PlotlyFigure(label='Deposition Rate', figure=json.loads(pio.to_json(fig_r)))
+            )
 
         if not self.creates_new_thin_film:
             return

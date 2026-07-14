@@ -2349,6 +2349,7 @@ class METEORParser(MatchingParser):
         from nomad_inl_base.schema_packages.meteor import (
             METEORDeposition,
             METEORPocket,
+            METEORProcessConditions,
             METEORQCMMonitor,
         )
 
@@ -2392,20 +2393,47 @@ class METEORParser(MatchingParser):
             logger.error(f'METEORParser: failed to read CSV body: {exc}')
             return
 
-        def _col_float(name):
+        def _col_float_raw(name):
             if name not in df.columns:
                 return None
             arr = pd.to_numeric(df[name], errors='coerce').to_numpy(dtype=np.float64)
             return arr if not np.all(np.isnan(arr)) else None
 
+        # ── Venting cutoff mask (pressure < 1 mbar) ──────────────────────────
+        # Any row where pressure >= 1 mbar means the chamber is being vented;
+        # all data from that point on is discarded.
+        _pressure_raw = _col_float_raw('Pressure(mBar)')
+        if _pressure_raw is not None:
+            # Find the first index where pressure >= 0.01 mbar
+            _vent_idx = np.argmax(_pressure_raw >= 0.01)
+            if _pressure_raw[_vent_idx] < 0.01:
+                # argmax returns 0 when no element satisfies the condition,
+                # but we checked it's < 0.01 so no element exceeds the threshold
+                _vent_idx = len(_pressure_raw)
+            # Keep rows [0, _vent_idx)
+            _n_valid = int(_vent_idx)
+        else:
+            _n_valid = len(df)
+
+        def _col_float(name):
+            arr = _col_float_raw(name)
+            if arr is None:
+                return None
+            sliced = arr[:_n_valid]
+            # Replace NaN/inf with 0.0 so arrays are always finite floats.
+            # This prevents YAML serialisation producing ".nan"/".inf" tokens
+            # that some readers may incorrectly deserialise as strings.
+            return np.nan_to_num(sliced, nan=0.0, posinf=0.0, neginf=0.0)
+
         def _col_bool(name):
             if name not in df.columns:
                 return None
-            return (
+            arr = (
                 df[name]
                 .map(lambda v: str(v).strip().lower() == 'true')
                 .to_numpy(dtype=bool)
             )
+            return arr[:_n_valid]
 
         # ── Build METEORDeposition entry ─────────────────────────────────────
         entry = METEORDeposition()
@@ -2419,27 +2447,32 @@ class METEORParser(MatchingParser):
         if time_arr is not None:
             entry.elapsed_time = time_arr - time_arr[0]
 
+        # ── Process conditions subsection ───────────────────────────────────────────────
+        conditions = METEORProcessConditions()
+
         # Chamber pressure: mbar → Pa
         pressure = _col_float('Pressure(mBar)')
         if pressure is not None:
-            entry.chamber_pressure = pressure * _MBAR_TO_PA
+            conditions.chamber_pressure = pressure * _MBAR_TO_PA
 
         # Substrate temperature: °C → K
         temp = _col_float('Temp(C)')
         if temp is not None:
-            entry.substrate_temperature = temp + _KELVIN_OFFSET
+            conditions.substrate_temperature = temp + _KELVIN_OFFSET
 
         ebeam_pwr = _col_float('Power(W)')
         if ebeam_pwr is not None:
-            entry.ebeam_power = ebeam_pwr
+            conditions.ebeam_power = ebeam_pwr
 
         ebeam_pct = _col_float('% Current(%)')
         if ebeam_pct is not None:
-            entry.ebeam_current_percentage = ebeam_pct
+            conditions.ebeam_current_percentage = ebeam_pct
 
         rotation = _col_float('Rotation speed(RPM)')
         if rotation is not None:
-            entry.rotation_speed = rotation
+            conditions.rotation_speed = rotation
+
+        entry.process_conditions = conditions
 
         # ── Pockets (4 fixed) ────────────────────────────────────────────────
         pockets = []
@@ -2479,7 +2512,7 @@ class METEORParser(MatchingParser):
 
         rate = _col_float('Rate(A/s)')
         if rate is not None:
-            qcm.deposition_rate = rate * _ANGSTROM_PER_S_TO_M_PER_S
+            qcm.deposition_rate = rate  # already in Å/s, schema unit is angstrom/s
 
         thickness_arr = _col_float('Thickness(A)')
         if thickness_arr is not None:
@@ -2501,7 +2534,9 @@ class METEORParser(MatchingParser):
 
         entry.qcm = qcm
 
-        # ── Write child archive (guard=True preserves user ELN edits) ────────
+        # ── Write child archive ───────────────────────────────────────────────
+        # overwrite=True ensures stale sidecar YAMLs (e.g. from schema changes)
+        # are always regenerated when the .nbl log is re-processed.
         create_child_entry(
             entry,
             archive,
@@ -2510,6 +2545,6 @@ class METEORParser(MatchingParser):
             raw_name=data_file + '_raw',
             raw_ref=get_hash_ref(archive.m_context.upload_id, data_file),
             logger=logger,
-            guard=True,
+            overwrite=True,
         )
         archive.metadata.entry_name = data_file
