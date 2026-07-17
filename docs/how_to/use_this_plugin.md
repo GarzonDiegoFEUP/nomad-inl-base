@@ -269,6 +269,30 @@ are recomputed automatically. If any threshold is exceeded,
 
 ---
 
+## Analysis with Jupyter notebooks { #analysis }
+
+INL provides four `JupyterAnalysis` schemas — for EQE, Solar Cell IV, GDOES,
+and XRD — that generate a pre-populated Jupyter notebook linked to an
+analysis ELN entry. See [Reference – Analysis](../reference/analysis.md) for
+the full list of fields and what each notebook does.
+
+1. Create a new entry of the desired type, e.g. **INL XRD Jupyter Analysis**.
+2. Set **Search queries for inputs** to match the measurement entries you
+   want to analyze (e.g. all `INLXRayDiffraction` entries for a sample).
+3. Click **Reset Inputs** to populate the **Inputs** sub-section from the
+   query.
+4. Click **Generate Notebook**. A `.ipynb` file is created and linked in
+   **Notebook**.
+5. Open **Notebook** and run the cells. The linked entry is loaded into the
+   `analysis` variable, and its inputs are available as `analysis.inputs`.
+
+!!! tip
+    If you edit the notebook and want to regenerate it from scratch, clear
+    the **Notebook** field first — **Generate Notebook** does nothing while a
+    notebook is already linked.
+
+---
+
 ## METEOR e-beam evaporation (Metal EvaporaTion by Electron-beam for SOlar Research) { #meteor }
 
 The **METEOR** instrument (Korvus Technology) is an e-beam evaporator with

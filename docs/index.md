@@ -10,6 +10,7 @@ It provides ELN (Electronic Lab Notebook) schemas and automatic normalization ro
 - **Batteries** – PC03 CathodeChamber and PC04 ElectrolyteChamber sputtering/annealing log parsers, with automatic sample creation and linking based on the sample name embedded in the log filename
 - **Wet deposition** – spin coating, slot-die coating, blade coating, inkjet printing, spray pyrolysis, dip coating, and chemical bath deposition
 - **Characterization** – XRD, UV-Vis transmission, 4-point probe, KLA-Tencor profilometry, EQE, solar cell IV, GDOES, SEM, EDX/EDS spectra, Bruker AFM/KPFM/cAFM, cyclic voltammetry (CV), linear-sweep voltammetry (IV), electrochemical impedance spectroscopy (EIS), and chronoamperometry
+- **Analysis** – Jupyter notebook–based analysis for EQE, solar cell IV, GDOES, and XRD data, built on the `nomad-analysis` plugin
 - **Shared entities** – substrates, thin films, thin-film stacks, instruments, selenium cells, and sample fragments referenced across all schemas
 
 <div markdown="block" class="home-grid">
@@ -61,6 +62,7 @@ each ELN entry type.
 - [Batteries](reference/batteries.md)
 - [Wet Deposition](reference/wet_deposition.md)
 - [Characterization](reference/characterization.md)
+- [Analysis](reference/analysis.md)
 
 </div>
 </div>
@@ -112,3 +114,7 @@ each ELN entry type.
 | `INLEDXSpectrum` | INL Characterization | Measurement |
 | `ChronoamperometryMeasurement` | INL Characterization | Measurement |
 | `EISMeasurement` | INL Characterization | Measurement |
+| `EQEJupyterAnalysis` | Analysis using Jupyter notebooks | Analysis |
+| `SolarCellJupyterAnalysis` | Analysis using Jupyter notebooks | Analysis |
+| `GDOESJupyterAnalysis` | Analysis using Jupyter notebooks | Analysis |
+| `INLXRDJupyterAnalysis` | Analysis using Jupyter notebooks | Analysis |

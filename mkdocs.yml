@@ -22,6 +22,7 @@ nav:
       - Batteries: reference/batteries.md
       - Wet Deposition: reference/wet_deposition.md
       - Characterization: reference/characterization.md
+      - Analysis: reference/analysis.md
 plugins:
   - search
 theme:
