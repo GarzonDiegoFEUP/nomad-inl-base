@@ -363,19 +363,6 @@ The `METEORQCMMonitor` sub-section captures:
 | **Thickness override** | User value; takes precedence over QCM thickness for film creation |
 | **Density** | Material density in the QCM controller (g/cm³) |
 | **Tooling factor** | QCM tooling correction factor (%) |
-2. Fill in **Area electrode**, **Electrode material**, **Electrolyte**, and
-   **Reference electrode** as needed.
-3. Nyquist and Bode plots are generated automatically on normalization.
-
-### Bio-Logic CV and IV (`.mpr`)
-
-1. Upload a Bio-Logic `.mpr` file containing a cyclic voltammetry or
-   linear-sweep / IV experiment — the parser creates a
-   `PotentiostatMeasurement` entry automatically.
-2. CV files (containing a `cycle number` column) display a current vs.
-   voltage curve for scan 3 (or 2 as fallback).
-3. IV/LSV files (no cycle column) display a full current vs. voltage sweep.
-4. Set **Area electrode** to switch the y-axis to current density.
 
 ---
 
