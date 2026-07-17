@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 
 import nbformat as nbf
 from nomad.datamodel.data import EntryData
-from nomad.datamodel.metainfo.annotations import SectionDisplayAnnotation
-from nomad.metainfo import SchemaPackage, Section
+from nomad.datamodel.metainfo.annotations import ELNAnnotation, SectionDisplayAnnotation
+from nomad.metainfo import Quantity, SchemaPackage, Section
 from nomad_analysis.jupyter.schema import JupyterAnalysis
 from nomad_analysis.utils import get_function_source, list_to_string
 
@@ -249,6 +249,8 @@ class INLXRDJupyterAnalysis(JupyterAnalysis, EntryData):
                 'lab_id',
                 'location',
                 'description',
+                'scherrer_k_factor',
+                'peak_matching_tolerance',
                 'method',
                 'template',
                 'notebook',
@@ -257,6 +259,28 @@ class INLXRDJupyterAnalysis(JupyterAnalysis, EntryData):
                 'trigger_reset_inputs',
             ],
         ),
+    )
+
+    scherrer_k_factor = Quantity(
+        type=float,
+        default=0.9,
+        description=(
+            'Scherrer constant K used in crystallite size calculation. '
+            'Use 0.9 for spherical crystallites (default) or 0.94 for cubic.'
+        ),
+        a_eln=ELNAnnotation(component='NumberEditQuantity'),
+    )
+
+    peak_matching_tolerance = Quantity(
+        type=float,
+        default=0.3,
+        unit='degree',
+        description=(
+            'Maximum 2\u03b8 separation (\u00b0) accepted when matching '
+            'experimental peaks to reference phases. '
+            'Increase for strained films; decrease for well-defined phases.'
+        ),
+        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     def write_predefined_cells(self, archive, logger):
@@ -316,7 +340,14 @@ class INLXRDJupyterAnalysis(JupyterAnalysis, EntryData):
         # Cell 3: run the full analysis pipeline
         cells.append(
             nbf.v4.new_code_cell(
-                source='xrd_full_analysis(analysis.inputs, reference_contents)\n',
+                source=(
+                    'xrd_full_analysis(\n'
+                    '    analysis.inputs,\n'
+                    '    reference_contents,\n'
+                    '    scherrer_k=analysis.scherrer_k_factor,\n'
+                    '    tolerance=analysis.peak_matching_tolerance.magnitude,\n'
+                    ')\n'
+                ),
                 metadata={'tags': ['nomad-analysis-predefined']},
             )
         )

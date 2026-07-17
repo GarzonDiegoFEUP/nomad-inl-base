@@ -1281,7 +1281,7 @@ def xrd_parse_reference_rtf(content_str):
 
 
 @category('XRD')
-def xrd_match_and_analyze(samples_dict, references_dict, tolerance=0.3):
+def xrd_match_and_analyze(samples_dict, references_dict, tolerance=0.3, scherrer_k=0.9):
     """
     Match experimental peaks to reference phases and compute crystallographic metrics.
 
@@ -1289,7 +1289,9 @@ def xrd_match_and_analyze(samples_dict, references_dict, tolerance=0.3):
 
     1. Matches fitted peaks to every reference phase using ``pd.merge_asof``
        (nearest 2θ within *tolerance* degrees).
-    2. Calculates **crystallite size** via :func:`xrd_calculate_scherrer`.
+    2. Calculates **crystallite size** via :func:`xrd_calculate_scherrer` using
+       the per-sample wavelength stored in *samples_dict* (read from
+       ``entry.xrd_settings.source.kalpha_one``) and *scherrer_k*.
     3. Calculates **Texture Coefficient** TC = Rᵢ / mean(Rᵢ), where
        Rᵢ = I_exp / I_ref.
 
@@ -1297,12 +1299,14 @@ def xrd_match_and_analyze(samples_dict, references_dict, tolerance=0.3):
     ----------
     samples_dict : dict
         ``{sample_name: {'two_theta': array, 'intensity': array,
-                         'peaks': DataFrame}}``
+                         'peaks': DataFrame, 'wavelength': float}}``
     references_dict : dict
         ``{phase_name: DataFrame}`` — as returned by
         :func:`xrd_parse_reference_rtf`.
     tolerance : float
         Maximum 2θ separation (°) for a match.
+    scherrer_k : float
+        Scherrer constant K (default 0.9).
 
     Returns
     -------
@@ -1321,6 +1325,7 @@ def xrd_match_and_analyze(samples_dict, references_dict, tolerance=0.3):
         if peak_df is None or peak_df.empty:
             continue
 
+        wavelength = sample_data.get('wavelength', 1.5406)
         exp_sorted = peak_df.sort_values('center').reset_index(drop=True)
         phase_matches = []
 
@@ -1343,7 +1348,9 @@ def xrd_match_and_analyze(samples_dict, references_dict, tolerance=0.3):
             merged['phase'] = phase_name
 
             merged['crystallite_size_nm'] = merged.apply(
-                lambda r: xrd_calculate_scherrer(r['fwhm'], r['2Theta_exp']),
+                lambda r: xrd_calculate_scherrer(
+                    r['fwhm'], r['2Theta_exp'], K=scherrer_k, wavelength=wavelength
+                ),
                 axis=1,
             )
             merged['Ri'] = np.where(
@@ -1630,13 +1637,15 @@ def xrd_plot_crystallite_size(analysis_results):
 
 
 @category('XRD')
-def xrd_full_analysis(inputs, reference_contents=None):
+def xrd_full_analysis(inputs, reference_contents=None, scherrer_k=0.9, tolerance=0.3):
     """
     Run the full advanced XRD analysis pipeline on NOMAD archive inputs.
 
     Steps:
 
     1. Load 2θ / intensity data from each ``ELNXRayDiffraction`` input entry.
+       The X-ray wavelength is read from
+       ``entry.xrd_settings.source.kalpha_one`` (Cu Kα default: 1.5406 Å).
     2. Apply polynomial background correction and normalise.
     3. Detect and fit peaks with PseudoVoigt profiles.
     4. If *reference_contents* is provided, parse each RTF reference card,
@@ -1653,6 +1662,12 @@ def xrd_full_analysis(inputs, reference_contents=None):
     reference_contents : dict, optional
         ``{phase_name: str}`` mapping phase names to raw RTF file content.
         Populated by the reference upload widget cell above this one.
+    scherrer_k : float
+        Scherrer constant K (default 0.9). Set via
+        ``analysis.scherrer_k_factor`` on the analysis entry.
+    tolerance : float
+        Maximum 2θ separation (°) for peak-to-reference matching (default 0.3).
+        Set via ``analysis.peak_matching_tolerance`` on the analysis entry.
     """
     import numpy as np
     import pandas as pd
@@ -1675,14 +1690,27 @@ def xrd_full_analysis(inputs, reference_contents=None):
             print(f'Could not read data from "{name}": {exc}')
             continue
 
+        # Read wavelength from instrument settings; fall back to Cu Kα
+        wavelength = 1.5406
+        try:
+            if (
+                entry.xrd_settings is not None
+                and entry.xrd_settings.source is not None
+                and entry.xrd_settings.source.kalpha_one is not None
+            ):
+                wavelength = float(entry.xrd_settings.source.kalpha_one.magnitude)
+        except Exception:
+            print(f'  Could not read wavelength for "{name}", using Cu K\u03b1 default (1.5406 \u00c5).')
+
         x_corr, y_corr, _ = xrd_background_correction(two_theta, intensity)
         peak_df = xrd_find_and_fit_peaks(x_corr, y_corr)
         samples_dict[name] = {
             'two_theta': x_corr,
             'intensity': y_corr,
             'peaks': peak_df,
+            'wavelength': wavelength,
         }
-        print(f'Loaded "{name}": {len(peak_df)} peak(s) fitted.')
+        print(f'Loaded "{name}": {len(peak_df)} peak(s) fitted (\u03bb = {wavelength:.4f} \u00c5).')
 
     if not samples_dict:
         print('No valid ELNXRayDiffraction entries found in inputs.')
@@ -1707,7 +1735,9 @@ def xrd_full_analysis(inputs, reference_contents=None):
 
     # Crystallographic analysis (requires reference phases)
     if references_dict:
-        analysis_results = xrd_match_and_analyze(samples_dict, references_dict)
+        analysis_results = xrd_match_and_analyze(
+            samples_dict, references_dict, tolerance=tolerance, scherrer_k=scherrer_k
+        )
 
         summary_rows = []
         for sample_name, result in analysis_results.items():
