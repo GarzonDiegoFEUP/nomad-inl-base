@@ -1018,3 +1018,710 @@ def xrd_voila_analysis(input_data) -> None:  # noqa: PLR0915
     export_results_button.on_click(on_click_export_results)
 
     display(display_panel)
+
+
+# ============================================================================
+# Advanced XRD analysis functions (notebook-based pipeline)
+# ============================================================================
+
+
+@category('XRD')
+def xrd_background_correction(x, y, bg_regions=None, poly_degree=3):
+    """
+    Subtract polynomial background from XRD data and normalize to [0, 1].
+
+    Parameters
+    ----------
+    x : array-like
+        2θ values in degrees.
+    y : array-like
+        Raw intensity values.
+    bg_regions : list of (float, float), optional
+        List of (min_2theta, max_2theta) regions to use for background
+        estimation.  If None, the first and last 5 % of the angular range
+        are used.
+    poly_degree : int
+        Degree of the polynomial fit (default 3).
+
+    Returns
+    -------
+    tuple (x_arr, y_corrected, y_background)
+        x_arr          — original 2θ array
+        y_corrected    — background-subtracted, normalised intensity [0, 1]
+        y_background   — evaluated background polynomial
+    """
+    import numpy as np
+
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    if bg_regions is None:
+        span = x[-1] - x[0]
+        bg_regions = [
+            (x[0], x[0] + 0.05 * span),
+            (x[-1] - 0.05 * span, x[-1]),
+        ]
+
+    bg_mask = np.zeros(len(x), dtype=bool)
+    for lo, hi in bg_regions:
+        bg_mask |= (x >= lo) & (x <= hi)
+
+    if bg_mask.sum() < poly_degree + 1:
+        bg_mask = np.ones(len(x), dtype=bool)
+
+    coeffs = np.polyfit(x[bg_mask], y[bg_mask], poly_degree)
+    y_background = np.polyval(coeffs, x)
+    y_corrected = np.clip(y - y_background, 0, None)
+
+    y_max = y_corrected.max()
+    if y_max > 0:
+        y_corrected = y_corrected / y_max
+
+    return x, y_corrected, y_background
+
+
+@category('XRD')
+def xrd_find_and_fit_peaks(x, y, min_rel_height=0.05, peak_prominence=0.05):
+    """
+    Detect and fit XRD peaks using PseudoVoigt profiles via lmfit.
+
+    The function smooths the pattern with a Savitzky-Golay filter, detects
+    candidate peaks with ``scipy.signal.find_peaks``, then fits each peak
+    individually in a ±1.5° window with a PseudoVoigt + Constant model.
+
+    Parameters
+    ----------
+    x : array-like
+        2θ values in degrees (background-corrected, normalised).
+    y : array-like
+        Intensity values.
+    min_rel_height : float
+        Minimum peak height as a fraction of the maximum intensity.
+    peak_prominence : float
+        Minimum prominence as a fraction of the maximum intensity.
+
+    Returns
+    -------
+    pandas.DataFrame
+        One row per fitted peak with columns:
+        ``center``, ``fwhm``, ``height``, ``amplitude``, ``eta``, ``sigma``.
+    """
+    import numpy as np
+    import pandas as pd
+    from lmfit.models import ConstantModel, PseudoVoigtModel
+    from scipy.signal import find_peaks, savgol_filter
+
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    win = max(5, min(11, (len(y) // 10) * 2 + 1))
+    if win % 2 == 0:
+        win += 1
+    y_smooth = savgol_filter(y, window_length=win, polyorder=3)
+
+    y_max = y_smooth.max() if y_smooth.max() > 0 else 1.0
+    peak_indices, _ = find_peaks(
+        y_smooth,
+        height=min_rel_height * y_max,
+        prominence=peak_prominence * y_max,
+    )
+
+    dx = (x[-1] - x[0]) / max(len(x) - 1, 1)
+    results = []
+    for idx in peak_indices:
+        center_guess = x[idx]
+        mask = (x >= center_guess - 1.5) & (x <= center_guess + 1.5)
+        if mask.sum() < 5:
+            continue
+        x_win = x[mask]
+        y_win = y[mask]
+
+        try:
+            model = PseudoVoigtModel() + ConstantModel()
+            params = model.make_params(
+                amplitude=dict(value=float(y_win.max()), min=0),
+                center=dict(
+                    value=center_guess,
+                    min=center_guess - 1.0,
+                    max=center_guess + 1.0,
+                ),
+                sigma=dict(value=0.1, min=0.01, max=2.0),
+                fraction=dict(value=0.5, min=0.0, max=1.0),
+                c=dict(value=float(y_win.min()), min=0),
+            )
+            fit = model.fit(y_win, params, x=x_win)
+            fwhm = float(fit.params['fwhm'].value)
+            if not (0.01 <= fwhm <= 2.0):
+                continue
+            results.append(
+                {
+                    'center': round(float(fit.params['center'].value), 4),
+                    'fwhm': round(fwhm, 4),
+                    'height': round(float(fit.params['height'].value), 4),
+                    'amplitude': round(float(fit.params['amplitude'].value), 4),
+                    'eta': round(float(fit.params['fraction'].value), 4),
+                    'sigma': round(float(fit.params['sigma'].value), 4),
+                }
+            )
+        except Exception:
+            results.append(
+                {
+                    'center': round(float(center_guess), 4),
+                    'fwhm': round(dx * 3, 4),
+                    'height': round(float(y[idx]), 4),
+                    'amplitude': round(float(y[idx]), 4),
+                    'eta': 0.5,
+                    'sigma': round(dx * 1.5, 4),
+                }
+            )
+
+    return pd.DataFrame(results)
+
+
+@category('XRD')
+def xrd_calculate_scherrer(fwhm_deg, theta_deg, K=0.9, wavelength=1.5406):
+    """
+    Calculate crystallite size using the Scherrer equation.
+
+    .. math::
+        D = \\frac{K \\lambda}{\\beta \\cos\\theta}
+
+    Parameters
+    ----------
+    fwhm_deg : float
+        Full width at half maximum in degrees (β).
+    theta_deg : float
+        Peak position as 2θ in degrees (will be halved to obtain θ).
+    K : float
+        Scherrer constant (default 0.9).
+    wavelength : float
+        X-ray wavelength in Å (default 1.5406 Å for Cu Kα).
+
+    Returns
+    -------
+    float
+        Crystallite size in nm, or NaN if inputs are unphysical.
+    """
+    import math
+
+    fwhm_rad = math.radians(fwhm_deg)
+    theta_rad = math.radians(theta_deg / 2.0)
+    cos_theta = math.cos(theta_rad)
+    if fwhm_rad <= 0 or cos_theta <= 0:
+        return float('nan')
+    size_angstrom = (K * wavelength) / (fwhm_rad * cos_theta)
+    return size_angstrom / 10.0  # Å → nm
+
+
+@category('XRD')
+def xrd_parse_reference_rtf(content_str):
+    """
+    Parse an ICDD PDF reference card from RTF file content.
+
+    Extracts the "Peak list" table into a DataFrame with columns:
+    ``No.``, ``h``, ``k``, ``l``, ``d [A]``, ``2Theta[deg]``, ``I [%]``,
+    and a derived ``hkl`` column (e.g. ``'(101)'``).
+
+    Parameters
+    ----------
+    content_str : bytes or str
+        Raw RTF file content.
+
+    Returns
+    -------
+    pandas.DataFrame or None
+        Reference peaks, or None if parsing fails.
+    """
+    import re
+
+    import pandas as pd
+    from striprtf.striprtf import rtf_to_text
+
+    if isinstance(content_str, (bytes, memoryview)):
+        content_str = bytes(content_str).decode('utf-8', errors='replace')
+
+    plain = rtf_to_text(content_str)
+
+    header_re = re.compile(r'No\.?\s+h\s+k\s+l', re.IGNORECASE)
+    data_re = re.compile(
+        r'^\s*(\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)'
+    )
+
+    rows = []
+    in_table = False
+    for line in plain.splitlines():
+        if header_re.search(line):
+            in_table = True
+            continue
+        if in_table:
+            m = data_re.match(line)
+            if m:
+                rows.append(
+                    {
+                        'No.': int(m.group(1)),
+                        'h': int(m.group(2)),
+                        'k': int(m.group(3)),
+                        'l': int(m.group(4)),
+                        'd [A]': float(m.group(5)),
+                        '2Theta[deg]': float(m.group(6)),
+                        'I [%]': float(m.group(7)),
+                    }
+                )
+            elif rows:
+                break
+
+    if not rows:
+        return None
+
+    df = pd.DataFrame(rows)
+    df['hkl'] = df.apply(
+        lambda r: f"({int(r['h'])}{int(r['k'])}{int(r['l'])})", axis=1
+    )
+    return df
+
+
+@category('XRD')
+def xrd_match_and_analyze(samples_dict, references_dict, tolerance=0.3):
+    """
+    Match experimental peaks to reference phases and compute crystallographic metrics.
+
+    For each sample the function:
+
+    1. Matches fitted peaks to every reference phase using ``pd.merge_asof``
+       (nearest 2θ within *tolerance* degrees).
+    2. Calculates **crystallite size** via :func:`xrd_calculate_scherrer`.
+    3. Calculates **Texture Coefficient** TC = Rᵢ / mean(Rᵢ), where
+       Rᵢ = I_exp / I_ref.
+
+    Parameters
+    ----------
+    samples_dict : dict
+        ``{sample_name: {'two_theta': array, 'intensity': array,
+                         'peaks': DataFrame}}``
+    references_dict : dict
+        ``{phase_name: DataFrame}`` — as returned by
+        :func:`xrd_parse_reference_rtf`.
+    tolerance : float
+        Maximum 2θ separation (°) for a match.
+
+    Returns
+    -------
+    dict
+        ``{sample_name: {'matches': DataFrame, 'summary': dict}}``
+        Summary keys: ``Avg_Crystallite_Size_nm``, ``Max_TC``,
+        ``Preferred_hkl``.
+    """
+    import numpy as np
+    import pandas as pd
+
+    analysis_results = {}
+
+    for sample_name, sample_data in samples_dict.items():
+        peak_df = sample_data.get('peaks')
+        if peak_df is None or peak_df.empty:
+            continue
+
+        exp_sorted = peak_df.sort_values('center').reset_index(drop=True)
+        phase_matches = []
+
+        for phase_name, ref_df in references_dict.items():
+            ref_sorted = (
+                ref_df.sort_values('2Theta[deg]')
+                .reset_index(drop=True)
+            )
+            merged = pd.merge_asof(
+                exp_sorted.rename(columns={'center': '2Theta_exp'}),
+                ref_sorted[['2Theta[deg]', 'I [%]', 'hkl']].rename(
+                    columns={'2Theta[deg]': '2Theta_ref', 'I [%]': 'I_ref'}
+                ),
+                left_on='2Theta_exp',
+                right_on='2Theta_ref',
+                tolerance=tolerance,
+                direction='nearest',
+            )
+            merged = merged.dropna(subset=['2Theta_ref']).copy()
+            merged['phase'] = phase_name
+
+            merged['crystallite_size_nm'] = merged.apply(
+                lambda r: xrd_calculate_scherrer(r['fwhm'], r['2Theta_exp']),
+                axis=1,
+            )
+            merged['Ri'] = np.where(
+                merged['I_ref'] > 0,
+                merged['height'] / merged['I_ref'],
+                np.nan,
+            )
+            phase_matches.append(merged)
+
+        if not phase_matches:
+            continue
+
+        matches_df = pd.concat(phase_matches, ignore_index=True)
+
+        tc_frames = []
+        for _, group in matches_df.groupby('phase'):
+            mean_ri = group['Ri'].mean()
+            tc = (group['Ri'] / mean_ri) if (mean_ri and mean_ri > 0) else np.nan
+            tc_frames.append(group.assign(TC=tc))
+        matches_df = pd.concat(tc_frames, ignore_index=True) if tc_frames else matches_df
+
+        avg_size = float(matches_df['crystallite_size_nm'].dropna().mean())
+        if 'TC' in matches_df.columns and not matches_df['TC'].isna().all():
+            max_idx = matches_df['TC'].idxmax()
+            max_tc = float(matches_df.loc[max_idx, 'TC'])
+            preferred_hkl = matches_df.loc[max_idx, 'hkl']
+        else:
+            max_tc = float('nan')
+            preferred_hkl = 'N/A'
+
+        analysis_results[sample_name] = {
+            'matches': matches_df,
+            'summary': {
+                'Avg_Crystallite_Size_nm': round(avg_size, 2),
+                'Max_TC': round(max_tc, 3) if not np.isnan(max_tc) else None,
+                'Preferred_hkl': preferred_hkl,
+            },
+        }
+
+    return analysis_results
+
+
+@category('XRD')
+def xrd_plot_stacked(samples_dict, references_dict=None, reference_peak_scale=0.15):
+    """
+    Create an interactive stacked XRD patterns plot using Plotly.
+
+    Each sample pattern is offset vertically by a constant step.
+    Reference peak positions (if provided) are shown as vertical sticks
+    beneath the bottom pattern.
+
+    Parameters
+    ----------
+    samples_dict : dict
+        ``{sample_name: {'two_theta': array, 'intensity': array}}``
+    references_dict : dict, optional
+        ``{phase_name: DataFrame}`` — from :func:`xrd_parse_reference_rtf`.
+    reference_peak_scale : float
+        Height of reference peak sticks relative to the stacking step.
+    """
+    import plotly.graph_objects as go
+
+    fig = go.Figure()
+    n = len(samples_dict)
+    offset_step = 1.2
+
+    for i, (name, data) in enumerate(samples_dict.items()):
+        hue = int(i * 360 / max(n, 1))
+        color = f'hsl({hue},70%,50%)'
+        fig.add_trace(
+            go.Scatter(
+                x=data['two_theta'],
+                y=data['intensity'] + i * offset_step,
+                mode='lines',
+                name=name,
+                line=dict(color=color, width=1.5),
+            )
+        )
+
+    if references_dict:
+        stub_colors = [
+            'rgba(0,0,0,0.55)',
+            'rgba(200,0,0,0.55)',
+            'rgba(0,0,200,0.55)',
+            'rgba(0,150,0,0.55)',
+        ]
+        for j, (phase_name, ref_df) in enumerate(references_dict.items()):
+            color = stub_colors[j % len(stub_colors)]
+            stick_top = -0.05
+            for _, row in ref_df.iterrows():
+                stick_h = row['I [%]'] / 100.0 * reference_peak_scale
+                fig.add_shape(
+                    type='line',
+                    x0=row['2Theta[deg]'],
+                    x1=row['2Theta[deg]'],
+                    y0=stick_top - stick_h,
+                    y1=stick_top,
+                    line=dict(color=color, width=1),
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=[None],
+                    y=[None],
+                    mode='lines',
+                    name=phase_name,
+                    line=dict(color=color, dash='dot'),
+                )
+            )
+
+    fig.update_layout(
+        title='Stacked XRD Patterns',
+        xaxis_title='2θ (°)',
+        yaxis_title='Normalised intensity (offset)',
+        height=600,
+        showlegend=True,
+    )
+    fig.show()
+
+
+@category('XRD')
+def xrd_plot_single_pattern(samples_dict, sample_name, references_dict=None, peak_df=None):
+    """
+    Plot a single XRD pattern with fitted peak markers and reference lines.
+
+    Parameters
+    ----------
+    samples_dict : dict
+        Full samples dictionary.
+    sample_name : str
+        Key in *samples_dict* to plot.
+    references_dict : dict, optional
+        Reference phases dictionary.
+    peak_df : pandas.DataFrame, optional
+        Fitted peaks (from :func:`xrd_find_and_fit_peaks`).  If None, uses
+        ``samples_dict[sample_name]['peaks']``.
+    """
+    import plotly.graph_objects as go
+
+    data = samples_dict.get(sample_name)
+    if data is None:
+        print(f'Sample "{sample_name}" not found.')
+        return
+
+    if peak_df is None:
+        peak_df = data.get('peaks')
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=data['two_theta'],
+            y=data['intensity'],
+            mode='lines',
+            name=sample_name,
+            line=dict(color='steelblue', width=1.5),
+        )
+    )
+
+    if peak_df is not None and not peak_df.empty:
+        for _, row in peak_df.iterrows():
+            fig.add_vline(
+                x=row['center'],
+                line=dict(color='red', dash='dash', width=1),
+                annotation_text=f"{row['center']:.2f}°",
+                annotation_font_size=9,
+            )
+
+    if references_dict:
+        ref_colors = [
+            'rgba(0,150,0,0.75)',
+            'rgba(150,0,150,0.75)',
+            'rgba(200,100,0,0.75)',
+        ]
+        for j, (phase_name, ref_df) in enumerate(references_dict.items()):
+            color = ref_colors[j % len(ref_colors)]
+            for _, row in ref_df.iterrows():
+                fig.add_vline(
+                    x=row['2Theta[deg]'],
+                    line=dict(color=color, dash='dot', width=0.8),
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=[None],
+                    y=[None],
+                    mode='lines',
+                    name=phase_name,
+                    line=dict(color=color, dash='dot'),
+                )
+            )
+
+    fig.update_layout(
+        title=f'XRD Pattern — {sample_name}',
+        xaxis_title='2θ (°)',
+        yaxis_title='Normalised intensity',
+        height=500,
+    )
+    fig.show()
+
+
+@category('XRD')
+def xrd_plot_tc(analysis_results):
+    """
+    Interactive grouped bar chart of Texture Coefficient (TC) per (hkl) per sample.
+
+    A dashed horizontal line at TC = 1 marks the random-texture reference.
+
+    Parameters
+    ----------
+    analysis_results : dict
+        Output of :func:`xrd_match_and_analyze`.
+    """
+    import plotly.graph_objects as go
+
+    fig = go.Figure()
+    for sample_name, result in analysis_results.items():
+        matches = result.get('matches')
+        if matches is None or 'TC' not in matches.columns:
+            continue
+        tc_data = matches.dropna(subset=['TC', 'hkl'])
+        if tc_data.empty:
+            continue
+        fig.add_trace(
+            go.Bar(
+                name=sample_name,
+                x=tc_data['hkl'],
+                y=tc_data['TC'],
+                text=[f'{v:.2f}' for v in tc_data['TC']],
+                textposition='outside',
+            )
+        )
+
+    fig.add_hline(
+        y=1.0,
+        line=dict(color='black', dash='dash', width=1),
+        annotation_text='TC = 1 (random texture)',
+    )
+    fig.update_layout(
+        title='Texture Coefficient by (hkl)',
+        xaxis_title='(hkl)',
+        yaxis_title='Texture Coefficient',
+        barmode='group',
+        height=500,
+    )
+    fig.show()
+
+
+@category('XRD')
+def xrd_plot_crystallite_size(analysis_results):
+    """
+    Interactive grouped bar chart of Scherrer crystallite size (nm) per (hkl) per sample.
+
+    Parameters
+    ----------
+    analysis_results : dict
+        Output of :func:`xrd_match_and_analyze`.
+    """
+    import plotly.graph_objects as go
+
+    fig = go.Figure()
+    for sample_name, result in analysis_results.items():
+        matches = result.get('matches')
+        if matches is None or 'crystallite_size_nm' not in matches.columns:
+            continue
+        size_data = matches.dropna(subset=['crystallite_size_nm', 'hkl'])
+        if size_data.empty:
+            continue
+        fig.add_trace(
+            go.Bar(
+                name=sample_name,
+                x=size_data['hkl'],
+                y=size_data['crystallite_size_nm'],
+                text=[f'{v:.1f}' for v in size_data['crystallite_size_nm']],
+                textposition='outside',
+            )
+        )
+
+    fig.update_layout(
+        title='Crystallite Size by (hkl)',
+        xaxis_title='(hkl)',
+        yaxis_title='Crystallite size (nm)',
+        barmode='group',
+        height=500,
+    )
+    fig.show()
+
+
+@category('XRD')
+def xrd_full_analysis(inputs, reference_contents=None):
+    """
+    Run the full advanced XRD analysis pipeline on NOMAD archive inputs.
+
+    Steps:
+
+    1. Load 2θ / intensity data from each ``ELNXRayDiffraction`` input entry.
+    2. Apply polynomial background correction and normalise.
+    3. Detect and fit peaks with PseudoVoigt profiles.
+    4. If *reference_contents* is provided, parse each RTF reference card,
+       match experimental peaks, and compute crystallite size (Scherrer) and
+       Texture Coefficient.
+    5. Display stacked pattern plot, per-sample pattern plots, and (when
+       references are available) TC and crystallite-size bar charts.
+
+    Parameters
+    ----------
+    inputs : list
+        ``analysis.inputs`` — list of ``SectionReference`` objects from the
+        NOMAD JupyterAnalysis entry.
+    reference_contents : dict, optional
+        ``{phase_name: str}`` mapping phase names to raw RTF file content.
+        Populated by the reference upload widget cell above this one.
+    """
+    import numpy as np
+    import pandas as pd
+    from nomad_measurements.xrd.schema import ELNXRayDiffraction
+
+    samples_dict = {}
+    for entry_input in inputs:
+        entry = entry_input.reference
+        if entry is None:
+            continue
+        # Force proxy resolution before isinstance check
+        name = entry.name
+        if not isinstance(entry, ELNXRayDiffraction):
+            print(f'Skipping "{name}" — not an ELNXRayDiffraction entry.')
+            continue
+        try:
+            two_theta = np.array(entry.results[0].two_theta.magnitude)
+            intensity = np.array(entry.results[0].intensity.magnitude)
+        except Exception as exc:
+            print(f'Could not read data from "{name}": {exc}')
+            continue
+
+        x_corr, y_corr, _ = xrd_background_correction(two_theta, intensity)
+        peak_df = xrd_find_and_fit_peaks(x_corr, y_corr)
+        samples_dict[name] = {
+            'two_theta': x_corr,
+            'intensity': y_corr,
+            'peaks': peak_df,
+        }
+        print(f'Loaded "{name}": {len(peak_df)} peak(s) fitted.')
+
+    if not samples_dict:
+        print('No valid ELNXRayDiffraction entries found in inputs.')
+        return
+
+    references_dict = {}
+    if reference_contents:
+        for phase_name, content in reference_contents.items():
+            ref_df = xrd_parse_reference_rtf(content)
+            if ref_df is not None:
+                references_dict[phase_name] = ref_df
+                print(f'Loaded reference "{phase_name}": {len(ref_df)} peaks.')
+            else:
+                print(f'Warning: could not parse reference "{phase_name}".')
+
+    # Stacked overview
+    xrd_plot_stacked(samples_dict, references_dict or None)
+
+    # Per-sample detailed plot
+    for sample_name in samples_dict:
+        xrd_plot_single_pattern(samples_dict, sample_name, references_dict or None)
+
+    # Crystallographic analysis (requires reference phases)
+    if references_dict:
+        analysis_results = xrd_match_and_analyze(samples_dict, references_dict)
+
+        summary_rows = []
+        for sample_name, result in analysis_results.items():
+            row = {'Sample': sample_name}
+            row.update(result['summary'])
+            summary_rows.append(row)
+        if summary_rows:
+            print('\nCrystallographic summary:')
+            print(pd.DataFrame(summary_rows).to_string(index=False))
+
+        xrd_plot_tc(analysis_results)
+        xrd_plot_crystallite_size(analysis_results)
+    else:
+        print(
+            '\nNo reference phases provided — TC and crystallite-size analysis skipped.'
+            '\nUpload ICDD .rtf reference cards with the widget above to enable full analysis.'
+        )

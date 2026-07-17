@@ -262,6 +262,7 @@ class INLXRDJupyterAnalysis(JupyterAnalysis, EntryData):
     def write_predefined_cells(self, archive, logger):
         cells = []
 
+        # Cell 1: all XRD analysis functions
         comment = '# XRD analysis functions\n\n'
         funcs = get_function_source(category_name='XRD', module=_analysis_source)
         source = comment + list_to_string(funcs)
@@ -272,10 +273,50 @@ class INLXRDJupyterAnalysis(JupyterAnalysis, EntryData):
             )
         )
 
-        source = 'xrd_voila_analysis(analysis.inputs)\n'
+        # Cell 2: interactive widget for uploading ICDD reference .rtf files
+        reference_widget_source = (
+            '# Upload ICDD PDF reference cards (.rtf files) to enable phase matching,\n'
+            '# crystallite-size (Scherrer), and texture-coefficient analysis.\n'
+            '# You can upload multiple files — each file becomes a separate phase.\n'
+            '# Skip / leave empty to run the analysis without reference matching.\n\n'
+            'import ipywidgets as widgets\n'
+            'from IPython.display import display\n\n'
+            'reference_contents = {}  # populated by the upload handler below\n\n'
+            'upload_widget = widgets.FileUpload(\n'
+            "    accept='.rtf',\n"
+            '    multiple=True,\n'
+            "    description='Upload .rtf',\n"
+            ')\n'
+            'status_out = widgets.Output()\n\n'
+            'def _on_upload_change(change):\n'
+            '    reference_contents.clear()\n'
+            '    with status_out:\n'
+            '        status_out.clear_output()\n'
+            '        for filename, file_info in upload_widget.value.items():\n'
+            "            phase_name = filename.rsplit('.', 1)[0]\n"
+            "            content = file_info['content']\n"
+            '            if isinstance(content, (bytes, memoryview)):\n'
+            "                content = bytes(content).decode('utf-8', errors='replace')\n"
+            '            reference_contents[phase_name] = content\n'
+            "            print(f'Loaded reference: {phase_name}')\n\n"
+            "upload_widget.observe(_on_upload_change, names='value')\n"
+            'display(widgets.VBox([\n'
+            "    widgets.HTML('<b>Reference phase upload (optional)</b>'),\n"
+            '    upload_widget,\n'
+            '    status_out,\n'
+            ']))\n'
+        )
         cells.append(
             nbf.v4.new_code_cell(
-                source=source,
+                source=reference_widget_source,
+                metadata={'tags': ['nomad-analysis-predefined']},
+            )
+        )
+
+        # Cell 3: run the full analysis pipeline
+        cells.append(
+            nbf.v4.new_code_cell(
+                source='xrd_full_analysis(analysis.inputs, reference_contents)\n',
                 metadata={'tags': ['nomad-analysis-predefined']},
             )
         )

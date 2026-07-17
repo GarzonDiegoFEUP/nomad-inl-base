@@ -33,6 +33,8 @@ dependencies = [
     "pdfplumber",
     "nomad-analysis",
     "Pillow",
+    "lmfit",
+    "striprtf",
     "pySPM",
     "galvani",
     "yadg",
