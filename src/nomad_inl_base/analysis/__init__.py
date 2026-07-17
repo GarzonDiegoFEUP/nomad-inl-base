@@ -10,5 +10,5 @@ class INLAnalysisPackageEntryPoint(SchemaPackageEntryPoint):
 
 analysis_entry_point = INLAnalysisPackageEntryPoint(
     name='INL Analysis',
-    description='JupyterAnalysis schemas for INL characterization (EQE, Solar Cell IV, GDOES).',
+    description='JupyterAnalysis schemas for INL characterization (EQE, Solar Cell IV, GDOES, XRD).',
 )
