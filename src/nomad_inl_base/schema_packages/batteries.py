@@ -7,6 +7,8 @@ if TYPE_CHECKING:
 
 import numpy as np
 import plotly.graph_objects as go
+import yaml
+from nomad.datamodel.context import ClientContext
 from nomad.datamodel.data import ArchiveSection, EntryData
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
@@ -331,6 +333,136 @@ class PlotConfig(ArchiveSection):
     )
 
 
+def _resolve_or_create_sample_stack(
+    archive: 'EntryArchive',
+    logger: 'BoundLogger',
+    sample_name,
+    data_file: str,
+    new_film_ref=None,
+):
+    """
+    Search the current upload for an existing INL sample (substrate, thin film
+    stack, or sample fragment — a bare ``INLThinFilm`` never counts as a
+    'complete sample') whose ``name`` matches ``sample_name``. If found, link
+    or extend it; if not, create a brand-new :class:`INLThinFilmStack`.
+
+    - Matched ``INLThinFilmStack``: append ``new_film_ref`` (if given) as an
+      additional layer, written back to the stack's raw YAML file (same
+      technique as ``wet_deposition.py``'s ``_update_sample``).
+    - Matched ``INLSubstrate``: create a new ``INLThinFilmStack`` referencing
+      it, with ``new_film_ref`` (if given) as its first layer.
+    - Matched ``INLSampleFragment``: a layer cannot be appended to a fragment;
+      the match is linked as-is (with a warning).
+    - No match (or running under ``ClientContext``, e.g. CLI/test parsing):
+      create a brand-new ``INLThinFilmStack`` (no substrate) named after
+      ``sample_name``, with ``new_film_ref`` (if given) as its first layer.
+
+    Returns a ``(INLSampleReference, is_stack)`` tuple, where ``is_stack`` is
+    ``True`` iff the reference target is an actual ``INLThinFilmStack`` entry
+    (as opposed to a matched ``INLSampleFragment`` linked as-is). Returns
+    ``(None, False)`` if ``sample_name`` is falsy.
+    """
+    if not sample_name:
+        return None, False
+
+    filetype = 'yaml'
+    match = None
+
+    if not isinstance(archive.m_context, ClientContext):
+        from nomad.search import search
+
+        search_result = search(
+            owner='visible',
+            query={
+                'upload_id': archive.m_context.upload_id,
+                'entry_type': ['INLSubstrate', 'INLThinFilmStack', 'INLSampleFragment'],
+                'results.eln.names': sample_name,
+            },
+            user_id=archive.metadata.main_author.user_id,
+        )
+        if search_result.pagination.total > 0:
+            match = search_result.data[0]
+            if search_result.pagination.total > 1:
+                logger.warning(
+                    f'Found {search_result.pagination.total} samples named '
+                    f'"{sample_name}" in this upload. Using the first one found.'
+                )
+
+    if match is not None:
+        entry_id = match['entry_id']
+        upload_id = match['upload_id']
+        entry_type = match['entry_type']
+        match_ref = f'../uploads/{upload_id}/archive/{entry_id}#data'
+
+        if entry_type == 'INLThinFilmStack':
+            stack_path = match.get('mainfile')
+            if new_film_ref and stack_path and archive.m_context.raw_path_exists(stack_path):
+                with archive.m_context.raw_file(stack_path, 'r') as _f:
+                    stack_dict = yaml.safe_load(_f) or {}
+                stack_data = stack_dict.setdefault('data', {})
+                layers = stack_data.get('layers') or []
+                layers.append({'reference': new_film_ref})
+                stack_data['layers'] = layers
+                with archive.m_context.raw_file(stack_path, 'w') as _f:
+                    yaml.dump(stack_dict, _f)
+                archive.m_context.upload.process_updated_raw_file(
+                    stack_path, allow_modify=True
+                )
+                logger.info(
+                    f'Appended new thin film layer to existing sample '
+                    f'"{sample_name}" ({stack_path!r}).'
+                )
+            return INLSampleReference(reference=match_ref, name=sample_name), True
+
+        if entry_type == 'INLSubstrate':
+            new_stack = INLThinFilmStack()
+            new_stack.name = sample_name
+            new_stack.substrate = INLSubstrateReference(reference=match_ref)
+            if new_film_ref:
+                new_stack.layers.append(INLThinFilmReference(reference=new_film_ref))
+            stack_filename, stack_archive = create_filename(
+                f'{data_file}_{sample_name}_sample',
+                new_stack,
+                'ThinFilmStack',
+                archive,
+                logger,
+            )
+            if not archive.m_context.raw_path_exists(stack_filename):
+                stack_ref = create_archive(
+                    stack_archive.m_to_dict(),
+                    archive.m_context,
+                    stack_filename,
+                    filetype,
+                    logger,
+                )
+            else:
+                stack_ref = get_hash_ref(archive.m_context.upload_id, stack_filename)
+            return INLSampleReference(reference=stack_ref, name=sample_name), True
+
+        # INLSampleFragment: cannot append a layer to a fragment.
+        logger.warning(
+            f'Sample "{sample_name}" matched an existing INLSampleFragment — '
+            'cannot append a new thin film layer to it. Linking as-is.'
+        )
+        return INLSampleReference(reference=match_ref, name=sample_name), False
+
+    # --- No match: create a brand-new stack ---
+    new_stack = INLThinFilmStack()
+    new_stack.name = sample_name
+    if new_film_ref:
+        new_stack.layers.append(INLThinFilmReference(reference=new_film_ref))
+    stack_filename, stack_archive = create_filename(
+        f'{data_file}_{sample_name}_sample', new_stack, 'ThinFilmStack', archive, logger
+    )
+    if not archive.m_context.raw_path_exists(stack_filename):
+        stack_ref = create_archive(
+            stack_archive.m_to_dict(), archive.m_context, stack_filename, filetype, logger
+        )
+    else:
+        stack_ref = get_hash_ref(archive.m_context.upload_id, stack_filename)
+    return INLSampleReference(reference=stack_ref, name=sample_name), True
+
+
 class BatteryChamberSputteringDeposition(PlotSection, EntryData):
     """
     Base class for parsed log entries from INL Battery Chamber sputtering systems
@@ -339,6 +471,18 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
     Subclasses override only ``m_def`` to supply the correct label; all quantities,
     subsections, and normalisation logic are inherited from here.
     All time-series columns are stored as NumPy arrays sampled at ~1 Hz.
+
+    Sample auto-linking: if the log filename follows the convention
+    ``PC0X_All Signals_[Sample Name] Date.csv`` (e.g.
+    ``PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv``), the sample name is
+    extracted into ``sample_name`` and, on normalisation, an existing sample
+    (``INLSubstrate``, ``INLThinFilmStack``, or ``INLSampleFragment``) with a
+    matching ``name`` in the same upload is looked up and linked in ``samples``
+    — the newly deposited thin film is appended to it as an additional layer
+    (or, for a substrate/fragment match, wraps it in a new stack). If no match
+    is found, a new ``INLThinFilmStack`` sample is created with that name. This
+    is independent of, and additive to, the ``substrate``/``substrates``-driven
+    stack creation below.
     """
 
     # --- Metadata (scalar, auto-populated from file header) ---
@@ -372,6 +516,18 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
     substrate_type = Quantity(
         type=str,
         description='Substrate type as identified by the system (e.g. "Bare Wafer").',
+        a_eln=ELNAnnotation(component='StringEditQuantity'),
+    )
+    sample_name = Quantity(
+        type=str,
+        description=(
+            'Sample name extracted from the log filename '
+            "(e.g. 'PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv' → 'LNbO_004'). "
+            'Used during normalisation to find a matching existing sample in this '
+            'upload (linking it, and appending the deposited thin film as a new '
+            'layer) or, if none is found, to create a new sample entry with this '
+            'name in ``samples``.'
+        ),
         a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
@@ -566,7 +722,28 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
         self._trim_inactive()
         self._compute_scalars()
         self._build_figures()
-        self._create_thin_film(archive, logger)
+        thin_film_ref, data_file = self._create_thin_film(archive, logger)
+        self._resolve_sample_from_filename(archive, logger, thin_film_ref, data_file)
+
+    def _resolve_sample_from_filename(
+        self,
+        archive: 'EntryArchive',
+        logger: 'BoundLogger',
+        thin_film_ref,
+        data_file: str,
+    ) -> None:
+        """Link/create a sample entry named after ``self.sample_name`` and add it
+        to ``samples`` (skips if a sample with that name is already listed, so
+        reprocessing doesn't append duplicates)."""
+        if not self.sample_name:
+            return
+        if any(ref.name == self.sample_name for ref in self.samples):
+            return
+        sample_ref, _is_stack = _resolve_or_create_sample_stack(
+            archive, logger, self.sample_name, data_file, thin_film_ref
+        )
+        if sample_ref is not None:
+            self.samples.append(sample_ref)
 
     def _trim_inactive(self) -> None:
         """Remove time steps where all sources are inactive (silently, no logging)."""
@@ -925,9 +1102,17 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
                     PlotlyFigure(label='Temperatures', figure=fig.to_plotly_json())
                 )
 
-    def _create_thin_film(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+    def _create_thin_film(self, archive: 'EntryArchive', logger: 'BoundLogger'):
+        """Create the deposited INLThinFilm entry and any per-substrate stacks.
+
+        Returns a ``(thin_film_ref, data_file)`` tuple; ``thin_film_ref`` is
+        ``None`` if no thin film could be created (e.g. no source materials).
+        """
+        data_file = archive.metadata.mainfile.rsplit('/', maxsplit=1)[-1].rsplit(
+            '.', maxsplit=1
+        )[0]
         if not self.sources:
-            return
+            return None, data_file
 
         # Collect materials from sources whose shutter was open at any point
         active_materials = []
@@ -955,12 +1140,9 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
                 'BatteryChamberSputteringDeposition: no source materials found, '
                 'skipping thin film creation.'
             )
-            return
+            return None, data_file
 
         filetype = 'yaml'
-        data_file = archive.metadata.mainfile.rsplit('/', maxsplit=1)[-1].rsplit(
-            '.', maxsplit=1
-        )[0]
 
         if self.start_datetime:
             date_str = self.start_datetime.strftime('%y%m%d')
@@ -1015,7 +1197,7 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
                 '(no substrates set). '
                 'Add entries to the ``substrates`` field to auto-create stacks.'
             )
-            return
+            return thinFilmRef, data_file
 
         for sub_name, substrate_ref in substrates_to_stack:
             new_thinFilmReference = INLThinFilmReference(reference=thinFilmRef)
@@ -1042,12 +1224,17 @@ class BatteryChamberSputteringDeposition(PlotSection, EntryData):
                     logger,
                 )
 
+        return thinFilmRef, data_file
+
 
 class PC03CathodeChamberDeposition(BatteryChamberSputteringDeposition):
     """
     Parsed log entry from the PC03 CathodeChamber sputtering system.
 
-    Populated automatically by uploading a CSV file whose filename starts with 'PC03'.
+    Populated automatically by uploading a CSV file whose filename starts with
+    'PC03'. If the filename follows ``PC03_All Signals_[Sample Name] Date.csv``,
+    the sample is auto-linked/created in ``samples`` — see
+    :class:`BatteryChamberSputteringDeposition` for details.
     """
 
     m_def = Section(label='PC03 Cathode Chamber Deposition')
@@ -1057,7 +1244,10 @@ class PC04ElectrolyteChamberDeposition(BatteryChamberSputteringDeposition):
     """
     Parsed log entry from the PC04 ElectrolyteChamber sputtering system.
 
-    Populated automatically by uploading a CSV file whose filename starts with 'PC04'.
+    Populated automatically by uploading a CSV file whose filename starts with
+    'PC04'. If the filename follows ``PC04_All Signals_[Sample Name] Date.csv``,
+    the sample is auto-linked/created in ``samples`` — see
+    :class:`BatteryChamberSputteringDeposition` for details.
     """
 
     m_def = Section(label='PC04 Electrolyte Chamber Deposition')
@@ -1073,9 +1263,16 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
     Inherits ``duration``, ``steps``, and ``samples`` from
     :class:`nomad_material_processing.general.Annealing`.
 
-    No sample is created automatically. Use ``thin_film`` or ``thin_film_stack``
-    to link the run to an existing :class:`~nomad_inl_base.schema_packages.entities.INLThinFilm`
-    or :class:`~nomad_inl_base.schema_packages.entities.INLThinFilmStack`.
+    Sample auto-linking: if the log filename follows the convention
+    ``PC04_All Signals_[Sample Name] Date.csv``, the sample name is extracted
+    into ``sample_name`` and, on normalisation, an existing sample
+    (``INLSubstrate``, ``INLThinFilmStack``, or ``INLSampleFragment``) with a
+    matching ``name`` in the same upload is looked up and set as
+    ``thin_film_stack`` (creating a new, empty ``INLThinFilmStack`` if none is
+    found). A manually-set ``thin_film``/``thin_film_stack`` reference is never
+    overwritten. If the match is an ``INLSampleFragment``, it cannot be
+    referenced by ``thin_film_stack`` (type mismatch) and is left unset — link
+    it manually in that case.
     """
 
     m_def = Section(label='PC04 Substrate Annealing')
@@ -1099,6 +1296,17 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
     substrate_type = Quantity(
         type=str,
         description='Substrate type as identified by the system (e.g. "Bare Wafer").',
+        a_eln=ELNAnnotation(component='StringEditQuantity'),
+    )
+    sample_name = Quantity(
+        type=str,
+        description=(
+            'Sample name extracted from the log filename '
+            "(e.g. 'PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv' → 'LNbO_004'). "
+            'Used during normalisation to find a matching existing sample in this '
+            'upload and set ``thin_film_stack`` to it (creating a new sample entry '
+            'with this name if none is found), unless a reference is already set.'
+        ),
         a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
     peak_temperature = Quantity(
@@ -1233,6 +1441,31 @@ class PC04SubstrateAnnealing(PlotSection, Annealing):
         super().normalize(archive, logger)
         self._compute_scalars()
         self._build_figures()
+        self._resolve_sample_from_filename(archive, logger)
+
+    def _resolve_sample_from_filename(
+        self, archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> None:
+        """Link ``thin_film_stack`` to a sample named after ``self.sample_name``,
+        unless a reference has already been set manually."""
+        if not self.sample_name or self.thin_film_stack is not None:
+            return
+        data_file = archive.metadata.mainfile.rsplit('/', maxsplit=1)[-1].rsplit(
+            '.', maxsplit=1
+        )[0]
+        sample_ref, is_stack = _resolve_or_create_sample_stack(
+            archive, logger, self.sample_name, data_file, new_film_ref=None
+        )
+        if sample_ref is not None and is_stack:
+            self.thin_film_stack = INLThinFilmStackReference(
+                reference=sample_ref.reference, name=sample_ref.name
+            )
+        elif sample_ref is not None and not is_stack:
+            logger.warning(
+                f'Sample "{self.sample_name}" matched an existing INLSampleFragment; '
+                '``thin_film_stack`` only accepts INLThinFilmStack references, so it '
+                'was left unset. Link it manually if needed.'
+            )
 
     def _compute_scalars(self) -> None:
         """Derive peak_temperature and fill the inherited duration quantity."""

@@ -652,6 +652,33 @@ class FourPointProbeParser(MatchingParser):
         archive.metadata.entry_name = data_file
 
 
+def _extract_sample_name(filename: str) -> 'str | None':
+    """
+    Extract the sample name embedded in a battery chamber log filename.
+
+    Expected convention::
+
+        PC03_All Signals_[Sample Name] Date.csv
+        PC04_All Signals_[Sample Name] Date.csv
+
+    e.g. ``PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv`` → ``LNbO_004``.
+
+    Requires the literal ``All Signals_`` marker followed by the sample name,
+    a space, and a ``YYYY.MM.DD-HH.MM.SS`` timestamp. Returns ``None`` (never
+    raises) if the filename doesn't follow this convention, e.g. the older
+    ``PC03_sample.CSV`` fixtures without an embedded sample name.
+    """
+    basename = filename.rsplit('/', maxsplit=1)[-1]
+    match = re.search(
+        r'All Signals_(?P<sample>.+?)\s+\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}',
+        basename,
+    )
+    if not match:
+        return None
+    sample_name = match.group('sample').strip()
+    return sample_name or None
+
+
 class _BaseSputteringChamberParser(MatchingParser):
     """
     Shared parser for INL Battery Chamber sputtering system CSV log files (PC03, PC04, …).
@@ -665,6 +692,14 @@ class _BaseSputteringChamberParser(MatchingParser):
       Line 3: empty
       Line 4: data column headers (~460 columns)
       Lines 5+: data rows at ~1 Hz
+
+    Filename convention (used to auto-link/create a sample entry)::
+
+        PC0X_All Signals_[Sample Name] Date.csv
+
+    e.g. ``PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv``. If the filename
+    doesn't follow this convention, sample auto-linking is skipped gracefully
+    (a warning is logged, parsing still succeeds).
     """
 
     # Subclasses override this with their specific entry class.
@@ -753,6 +788,17 @@ class _BaseSputteringChamberParser(MatchingParser):
         entry.operator = operator
         if start_datetime:
             entry.start_datetime = start_datetime
+
+        sample_name = _extract_sample_name(mainfile)
+        if sample_name:
+            entry.sample_name = sample_name
+        else:
+            logger.warning(
+                f'{type(self).__name__}: could not extract a sample name from '
+                f'filename {mainfile.rsplit("/", maxsplit=1)[-1]!r} '
+                "(expected 'PC0X_All Signals_[Sample Name] Date.csv'). "
+                'Skipping automatic sample linking.'
+            )
 
         entry.timestamps = timestamps
 
@@ -1082,6 +1128,17 @@ class PC04ChamberParser(_BaseSputteringChamberParser):
         if start_datetime:
             entry.start_datetime = start_datetime
         entry.timestamps = timestamps
+
+        sample_name = _extract_sample_name(mainfile)
+        if sample_name:
+            entry.sample_name = sample_name
+        else:
+            logger.warning(
+                f'PC04ChamberParser: could not extract a sample name from '
+                f'filename {mainfile.rsplit("/", maxsplit=1)[-1]!r} '
+                "(expected 'PC0X_All Signals_[Sample Name] Date.csv'). "
+                'Skipping automatic sample linking.'
+            )
 
         ph = col_str('Process Phase')
         if ph is not None:

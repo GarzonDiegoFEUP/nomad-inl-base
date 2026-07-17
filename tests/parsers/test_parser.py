@@ -24,6 +24,9 @@ def test_pc03_parse(parsed_archive, caplog):
     gas_flows = parsed_archive.data.chamber_environment.gas_flow
     assert len(gas_flows) > 0
     assert all(gf.name is not None for gf in gas_flows)
+    # Old-style filename (no embedded sample name) — graceful skip, no crash.
+    assert parsed_archive.data.sample_name is None
+    assert len(parsed_archive.data.samples) == 0
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +49,78 @@ def test_pc04_parse(parsed_archive, caplog):
     assert parsed_archive.data.chamber_environment.pressure is not None
     assert parsed_archive.data.chamber_environment.pressure.value is not None
     assert parsed_archive.data.dc_power_supply is not None
+    # Old-style filename (no embedded sample name) — graceful skip, no crash.
+    assert parsed_archive.data.sample_name is None
+    assert len(parsed_archive.data.samples) == 0
+
+
+# ---------------------------------------------------------------------------
+# Sample-name-in-filename auto-linking (new naming convention)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    'parsed_archive, caplog',
+    [
+        (
+            (
+                'tests/data/PC04_All Signals_LNbO_004 2026.07.16-09.32.33.CSV',
+                [],
+            ),
+            ['error', 'critical'],
+        )
+    ],
+    indirect=True,
+    ids=['PC04_All Signals_LNbO_004.CSV'],
+)
+def test_pc04_parse_sample_name_from_filename(parsed_archive, caplog):
+    normalize_all(parsed_archive)
+    assert parsed_archive.data.sample_name == 'LNbO_004'
+    assert len(parsed_archive.data.samples) == 1
+    assert parsed_archive.data.samples[0].name == 'LNbO_004'
+
+
+@pytest.mark.parametrize(
+    'parsed_archive, caplog',
+    [
+        (
+            (
+                'tests/data/PC03_All Signals_LNbO_004 2026.07.16-09.32.33.CSV',
+                [],
+            ),
+            ['error', 'critical'],
+        )
+    ],
+    indirect=True,
+    ids=['PC03_All Signals_LNbO_004.CSV'],
+)
+def test_pc03_parse_sample_name_from_filename(parsed_archive, caplog):
+    normalize_all(parsed_archive)
+    assert parsed_archive.data.sample_name == 'LNbO_004'
+    assert len(parsed_archive.data.samples) == 1
+    assert parsed_archive.data.samples[0].name == 'LNbO_004'
+
+
+@pytest.mark.parametrize(
+    'filename, expected',
+    [
+        (
+            'PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv',
+            'LNbO_004',
+        ),
+        (
+            '/some/dir/PC03_All Signals_Foo_Bar 2026.01.02-03.04.05.csv',
+            'Foo_Bar',
+        ),
+        ('PC03_sample.CSV', None),
+        ('PC04_sample.CSV', None),
+        ('PC04_All Signals_2026.07.16-09.32.33.csv', None),
+    ],
+)
+def test_extract_sample_name(filename, expected):
+    from nomad_inl_base.parsers.parser import _extract_sample_name
+
+    assert _extract_sample_name(filename) == expected
 
 
 # ---------------------------------------------------------------------------
