@@ -376,13 +376,14 @@ def test_testo_vi2_star_lab(parsed_archive, caplog):
     assert data.source_lab_name == 'STAR LAB'
     assert data.lab_id == 'B.P0.Lg.06'
     assert data.serial_number == '44675156'
-    assert data.measurement_records is not None
-    assert len(data.measurement_records) > 0
+    assert data.timestamps is not None
+    assert len(data.timestamps) > 0
+    assert len(data.temperature) == len(data.timestamps)
+    assert len(data.humidity) == len(data.timestamps)
 
-    first = data.measurement_records[0]
-    assert first.timestamp is not None
-    assert first.temperature is not None
-    assert first.humidity is not None
+    assert data.timestamps[0] is not None
+    assert data.temperature[0] is not None
+    assert data.humidity[0] is not None
 
     labels = [fig.label for fig in data.figures]
     assert 'Temperature Trend' in labels
@@ -410,7 +411,7 @@ def test_testo_vi2_support(parsed_archive, caplog):
     assert data.source_lab_name == 'SUPPORT'
     assert data.lab_id == 'C.P0.Tl.01'
     assert data.serial_number == '44674288'
-    assert len(data.measurement_records) > 0
+    assert len(data.timestamps) > 0
 
 
 def test_testo_lab_name_normalization():
@@ -439,22 +440,14 @@ def test_testo_merge_dedup_keeps_earliest_record():
     import structlog
     from nomad.units import ureg
 
-    from nomad_inl_base.schema_packages.testo import (
-        INLTestoLogger,
-        INLTestoMeasurementRecord,
-    )
+    from nomad_inl_base.schema_packages.testo import INLTestoLogger
 
     ts = datetime.datetime(2026, 1, 1, 12, 0, 0)
     entry = INLTestoLogger()
     entry.lab_id = None  # skip cross-entry search branch entirely
-    entry.measurement_records = [
-        INLTestoMeasurementRecord(
-            timestamp=ts, temperature=ureg.Quantity(300.0, 'kelvin'), humidity=50.0
-        ),
-        INLTestoMeasurementRecord(
-            timestamp=ts, temperature=ureg.Quantity(310.0, 'kelvin'), humidity=60.0
-        ),
-    ]
+    entry.timestamps = [ts, ts]
+    entry.temperature = ureg.Quantity([300.0, 310.0], 'kelvin')
+    entry.humidity = [50.0, 60.0]
     fake_archive = SimpleNamespace(
         metadata=SimpleNamespace(upload_create_time=None, entry_id='x'),
         m_context=None,

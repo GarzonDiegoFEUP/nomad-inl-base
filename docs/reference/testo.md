@@ -14,7 +14,11 @@ data loggers deployed around the lab.
 
 Represents a Testo logger device at a fixed lab location. Each uploaded
 `.vi2` export creates one entry of this type holding the records read from
-that particular file (`measurement_records`). The physical device/location is
+that particular file as parallel array quantities (`timestamps`,
+`temperature`, `humidity`) rather than one repeating subsection per record —
+a single file can contain hundreds of thousands of readings, and per-record
+subsections do not scale for that volume (the auto-generated child archive
+would balloon in size and fail to process). The physical device/location is
 identified via the inherited `lab_id` field (e.g. `B.P0.Lg.06` or
 `C.P0.Tl.01`).
 
@@ -26,16 +30,13 @@ measurement history recorded for that device, and shows it as two plots
 
 ### Quantities
 
-| Quantity | Type | Description |
-|----------|------|-------------|
-| `serial_number` | `str` | Serial number of the Testo logger device |
-| `source_lab_name` | `str` | Raw lab-name string extracted from the uploaded `.vi2` file, before mapping to a `lab_id`/device location |
-
-### Sub-sections
-
-| Sub-section | Type | Description |
-|-------------|------|-------------|
-| `measurement_records` | `INLTestoMeasurementRecord` (repeats) | Temperature/humidity records parsed from this uploaded `.vi2` file |
+| Quantity | Type | Unit | Description |
+|----------|------|------|-------------|
+| `serial_number` | `str` | – | Serial number of the Testo logger device |
+| `source_lab_name` | `str` | – | Raw lab-name string extracted from the uploaded `.vi2` file, before mapping to a `lab_id`/device location |
+| `timestamps` | `Datetime` array | – | Timestamps of the temperature/humidity records parsed from this uploaded `.vi2` file |
+| `temperature` | `float` array | K (displayed as °C) | Measured air temperature time series, parallel to `timestamps` |
+| `humidity` | `float` array | – | Measured relative humidity (%RH) time series, parallel to `timestamps` |
 
 ### Trend merge and deduplication
 
@@ -65,21 +66,6 @@ Two `PlotlyFigure`s are generated on every normalization:
 - **Humidity Trend** — relative humidity (%) vs. time.
 
 Both are titled with the device's `lab_id` when available.
-
----
-
-## INLTestoMeasurementRecord
-
-**Base class:** `ArchiveSection`  
-**Label:** *Measurement Record*
-
-A single temperature/humidity reading.
-
-| Quantity | Type | Unit | Description |
-|----------|------|------|-------------|
-| `timestamp` | `Datetime` | – | Timestamp of the measurement, reconstructed from the logger ticker |
-| `temperature` | `float` | K (displayed as °C) | Measured air temperature |
-| `humidity` | `float` | – | Measured relative humidity (%RH) |
 
 ---
 
@@ -143,6 +129,10 @@ trend until corrected manually).
 ### Output
 
 The parser creates one `INLTestoLogger` child entry per uploaded `.vi2`
-file (`<file>.TestoLogger.archive.yaml`), populated with `serial_number`,
-`source_lab_name`, the routed `lab_id` (if recognized), and one
-`INLTestoMeasurementRecord` per row parsed from the file.
+file (`<file>.TestoLogger.archive.json`), populated with `serial_number`,
+`source_lab_name`, the routed `lab_id` (if recognized), and the parsed
+`timestamps`/`temperature`/`humidity` arrays. The child archive is written
+as JSON rather than YAML, since PyYAML's block-style dump/load of the
+potentially hundreds of thousands of array entries is far slower (tens of
+seconds vs. a fraction of a second) and previously caused processing to fail
+on a real server.

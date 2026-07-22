@@ -2445,7 +2445,7 @@ class METEORParser(MatchingParser):
                 names=col_names_padded,
                 sep=r'\s*,\s*',
                 engine='python',
-                #low_memory=False,
+                # low_memory=False,
             )
         except Exception as exc:
             logger.error(f'METEORParser: failed to read CSV body: {exc}')
@@ -2755,12 +2755,14 @@ class TestoVI2Parser(MatchingParser):
     """
 
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
-        from nomad_inl_base.schema_packages.testo import (
-            INLTestoLogger,
-            INLTestoMeasurementRecord,
-        )
+        from nomad_inl_base.schema_packages.testo import INLTestoLogger
 
-        filetype = 'yaml'
+        # JSON, not YAML: a single .vi2 file can hold >100k readings, and
+        # PyYAML's block-style dump/load of that many numeric array entries
+        # is ~50-100x slower than json (tens of seconds vs a fraction of a
+        # second), which previously caused the generated child archive to
+        # fail processing on a real server.
+        filetype = 'json'
         data_file = mainfile.rsplit('/', maxsplit=1)[-1].rsplit('.', maxsplit=1)[0]
 
         df = _parse_testo_vi2(mainfile, logger)
@@ -2785,16 +2787,17 @@ class TestoVI2Parser(MatchingParser):
         if lab_id is not None:
             entry.lab_id = lab_id
 
-        entry.measurement_records = [
-            INLTestoMeasurementRecord(
-                timestamp=row.datetime.to_pydatetime(),
-                temperature=ureg.Quantity(
-                    float(row.temperature) + _KELVIN_OFFSET, ureg.kelvin
-                ),
-                humidity=float(row.humidity),
-            )
-            for row in df.itertuples()
-        ]
+        # Store the (potentially hundreds of thousands of) readings as
+        # parallel array quantities rather than one repeating subsection per
+        # record: a single file can hold >100k records, and per-record
+        # subsections do not scale (the auto-generated child archive would
+        # balloon to tens of MB and fail to process).
+        entry.timestamps = [ts.to_pydatetime() for ts in df['datetime']]
+        entry.temperature = ureg.Quantity(
+            df['temperature'].to_numpy(dtype=np.float64) + _KELVIN_OFFSET,
+            ureg.kelvin,
+        )
+        entry.humidity = df['humidity'].to_numpy(dtype=np.float64)
 
         create_child_entry(
             entry,

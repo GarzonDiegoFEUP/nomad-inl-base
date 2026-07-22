@@ -7,10 +7,9 @@ if TYPE_CHECKING:
 import numpy as np
 import plotly.graph_objects as go
 from nomad.datamodel.context import ClientContext
-from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
-from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection
+from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section
 
 from nomad_inl_base.schema_packages.entities import (
     INLEntityCategory,
@@ -23,51 +22,17 @@ m_package = SchemaPackage()
 _KELVIN_TO_C = 273.15
 
 
-class INLTestoMeasurementRecord(ArchiveSection):
-    """A single temperature/humidity reading from a Testo environmental data logger."""
-
-    m_def = Section(label='Measurement Record')
-
-    timestamp = Quantity(
-        type=Datetime,
-        description=(
-            'Timestamp of this measurement, reconstructed from the logger '
-            'ticker. Kept timezone-naive, as recorded by the logger.'
-        ),
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.DateTimeEditQuantity, label='Timestamp'
-        ),
-    )
-
-    temperature = Quantity(
-        type=np.float64,
-        unit='kelvin',
-        description='Measured air temperature.',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            defaultDisplayUnit='celsius',
-            label='Temperature',
-        ),
-    )
-
-    humidity = Quantity(
-        type=np.float64,
-        description='Measured relative humidity (%RH).',
-        a_eln=ELNAnnotation(
-            component=ELNComponentEnum.NumberEditQuantity,
-            label='Relative Humidity (%)',
-        ),
-    )
-
-
 class INLTestoLogger(INLInstrument, PlotSection):
     """
     Testo 175H1 (or compatible) environmental data logger deployed at a fixed
     lab location.
 
     Each uploaded ``.vi2`` file creates one entry of this type, holding the
-    records read from that particular file (``measurement_records``). The
-    physical device/location is identified via ``lab_id`` (e.g.
+    records read from that particular file as parallel array quantities
+    (``timestamps``, ``temperature``, ``humidity``) rather than one repeating
+    subsection per record, since a single file can contain hundreds of
+    thousands of readings and per-record subsections do not scale for that
+    volume. The physical device/location is identified via ``lab_id`` (e.g.
     ``B.P0.Lg.06`` or ``C.P0.Tl.01``).
 
     On processing, this entry also looks up every other ``INLTestoLogger``
@@ -102,11 +67,48 @@ class INLTestoLogger(INLInstrument, PlotSection):
         ),
     )
 
-    measurement_records = SubSection(
-        section_def=INLTestoMeasurementRecord,
-        repeats=True,
-        description='Temperature/humidity records parsed from this uploaded .vi2 file.',
+    timestamps = Quantity(
+        type=Datetime,
+        shape=['*'],
+        description=(
+            'Timestamps of the temperature/humidity records parsed from this '
+            'uploaded .vi2 file.'
+        ),
     )
+
+    temperature = Quantity(
+        type=np.float64,
+        shape=['*'],
+        unit='kelvin',
+        description='Measured air temperature time series.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='celsius', label='Temperature'),
+    )
+
+    humidity = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Measured relative humidity (%RH) time series.',
+        a_eln=ELNAnnotation(label='Relative Humidity (%)'),
+    )
+
+    @staticmethod
+    def _records_from_arrays(section) -> list:
+        """Zip a section's ``timestamps``/``temperature``/``humidity`` array
+        quantities into a list of ``(timestamp, temperature, humidity)`` tuples.
+        """
+        timestamps = getattr(section, 'timestamps', None)
+        if timestamps is None:
+            return []
+        temperatures = getattr(section, 'temperature', None)
+        humidities = getattr(section, 'humidity', None)
+        records = []
+        for i, ts in enumerate(timestamps):
+            if ts is None:
+                continue
+            temp = temperatures[i] if temperatures is not None else None
+            hum = humidities[i] if humidities is not None else None
+            records.append((ts, temp, hum))
+        return records
 
     def _collect_history(self, archive: 'EntryArchive', logger: 'BoundLogger') -> dict:
         """Merge measurement records from this entry and every other
@@ -115,11 +117,7 @@ class INLTestoLogger(INLInstrument, PlotSection):
         Returns a dict mapping timestamp -> (temperature, humidity), deduplicated
         with "earliest upload wins" semantics on timestamp collisions.
         """
-        own_records = [
-            (r.timestamp, r.temperature, r.humidity)
-            for r in self.measurement_records or []
-            if r.timestamp is not None
-        ]
+        own_records = self._records_from_arrays(self)
 
         # (upload_create_time, records) candidates, earliest upload first.
         candidates = [(archive.metadata.upload_create_time, own_records)]
@@ -153,11 +151,7 @@ class INLTestoLogger(INLInstrument, PlotSection):
                             hit['entry_id'], hit['upload_id'], None
                         )
                         other = other_archive.data
-                        other_records = [
-                            (r.timestamp, r.temperature, r.humidity)
-                            for r in getattr(other, 'measurement_records', None) or []
-                            if r.timestamp is not None
-                        ]
+                        other_records = self._records_from_arrays(other)
                         candidates.append(
                             (hit.get('upload_create_time'), other_records)
                         )
