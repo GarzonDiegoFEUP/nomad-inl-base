@@ -7,3 +7,4 @@ Detailed schema reference for all ELN entry types provided by `nomad-inl-base`.
 - [Wet Deposition](wet_deposition.md) – recipe system and all 7 wet deposition methods
 - [Characterization](characterization.md) – XRD, UV-Vis, 4PP, profiler, EQE, solar cell IV, GDOES, SEM, EDX/EDS spectra, AFM (Bruker NanoScope), EIS, CV, and chronoamperometry
 - [Analysis](analysis.md) – Jupyter notebook analyses for EQE, solar cell IV, GDOES, and XRD data
+- [Testo Environmental Logger](testo.md) – temperature/humidity trend logging from Testo `.vi2` exports

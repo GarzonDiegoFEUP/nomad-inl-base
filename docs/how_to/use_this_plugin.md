@@ -366,6 +366,41 @@ The `METEORQCMMonitor` sub-section captures:
 
 ---
 
+## Testo environmental logger { #testo }
+
+Testo 175H1 (and compatible) environmental data loggers export `.vi2` files
+containing temperature/humidity readings. Each upload is parsed automatically
+and routed to the device entry for the lab where the logger is deployed.
+
+### Uploading a logger export
+
+1. Upload a `*.vi2` file to your NOMAD upload.
+2. The parser creates an **INL Testo Logger** entry named
+   `<filename>.TestoLogger` automatically, containing the temperature and
+   humidity records read from that file.
+3. The lab name recorded inside the file is matched against the device
+   locations below and used to set the entry's **Lab ID**:
+
+   | Lab name in file | Device location (Lab ID) |
+   |-------------------|---------------------------|
+   | `STAR LAB` | `B.P0.Lg.06` |
+   | `SUPPORT` | `C.P0.Tl.01` |
+
+   If the lab name isn't recognized, a warning is logged and the entry is
+   created without a Lab ID — open the entry and set **Lab ID** manually to
+   include it in that device's trend.
+
+### Viewing the combined trend
+
+Every `INL Testo Logger` entry that shares the same **Lab ID** contributes
+its records to a single, deduplicated **Temperature Trend** and **Humidity
+Trend** plot shown on each entry for that device — uploading a new `.vi2`
+file for a lab automatically extends the trend without duplicating
+overlapping measurements (records are merged by timestamp, keeping the
+reading from the earliest-uploaded file when timestamps collide).
+
+---
+
 ## File naming for automatic parsing
 
 | Measurement type | Required file name pattern | Produces |
@@ -381,3 +416,4 @@ The `METEORQCMMonitor` sub-section captures:
 | EDX/EDS spectrum | `.txt`/`.msa`/`.emsa`/`.ems` with `#FORMAT : EMSA` header | `INLEDXSpectrum` |
 | Bruker AFM/KPFM/cAFM | `*.001`, `*.002`, … *(numbered Bruker binary)* | `INLAFMSession` |
 | EIS / CV / IV (Bio-Logic) | `*.mpr` *(technique auto-detected from data columns)* | `EISMeasurement` or `PotentiostatMeasurement` |
+| Testo environmental logger | `*.vi2` | `INLTestoLogger` |

@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     )
 
 import re
+import struct
 
 import numpy as np
 import pandas as pd
@@ -2603,5 +2604,205 @@ class METEORParser(MatchingParser):
             raw_ref=get_hash_ref(archive.m_context.upload_id, data_file),
             logger=logger,
             overwrite=True,
+        )
+        archive.metadata.entry_name = data_file
+
+
+# ---------------------------------------------------------------------------
+# Testo VI2 Environmental Logger Parser
+# ---------------------------------------------------------------------------
+
+# Maps normalized (trimmed, collapsed-whitespace, upper-cased) lab names, as
+# recorded inside the .vi2 file, to the lab_id of the physical device/location
+# they should be routed to. Extend this dict as new loggers/labs are added.
+_TESTO_LAB_LOCATION_ALIASES = {
+    'STAR LAB': 'B.P0.Lg.06',
+    'STARLAB': 'B.P0.Lg.06',
+    'SUPPORT': 'C.P0.Tl.01',
+    'SUPPORT LAB': 'C.P0.Tl.01',
+}
+
+
+def _normalize_testo_lab_name(raw_lab_name: str) -> str:
+    """Normalize a raw lab-name string for alias lookup (trim, collapse
+    internal whitespace, upper-case)."""
+    return re.sub(r'\s+', ' ', raw_lab_name or '').strip().upper()
+
+
+def _find_ole_stream_path(ole, target_suffix: str):
+    """Dynamically find an internal OLE stream path regardless of the
+    logger's folder ID."""
+    for path_list in ole.listdir():
+        full_path = '/'.join(path_list)
+        if full_path.endswith(target_suffix):
+            return full_path
+    return None
+
+
+def _parse_testo_vi2(filepath: str, logger):
+    """
+    Parse a Testo .vi2 environmental logger file (OLE compound document).
+
+    Returns a pandas DataFrame with columns [datetime, lab_name,
+    serial_number, temperature (°C), humidity (%RH)], or None if the file
+    could not be parsed (errors are logged, never raised).
+    """
+    import olefile
+
+    try:
+        with olefile.OleFileIO(filepath) as ole:
+            summary_path = _find_ole_stream_path(ole, 'summary')
+            values_path = _find_ole_stream_path(ole, 'data/values')
+            t17c_path = _find_ole_stream_path(ole, 't17c')
+            info_path = _find_ole_stream_path(ole, '\x05SummaryInformation')
+
+            if not summary_path or not values_path:
+                logger.error(
+                    f"TestoVI2Parser: '{filepath}' is missing essential "
+                    "'summary' or 'data/values' streams."
+                )
+                return None
+
+            summary_bytes = ole.openstream(summary_path).read()
+            total_records = struct.unpack_from('<I', summary_bytes, 12)[0]
+            sample_rate_sec = struct.unpack_from('<I', summary_bytes, 28)[0] // 1000
+
+            lab_name, serial_number, prog_time = 'Unknown', 'Unknown', 0
+
+            if info_path:
+                sum_info = ole.openstream(info_path).read()
+                strings = [
+                    s.decode('latin1')
+                    for s in re.findall(rb'[\x20-\x7E]{3,}', sum_info)
+                ]
+                for s in strings:
+                    if s not in ('t17c', 'SummaryInformation') and 'SN' not in s:
+                        lab_name = s
+                        break
+
+            if t17c_path:
+                t17c_text = (
+                    ole.openstream(t17c_path).read().decode('latin1', errors='ignore')
+                )
+                for line in t17c_text.splitlines():
+                    if '\t' in line:
+                        k, v = line.split('\t', 1)
+                        if k.strip() == 'SerialNumber':
+                            serial_number = v.strip()
+                        elif k.strip() == 'ProgTime':
+                            try:
+                                prog_time = int(v.strip())
+                            except ValueError:
+                                logger.warning(
+                                    'TestoVI2Parser: could not parse ProgTime '
+                                    f'value {v.strip()!r}.'
+                                )
+
+            raw_bytes = ole.openstream(values_path).read()
+            record_dtype = np.dtype(
+                [
+                    ('ticker', '<u4'),
+                    ('humidity', '<f4'),
+                    ('temperature', '<f4'),
+                ]
+            )
+            data = np.frombuffer(raw_bytes, dtype=record_dtype)
+
+            if len(data) == 0:
+                logger.error(
+                    f"TestoVI2Parser: no measurement records found in '{filepath}'."
+                )
+                return None
+
+            if total_records and len(data) != total_records:
+                logger.warning(
+                    f'TestoVI2Parser: summary reports {total_records} records but '
+                    f'{len(data)} were read from the data stream. Using the '
+                    'records actually read.'
+                )
+
+            df = pd.DataFrame(data)
+
+            start_ticker = df['ticker'].iloc[0]
+            seconds_elapsed = start_ticker / 9.63857262
+            start_epoch = prog_time + seconds_elapsed
+            start_datetime = pd.to_datetime(start_epoch, unit='s')
+
+            df['datetime'] = pd.date_range(
+                start=start_datetime, periods=len(df), freq=f'{sample_rate_sec}s'
+            )
+            df['lab_name'] = lab_name
+            df['serial_number'] = serial_number
+            df['temperature'] = df['temperature'].round(2)
+            df['humidity'] = df['humidity'].round(2)
+
+            return df[
+                ['datetime', 'lab_name', 'serial_number', 'temperature', 'humidity']
+            ]
+    except Exception as exc:
+        logger.error(f"TestoVI2Parser: failed to parse '{filepath}': {exc}")
+        return None
+
+
+class TestoVI2Parser(MatchingParser):
+    """
+    Parser for Testo 175H1 (and compatible) environmental data logger `.vi2`
+    exports. Extracts temperature/humidity records and routes them to the
+    `INLTestoLogger` device entry for the lab where the logger is deployed,
+    based on the lab name recorded in the file (see
+    `_TESTO_LAB_LOCATION_ALIASES`). Unrecognized lab names are logged as a
+    warning and left unrouted (no `lab_id` set).
+    """
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        from nomad_inl_base.schema_packages.testo import (
+            INLTestoLogger,
+            INLTestoMeasurementRecord,
+        )
+
+        filetype = 'yaml'
+        data_file = mainfile.rsplit('/', maxsplit=1)[-1].rsplit('.', maxsplit=1)[0]
+
+        df = _parse_testo_vi2(mainfile, logger)
+        if df is None:
+            return
+
+        raw_lab_name = str(df['lab_name'].iloc[0])
+        normalized_lab_name = _normalize_testo_lab_name(raw_lab_name)
+        lab_id = _TESTO_LAB_LOCATION_ALIASES.get(normalized_lab_name)
+
+        if lab_id is None:
+            logger.warning(
+                f"TestoVI2Parser: unrecognized lab name '{raw_lab_name}' in "
+                f"'{mainfile}'. The reading will not be routed to a device "
+                'location.'
+            )
+
+        entry = INLTestoLogger()
+        entry.name = f'Testo Logger {lab_id or raw_lab_name}'
+        entry.source_lab_name = raw_lab_name
+        entry.serial_number = str(df['serial_number'].iloc[0])
+        if lab_id is not None:
+            entry.lab_id = lab_id
+
+        entry.measurement_records = [
+            INLTestoMeasurementRecord(
+                timestamp=row.datetime.to_pydatetime(),
+                temperature=ureg.Quantity(
+                    float(row.temperature) + _KELVIN_OFFSET, ureg.kelvin
+                ),
+                humidity=float(row.humidity),
+            )
+            for row in df.itertuples()
+        ]
+
+        create_child_entry(
+            entry,
+            archive,
+            child_filename=f'{data_file}.TestoLogger.archive.{filetype}',
+            filetype=filetype,
+            raw_name=data_file + '_raw',
+            raw_ref=get_hash_ref(archive.m_context.upload_id, data_file),
+            logger=logger,
         )
         archive.metadata.entry_name = data_file

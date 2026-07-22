@@ -348,3 +348,125 @@ def test_emsa_edx_parser():
 @pytest.mark.skip(reason='No test data available for BrukerAFMParser')
 def test_bruker_afm_parser():
     pass
+
+
+# ---------------------------------------------------------------------------
+# Testo VI2 Environmental Logger
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    'parsed_archive, caplog',
+    [
+        (
+            (
+                'tests/data/STAR LAB_44675156_2026_07_22_09_42_20.vi2',
+                [],
+            ),
+            ['error', 'critical'],
+        )
+    ],
+    indirect=True,
+    ids=['STAR_LAB.vi2'],
+)
+def test_testo_vi2_star_lab(parsed_archive, caplog):
+    normalize_all(parsed_archive)
+    data = parsed_archive.data
+    assert data is not None
+    assert data.source_lab_name == 'STAR LAB'
+    assert data.lab_id == 'B.P0.Lg.06'
+    assert data.serial_number == '44675156'
+    assert data.measurement_records is not None
+    assert len(data.measurement_records) > 0
+
+    first = data.measurement_records[0]
+    assert first.timestamp is not None
+    assert first.temperature is not None
+    assert first.humidity is not None
+
+    labels = [fig.label for fig in data.figures]
+    assert 'Temperature Trend' in labels
+    assert 'Humidity Trend' in labels
+
+
+@pytest.mark.parametrize(
+    'parsed_archive, caplog',
+    [
+        (
+            (
+                'tests/data/SUPPORT_44674288_2026_07_22_09_51_16.vi2',
+                [],
+            ),
+            ['error', 'critical'],
+        )
+    ],
+    indirect=True,
+    ids=['SUPPORT.vi2'],
+)
+def test_testo_vi2_support(parsed_archive, caplog):
+    normalize_all(parsed_archive)
+    data = parsed_archive.data
+    assert data is not None
+    assert data.source_lab_name == 'SUPPORT'
+    assert data.lab_id == 'C.P0.Tl.01'
+    assert data.serial_number == '44674288'
+    assert len(data.measurement_records) > 0
+
+
+def test_testo_lab_name_normalization():
+    from nomad_inl_base.parsers.parser import (
+        _TESTO_LAB_LOCATION_ALIASES,
+        _normalize_testo_lab_name,
+    )
+
+    assert _TESTO_LAB_LOCATION_ALIASES[_normalize_testo_lab_name('star lab')] == (
+        'B.P0.Lg.06'
+    )
+    assert _TESTO_LAB_LOCATION_ALIASES[_normalize_testo_lab_name('  STAR   LAB ')] == (
+        'B.P0.Lg.06'
+    )
+    assert _TESTO_LAB_LOCATION_ALIASES[_normalize_testo_lab_name('support')] == (
+        'C.P0.Tl.01'
+    )
+    assert _normalize_testo_lab_name('Unknown Lab') not in _TESTO_LAB_LOCATION_ALIASES
+
+
+def test_testo_merge_dedup_keeps_earliest_record():
+    """Duplicate timestamps must resolve to the first (earliest) record seen."""
+    import datetime
+    from types import SimpleNamespace
+
+    import structlog
+    from nomad.units import ureg
+
+    from nomad_inl_base.schema_packages.testo import (
+        INLTestoLogger,
+        INLTestoMeasurementRecord,
+    )
+
+    ts = datetime.datetime(2026, 1, 1, 12, 0, 0)
+    entry = INLTestoLogger()
+    entry.lab_id = None  # skip cross-entry search branch entirely
+    entry.measurement_records = [
+        INLTestoMeasurementRecord(
+            timestamp=ts, temperature=ureg.Quantity(300.0, 'kelvin'), humidity=50.0
+        ),
+        INLTestoMeasurementRecord(
+            timestamp=ts, temperature=ureg.Quantity(310.0, 'kelvin'), humidity=60.0
+        ),
+    ]
+    fake_archive = SimpleNamespace(
+        metadata=SimpleNamespace(upload_create_time=None, entry_id='x'),
+        m_context=None,
+    )
+
+    merged = entry._collect_history(fake_archive, structlog.get_logger())
+
+    # The `Datetime` quantity normalizes naive datetimes to UTC-aware ones
+    # (same clock time, just tagged), so compare via the single resulting key
+    # rather than assuming exact equality with the naive `ts` used as input.
+    assert len(merged) == 1
+    (merged_ts, (temp, hum)) = next(iter(merged.items()))
+    assert merged_ts.replace(tzinfo=None) == ts
+    assert float(temp.magnitude) == 300.0
+    assert hum == 50.0

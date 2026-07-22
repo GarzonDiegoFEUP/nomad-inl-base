@@ -38,6 +38,7 @@ dependencies = [
     "pySPM",
     "galvani",
     "yadg",
+    "olefile",
 ]
 
 [project.urls]
@@ -174,6 +175,8 @@ bruker_afm_parser_entry_point = "nomad_inl_base.parsers:bruker_afm_parser_entry_
 mpr_parser_entry_point = "nomad_inl_base.parsers:mpr_parser_entry_point"
 meteor_entry_point = "nomad_inl_base.schema_packages:meteor_entry_point"
 meteor_parser_entry_point = "nomad_inl_base.parsers:meteor_parser_entry_point"
+testo_entry_point = "nomad_inl_base.schema_packages:testo_entry_point"
+testo_vi2_parser_entry_point = "nomad_inl_base.parsers:testo_vi2_parser_entry_point"
 
 
 

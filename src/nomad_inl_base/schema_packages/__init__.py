@@ -136,3 +136,16 @@ meteor_entry_point = METEORPackageEntryPoint(
     name='METEOR E-Beam Evaporation',
     description='ELN schemas for the METEOR (Korvus Technology) e-beam evaporator.',
 )
+
+
+class INLTestoPackageEntryPoint(SchemaPackageEntryPoint):
+    def load(self):
+        from nomad_inl_base.schema_packages.testo import m_package
+
+        return m_package
+
+
+testo_entry_point = INLTestoPackageEntryPoint(
+    name='INL Testo Logger',
+    description='ELN schema for Testo environmental data loggers (temperature/humidity).',
+)

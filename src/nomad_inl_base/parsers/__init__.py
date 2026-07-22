@@ -224,3 +224,21 @@ meteor_parser_entry_point = METEORParserEntryPoint(
     mainfile_name_re=r'.*\.nbl$',
     mainfile_mime_re=r'(text/plain|application/octet-stream)',
 )
+
+
+class TestoVI2ParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import TestoVI2Parser
+
+        return TestoVI2Parser(**self.dict())
+
+
+testo_vi2_parser_entry_point = TestoVI2ParserEntryPoint(
+    name='TestoVI2Parser',
+    description=(
+        'Parser for Testo 175H1 (and compatible) environmental data logger '
+        '.vi2 exports (temperature/humidity). Routes records to the '
+        'INLTestoLogger device entry for the lab location recorded in the file.'
+    ),
+    mainfile_name_re=r'(?i).*\.vi2$',
+)
