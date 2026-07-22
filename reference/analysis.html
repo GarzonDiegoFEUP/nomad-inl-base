@@ -1,0 +1,890 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A plugin to manage the data from LaNaSC">
+      
+      
+        <meta name="author" content="Diego Garzon">
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-8.1.1">
+    
+    
+      
+        <title>Analysis - nomad-inl-base</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.23b6d78a.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+          
+          
+          <meta name="theme-color" content="">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,400i,700%7C&display=fallback">
+        <style>:root{--md-text-font:"Titillium Web";--md-code-font:""}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="#2a4cdf" data-md-color-accent="#008a67">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#reference-analysis" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-header__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            nomad-inl-base
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Analysis
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-nav__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    nomad-inl-base
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/tutorial.html" class="md-nav__link">
+        Tutorial
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How-to guides" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/install_this_plugin.html" class="md-nav__link">
+        Install this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/use_this_plugin.html" class="md-nav__link">
+        Use this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_this_plugin.html" class="md-nav__link">
+        Contribute to this plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_the_documentation.html" class="md-nav__link">
+        Contribute to the documentation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explanation/explanation.html" class="md-nav__link">
+        Explanation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="references.html" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="entities.html" class="md-nav__link">
+        Entities
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sputtering.html" class="md-nav__link">
+        STAR Sputtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="meteor.html" class="md-nav__link">
+        METEOR E-Beam
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="testo.html" class="md-nav__link">
+        Testo Environmental Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="batteries.html" class="md-nav__link">
+        Batteries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="wet_deposition.html" class="md-nav__link">
+        Wet Deposition
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="characterization.html" class="md-nav__link">
+        Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Analysis
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="analysis.html" class="md-nav__link md-nav__link--active">
+        Analysis
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#common-fields-inherited-from-jupyteranalysis" class="md-nav__link">
+    Common fields (inherited from JupyterAnalysis)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    How it works
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eqejupyteranalysis" class="md-nav__link">
+    EQEJupyterAnalysis
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solarcelljupyteranalysis" class="md-nav__link">
+    SolarCellJupyterAnalysis
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gdoesjupyteranalysis" class="md-nav__link">
+    GDOESJupyterAnalysis
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlxrdjupyteranalysis" class="md-nav__link">
+    INLXRDJupyterAnalysis
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#common-fields-inherited-from-jupyteranalysis" class="md-nav__link">
+    Common fields (inherited from JupyterAnalysis)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    How it works
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eqejupyteranalysis" class="md-nav__link">
+    EQEJupyterAnalysis
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solarcelljupyteranalysis" class="md-nav__link">
+    SolarCellJupyterAnalysis
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gdoesjupyteranalysis" class="md-nav__link">
+    GDOESJupyterAnalysis
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inlxrdjupyteranalysis" class="md-nav__link">
+    INLXRDJupyterAnalysis
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="reference-analysis">Reference – Analysis<a class="headerlink" href="#reference-analysis" title="Permanent link">&para;</a></h1>
+<p>This page documents the Jupyter notebook–based analysis ELN entries provided
+by the <a href="https://github.com/FAIRmat-NFDI/nomad-analysis"><code>nomad-analysis</code></a>
+plugin and extended here with INL-specific pre-defined notebook cells. These
+entries live under the <strong>Analysis using Jupyter notebooks</strong> category.</p>
+<table>
+<thead>
+<tr>
+<th>Schema</th>
+<th>Label</th>
+<th><code>method</code></th>
+<th>Typical input entries</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EQEJupyterAnalysis</code></td>
+<td>EQE Jupyter Analysis</td>
+<td><code>EQE</code></td>
+<td><code>INLEQE</code></td>
+</tr>
+<tr>
+<td><code>SolarCellJupyterAnalysis</code></td>
+<td>Solar Cell IV Jupyter Analysis</td>
+<td><code>SolarCellIV</code></td>
+<td><code>INLSolarCellIV</code></td>
+</tr>
+<tr>
+<td><code>GDOESJupyterAnalysis</code></td>
+<td>GDOES Jupyter Analysis</td>
+<td><code>GDOES</code></td>
+<td><code>INLGDOES</code></td>
+</tr>
+<tr>
+<td><code>INLXRDJupyterAnalysis</code></td>
+<td>INL XRD Jupyter Analysis</td>
+<td><code>XRD</code></td>
+<td><code>INLXRayDiffraction</code></td>
+</tr>
+</tbody>
+</table>
+<p>All four schemas are defined in
+<a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base/blob/main/src/nomad_inl_base/analysis/schema.py"><code>nomad_inl_base.analysis.schema</code></a>
+and are subclasses of <code>nomad_analysis.jupyter.schema.JupyterAnalysis</code>. The
+underlying analysis functions live in
+<a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base/blob/main/src/nomad_inl_base/analysis/analysis_source.py"><code>nomad_inl_base.analysis.analysis_source</code></a>.</p>
+<hr />
+<h2 id="common-fields-inherited-from-jupyteranalysis">Common fields (inherited from <code>JupyterAnalysis</code>)<a class="headerlink" href="#common-fields-inherited-from-jupyteranalysis" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Quantity / Action</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>query_for_inputs</code></td>
+<td>Query (repeats)</td>
+<td>Search query used to find candidate input entries (e.g. all <code>INLEQE</code> entries for a given sample).</td>
+</tr>
+<tr>
+<td><code>trigger_reset_inputs</code></td>
+<td>Action</td>
+<td>Clears <code>inputs</code> and re-populates it from <code>query_for_inputs</code>.</td>
+</tr>
+<tr>
+<td><code>inputs</code></td>
+<td><code>SectionReference</code> (repeats)</td>
+<td>The resolved list of referenced entries the notebook will analyze. Accessible in the notebook as <code>analysis.inputs</code>.</td>
+</tr>
+<tr>
+<td><code>trigger_generate_notebook</code></td>
+<td>Action</td>
+<td>Generates the <code>.ipynb</code> file (see <a href="#how-it-works">How it works</a>) and links it in <code>notebook</code>. Does nothing if <code>notebook</code> is already set.</td>
+</tr>
+<tr>
+<td><code>notebook</code></td>
+<td>File</td>
+<td>The generated/uploaded Jupyter notebook, connected to the ELN entry.</td>
+</tr>
+<tr>
+<td><code>template</code></td>
+<td>Reference</td>
+<td>Optional <code>JupyterAnalysisTemplate</code> entry to seed the notebook from a custom template instead of the default cells.</td>
+</tr>
+<tr>
+<td><code>method</code></td>
+<td><code>str</code></td>
+<td>Set automatically by each subclass (<code>EQE</code>, <code>SolarCellIV</code>, <code>GDOES</code>, <code>XRD</code>).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Set <strong>Search queries for inputs</strong> (<code>query_for_inputs</code>) to match the
+   measurement entries you want to analyze (e.g. by sample or upload).</li>
+<li>Click <strong>Reset Inputs</strong> (<code>trigger_reset_inputs</code>). This populates <code>inputs</code>
+   with references to the matched entries.</li>
+<li>Click <strong>Generate Notebook</strong> (<code>trigger_generate_notebook</code>). This creates a
+   <code>.ipynb</code> file with:<ul>
+<li>A header cell that loads the linked entry into a Python variable
+    named <code>analysis</code> (via <code>nomad_analysis.utils.get_entry_data</code>).</li>
+<li>A pre-defined code cell injecting the schema-specific analysis
+    functions (<code>eqe_analysis</code>, <code>solar_cell_iv_analysis</code>, <code>gdoes_analysis</code>,
+    or <code>xrd_voila_analysis</code> — see below).</li>
+<li>A call to that function with <code>analysis.inputs</code> as the argument.</li>
+</ul>
+</li>
+<li>Open <strong>Notebook</strong> and run the cells. The analysis inputs (as resolved
+   <code>SectionReference</code> objects) are available as <code>analysis.inputs</code>; each
+   reference's target entry is <code>entry_input.reference</code>.</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Local fixes on top of <code>nomad-analysis</code></p>
+<p>The notebook generation in this plugin patches a few issues found in the
+upstream <code>nomad-analysis</code> v0.2.3 templates:</p>
+<ul>
+<li>The header cell's <code>get_entry_data(..., url=NOMAD_ANALYSIS_BASE_URL)</code>
+  call has its <code>url</code> argument commented out after generation, since it is
+  not needed and can prevent the API call from succeeding (e.g. inside a
+  JupyterHub container). <code>get_entry_data</code> falls back to the local NOMAD
+  client URL.</li>
+<li>The pre-defined analysis calls use <code>analysis.inputs</code> (not
+  <code>analysis.data.inputs</code>, which does not exist).</li>
+<li><code>INLXRDJupyterAnalysis</code> uses a locally patched copy of
+  <code>xrd_voila_analysis</code> where <code>get_input_entry_names</code> accesses
+  <code>entry_input.reference.name</code> <strong>before</strong> the <code>isinstance</code> check. This
+  forces resolution of the lazy reference proxy returned by the search
+  API; without it, <code>isinstance(entry_input.reference, ELNXRayDiffraction)</code>
+  can spuriously return <code>False</code> and no input entries show up in the
+  notebook's dropdown.</li>
+</ul>
+</div>
+<hr />
+<h2 id="eqejupyteranalysis">EQEJupyterAnalysis<a class="headerlink" href="#eqejupyteranalysis" title="Permanent link">&para;</a></h2>
+<p><strong>Base class:</strong> <code>JupyterAnalysis</code>, <code>EntryData</code>
+<strong>Label:</strong> <code>EQE Jupyter Analysis</code></p>
+<p>Generates a notebook that calls <code>eqe_analysis(analysis.inputs)</code>. For each
+input <code>INLEQE</code> entry it:</p>
+<ul>
+<li>Calculates the short-circuit current density (Jsc) against the AM1.5G
+  reference spectrum.</li>
+<li>Fits the bandgap using a sigmoid fit and the Keller (linear extrapolation)
+  method.</li>
+<li>Plots the EQE spectrum (with a secondary energy axis) and prints a summary
+  table across all input entries.</li>
+</ul>
+<h2 id="solarcelljupyteranalysis">SolarCellJupyterAnalysis<a class="headerlink" href="#solarcelljupyteranalysis" title="Permanent link">&para;</a></h2>
+<p><strong>Base class:</strong> <code>JupyterAnalysis</code>, <code>EntryData</code>
+<strong>Label:</strong> <code>Solar Cell IV Jupyter Analysis</code></p>
+<p>Generates a notebook that calls <code>solar_cell_iv_analysis(analysis.inputs)</code>.
+For each input <code>INLSolarCellIV</code> entry it plots all JV curves, collects
+Voc/Jsc/fill factor/efficiency into a summary table, and shows box plots of
+the parameter distributions across all input entries.</p>
+<h2 id="gdoesjupyteranalysis">GDOESJupyterAnalysis<a class="headerlink" href="#gdoesjupyteranalysis" title="Permanent link">&para;</a></h2>
+<p><strong>Base class:</strong> <code>JupyterAnalysis</code>, <code>EntryData</code>
+<strong>Label:</strong> <code>GDOES Jupyter Analysis</code></p>
+<p>Generates a notebook that calls <code>gdoes_analysis(analysis.inputs)</code>. For each
+input <code>INLGDOES</code> entry it plots the per-element depth profile and computes
+FWHM-based layer thickness estimates for each element.</p>
+<h2 id="inlxrdjupyteranalysis">INLXRDJupyterAnalysis<a class="headerlink" href="#inlxrdjupyteranalysis" title="Permanent link">&para;</a></h2>
+<p><strong>Base class:</strong> <code>JupyterAnalysis</code>, <code>EntryData</code>
+<strong>Label:</strong> <code>INL XRD Jupyter Analysis</code></p>
+<p>Generates a notebook that calls <code>xrd_voila_analysis(analysis.inputs)</code>, an
+interactive <code>ipywidgets</code>/Voila panel for XRD peak finding. It lets you:</p>
+<ul>
+<li>Select one of the input <code>INLXRayDiffraction</code> entries from a dropdown.</li>
+<li>Adjust peak-finding parameters (height, threshold, distance) used by
+  <code>scipy.signal.find_peaks</code>.</li>
+<li>View the intensity vs. 2θ plot (log scale) with detected peaks marked.</li>
+<li>Export the peak table as JSON or CSV.</li>
+</ul>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="characterization.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Characterization" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Characterization
+            </div>
+          </div>
+        </a>
+      
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant"], "search": "../assets/javascripts/workers/search.c7dec7e7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.da79ceb7.min.js"></script>
+      
+        <script src="../javascript.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

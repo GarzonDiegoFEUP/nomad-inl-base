@@ -1,0 +1,989 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A plugin to manage the data from LaNaSC">
+      
+      
+        <meta name="author" content="Diego Garzon">
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-8.1.1">
+    
+    
+      
+        <title>Testo Environmental Logger - nomad-inl-base</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.23b6d78a.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+          
+          
+          <meta name="theme-color" content="">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,400i,700%7C&display=fallback">
+        <style>:root{--md-text-font:"Titillium Web";--md-code-font:""}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="#2a4cdf" data-md-color-accent="#008a67">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#reference-testo-environmental-logger" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-header__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            nomad-inl-base
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Testo Environmental Logger
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-nav__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    nomad-inl-base
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/tutorial.html" class="md-nav__link">
+        Tutorial
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How-to guides" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/install_this_plugin.html" class="md-nav__link">
+        Install this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/use_this_plugin.html" class="md-nav__link">
+        Use this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_this_plugin.html" class="md-nav__link">
+        Contribute to this plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_the_documentation.html" class="md-nav__link">
+        Contribute to the documentation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explanation/explanation.html" class="md-nav__link">
+        Explanation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="references.html" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="entities.html" class="md-nav__link">
+        Entities
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sputtering.html" class="md-nav__link">
+        STAR Sputtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="meteor.html" class="md-nav__link">
+        METEOR E-Beam
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Testo Environmental Logger
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="testo.html" class="md-nav__link md-nav__link--active">
+        Testo Environmental Logger
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#inltestologger" class="md-nav__link">
+    INLTestoLogger
+  </a>
+  
+    <nav class="md-nav" aria-label="INLTestoLogger">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quantities" class="md-nav__link">
+    Quantities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trend-merge-and-deduplication" class="md-nav__link">
+    Trend merge and deduplication
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plots" class="md-nav__link">
+    Plots
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inltestologgerreference" class="md-nav__link">
+    INLTestoLoggerReference
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vi2-file-format-and-parser" class="md-nav__link">
+    .vi2 file format and parser
+  </a>
+  
+    <nav class="md-nav" aria-label=".vi2 file format and parser">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#streams-read" class="md-nav__link">
+    Streams read
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#record-reconstruction" class="md-nav__link">
+    Record reconstruction
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lab-name-device-routing" class="md-nav__link">
+    Lab name → device routing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    Output
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="batteries.html" class="md-nav__link">
+        Batteries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="wet_deposition.html" class="md-nav__link">
+        Wet Deposition
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="characterization.html" class="md-nav__link">
+        Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="analysis.html" class="md-nav__link">
+        Analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#inltestologger" class="md-nav__link">
+    INLTestoLogger
+  </a>
+  
+    <nav class="md-nav" aria-label="INLTestoLogger">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quantities" class="md-nav__link">
+    Quantities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trend-merge-and-deduplication" class="md-nav__link">
+    Trend merge and deduplication
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plots" class="md-nav__link">
+    Plots
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inltestologgerreference" class="md-nav__link">
+    INLTestoLoggerReference
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vi2-file-format-and-parser" class="md-nav__link">
+    .vi2 file format and parser
+  </a>
+  
+    <nav class="md-nav" aria-label=".vi2 file format and parser">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#streams-read" class="md-nav__link">
+    Streams read
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#record-reconstruction" class="md-nav__link">
+    Record reconstruction
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lab-name-device-routing" class="md-nav__link">
+    Lab name → device routing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    Output
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="reference-testo-environmental-logger">Reference – Testo Environmental Logger<a class="headerlink" href="#reference-testo-environmental-logger" title="Permanent link">&para;</a></h1>
+<p>This page documents the ELN entry types and parser used to record
+temperature/humidity data from Testo 175H1 (and compatible) environmental
+data loggers deployed around the lab.</p>
+<hr />
+<h2 id="inltestologger">INLTestoLogger<a class="headerlink" href="#inltestologger" title="Permanent link">&para;</a></h2>
+<p><strong>Category:</strong> INL Entities<br />
+<strong>Base class:</strong> <code>INLInstrument</code>, <code>PlotSection</code><br />
+<strong>Label:</strong> <em>INL Testo Logger</em></p>
+<p>Represents a Testo logger device at a fixed lab location. Each uploaded
+<code>.vi2</code> export creates one entry of this type holding the records read from
+that particular file as parallel array quantities (<code>timestamps</code>,
+<code>temperature</code>, <code>humidity</code>) rather than one repeating subsection per record —
+a single file can contain hundreds of thousands of readings, and per-record
+subsections do not scale for that volume (the auto-generated child archive
+would balloon in size and fail to process). The physical device/location is
+identified via the inherited <code>lab_id</code> field (e.g. <code>B.P0.Lg.06</code> or
+<code>C.P0.Tl.01</code>).</p>
+<p>On processing, the entry also looks up every other <code>INLTestoLogger</code> entry
+that shares the same <code>lab_id</code> (across uploads) to build a deduplicated,
+chronologically sorted temperature/humidity trend covering the full
+measurement history recorded for that device, and shows it as two plots
+(temperature and humidity vs. time) on the entry.</p>
+<h3 id="quantities">Quantities<a class="headerlink" href="#quantities" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Type</th>
+<th>Unit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>serial_number</code></td>
+<td><code>str</code></td>
+<td>–</td>
+<td>Serial number of the Testo logger device</td>
+</tr>
+<tr>
+<td><code>source_lab_name</code></td>
+<td><code>str</code></td>
+<td>–</td>
+<td>Raw lab-name string extracted from the uploaded <code>.vi2</code> file, before mapping to a <code>lab_id</code>/device location</td>
+</tr>
+<tr>
+<td><code>timestamps</code></td>
+<td><code>Datetime</code> array</td>
+<td>–</td>
+<td>Timestamps of the temperature/humidity records parsed from this uploaded <code>.vi2</code> file</td>
+</tr>
+<tr>
+<td><code>temperature</code></td>
+<td><code>float</code> array</td>
+<td>K (displayed as °C)</td>
+<td>Measured air temperature time series, parallel to <code>timestamps</code></td>
+</tr>
+<tr>
+<td><code>humidity</code></td>
+<td><code>float</code> array</td>
+<td>–</td>
+<td>Measured relative humidity (%RH) time series, parallel to <code>timestamps</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="trend-merge-and-deduplication">Trend merge and deduplication<a class="headerlink" href="#trend-merge-and-deduplication" title="Permanent link">&para;</a></h3>
+<p><code>_collect_history</code> gathers records from the current entry plus every other
+<code>INLTestoLogger</code> entry found via a <code>results.eln.lab_ids</code> search for the same
+<code>lab_id</code>, then merges them into a single timestamp → (temperature, humidity)
+mapping:</p>
+<ol>
+<li>Records are grouped by their source entry's upload creation time, oldest
+   upload first.</li>
+<li>Records are merged by exact timestamp. If two entries report a record for
+   the same timestamp, the value from the earliest-uploaded entry is kept
+   (earliest upload wins) — this guarantees exactly one measurement per time
+   point in the combined trend, with no duplicates.</li>
+<li>The merged, deduplicated series is sorted chronologically and plotted.</li>
+</ol>
+<p>This cross-entry lookup is skipped when running in a <code>ClientContext</code> (e.g.
+the standalone <code>nomad-parse</code>/<code>nomad.client</code> CLI), since it requires the
+server-side search index; only the current entry's own records are plotted
+in that case.</p>
+<h3 id="plots">Plots<a class="headerlink" href="#plots" title="Permanent link">&para;</a></h3>
+<p>Two <code>PlotlyFigure</code>s are generated on every normalization:</p>
+<ul>
+<li><strong>Temperature Trend</strong> — temperature (°C) vs. time.</li>
+<li><strong>Humidity Trend</strong> — relative humidity (%) vs. time.</li>
+</ul>
+<p>Both are titled with the device's <code>lab_id</code> when available.</p>
+<hr />
+<h2 id="inltestologgerreference">INLTestoLoggerReference<a class="headerlink" href="#inltestologgerreference" title="Permanent link">&para;</a></h2>
+<p><strong>Base class:</strong> <code>INLInstrumentReference</code></p>
+<p>A reference to an <code>INLTestoLogger</code> entry, for use from other schemas.</p>
+<hr />
+<h2 id="vi2-file-format-and-parser">.vi2 file format and parser<a class="headerlink" href="#vi2-file-format-and-parser" title="Permanent link">&para;</a></h2>
+<p>Testo <code>.vi2</code> files are OLE compound documents (the same container format
+used by legacy <code>.doc</code>/<code>.xls</code> files). <code>TestoVI2Parser</code> is registered for any
+mainfile matching <code>*.vi2</code> (case-insensitive).</p>
+<h3 id="streams-read">Streams read<a class="headerlink" href="#streams-read" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Internal stream (suffix match)</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>summary</code></td>
+<td>Total record count and sample interval (ms)</td>
+</tr>
+<tr>
+<td><code>data/values</code></td>
+<td>Binary array of <code>(ticker, humidity, temperature)</code> records</td>
+</tr>
+<tr>
+<td><code>t17c</code></td>
+<td>Tab-separated key/value metadata, including <code>SerialNumber</code> and <code>ProgTime</code> (log start epoch)</td>
+</tr>
+<tr>
+<td><code>\x05SummaryInformation</code></td>
+<td>OLE summary info; the first plausible ASCII string (excluding stream names and serial-number-like tokens) is taken as the raw lab name</td>
+</tr>
+</tbody>
+</table>
+<p>Stream paths are located dynamically (<code>_find_ole_stream_path</code>) since the
+logger's internal folder ID varies between files.</p>
+<h3 id="record-reconstruction">Record reconstruction<a class="headerlink" href="#record-reconstruction" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Each binary record is unpacked as <code>ticker</code> (<code>u4</code>), <code>humidity</code> (<code>f4</code>),
+   <code>temperature</code> (<code>f4</code>).</li>
+<li>The start timestamp is computed from <code>ProgTime</code> (epoch seconds) plus the
+   first record's <code>ticker</code> divided by a fixed logger clock-rate constant
+   (<code>9.63857262</code>).</li>
+<li>Subsequent timestamps are spaced using the summary's sample interval.</li>
+<li>Temperature is stored in Kelvin (<code>°C + 273.15</code>); humidity is stored
+   unitless as %RH.</li>
+</ol>
+<p>If the essential <code>summary</code> or <code>data/values</code> streams are missing, or no
+records are read, the file is logged as an error and skipped (no entry is
+created). A mismatch between the summary's reported record count and the
+number of records actually read is logged as a warning but does not stop
+parsing.</p>
+<h3 id="lab-name-device-routing">Lab name → device routing<a class="headerlink" href="#lab-name-device-routing" title="Permanent link">&para;</a></h3>
+<p>The raw lab name extracted from the file is normalized (whitespace
+collapsed, upper-cased) and looked up in a fixed alias table:</p>
+<table>
+<thead>
+<tr>
+<th>Normalized lab name</th>
+<th>Routed <code>lab_id</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>STAR LAB</code>, <code>STARLAB</code></td>
+<td><code>B.P0.Lg.06</code></td>
+</tr>
+<tr>
+<td><code>SUPPORT</code>, <code>SUPPORT LAB</code></td>
+<td><code>C.P0.Tl.01</code></td>
+</tr>
+</tbody>
+</table>
+<p>If the lab name doesn't match any alias, a warning is logged and the entry
+is created without a <code>lab_id</code> (so it won't be merged into any device's
+trend until corrected manually).</p>
+<h3 id="output">Output<a class="headerlink" href="#output" title="Permanent link">&para;</a></h3>
+<p>The parser creates one <code>INLTestoLogger</code> child entry per uploaded <code>.vi2</code>
+file (<code>&lt;file&gt;.TestoLogger.archive.json</code>), populated with <code>serial_number</code>,
+<code>source_lab_name</code>, the routed <code>lab_id</code> (if recognized), and the parsed
+<code>timestamps</code>/<code>temperature</code>/<code>humidity</code> arrays. The child archive is written
+as JSON rather than YAML, since PyYAML's block-style dump/load of the
+potentially hundreds of thousands of array entries is far slower (tens of
+seconds vs. a fraction of a second) and previously caused processing to fail
+on a real server.</p>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="meteor.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: METEOR E-Beam" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              METEOR E-Beam
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="batteries.html" class="md-footer__link md-footer__link--next" aria-label="Next: Batteries" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Batteries
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant"], "search": "../assets/javascripts/workers/search.c7dec7e7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.da79ceb7.min.js"></script>
+      
+        <script src="../javascript.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

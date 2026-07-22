@@ -1,0 +1,1128 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A plugin to manage the data from LaNaSC">
+      
+      
+        <meta name="author" content="Diego Garzon">
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-8.1.1">
+    
+    
+      
+        <title>Batteries - nomad-inl-base</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.23b6d78a.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+          
+          
+          <meta name="theme-color" content="">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,400i,700%7C&display=fallback">
+        <style>:root{--md-text-font:"Titillium Web";--md-code-font:""}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="#2a4cdf" data-md-color-accent="#008a67">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#reference-batteries" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-header__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            nomad-inl-base
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Batteries
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-nav__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    nomad-inl-base
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/tutorial.html" class="md-nav__link">
+        Tutorial
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How-to guides" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/install_this_plugin.html" class="md-nav__link">
+        Install this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/use_this_plugin.html" class="md-nav__link">
+        Use this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_this_plugin.html" class="md-nav__link">
+        Contribute to this plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_the_documentation.html" class="md-nav__link">
+        Contribute to the documentation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explanation/explanation.html" class="md-nav__link">
+        Explanation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="references.html" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="entities.html" class="md-nav__link">
+        Entities
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sputtering.html" class="md-nav__link">
+        STAR Sputtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="meteor.html" class="md-nav__link">
+        METEOR E-Beam
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="testo.html" class="md-nav__link">
+        Testo Environmental Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Batteries
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="batteries.html" class="md-nav__link md-nav__link--active">
+        Batteries
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filename-convention-automatic-sample-linking" class="md-nav__link">
+    Filename convention &amp; automatic sample linking
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batterychambersputteringdeposition-base" class="md-nav__link">
+    BatteryChamberSputteringDeposition (base)
+  </a>
+  
+    <nav class="md-nav" aria-label="BatteryChamberSputteringDeposition (base)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    Metadata
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sample-references" class="md-nav__link">
+    Sample references
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-series-process-data" class="md-nav__link">
+    Time-series &amp; process data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sub-sections" class="md-nav__link">
+    Sub-sections
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#normalization" class="md-nav__link">
+    Normalization
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pc03cathodechamberdeposition" class="md-nav__link">
+    PC03CathodeChamberDeposition
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pc04electrolytechamberdeposition" class="md-nav__link">
+    PC04ElectrolyteChamberDeposition
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pc04substrateannealing" class="md-nav__link">
+    PC04SubstrateAnnealing
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="wet_deposition.html" class="md-nav__link">
+        Wet Deposition
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="characterization.html" class="md-nav__link">
+        Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="analysis.html" class="md-nav__link">
+        Analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filename-convention-automatic-sample-linking" class="md-nav__link">
+    Filename convention &amp; automatic sample linking
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batterychambersputteringdeposition-base" class="md-nav__link">
+    BatteryChamberSputteringDeposition (base)
+  </a>
+  
+    <nav class="md-nav" aria-label="BatteryChamberSputteringDeposition (base)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    Metadata
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sample-references" class="md-nav__link">
+    Sample references
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-series-process-data" class="md-nav__link">
+    Time-series &amp; process data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sub-sections" class="md-nav__link">
+    Sub-sections
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#normalization" class="md-nav__link">
+    Normalization
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pc03cathodechamberdeposition" class="md-nav__link">
+    PC03CathodeChamberDeposition
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pc04electrolytechamberdeposition" class="md-nav__link">
+    PC04ElectrolyteChamberDeposition
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pc04substrateannealing" class="md-nav__link">
+    PC04SubstrateAnnealing
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="reference-batteries">Reference – Batteries<a class="headerlink" href="#reference-batteries" title="Permanent link">&para;</a></h1>
+<p>This page documents the ELN entry types populated automatically from log
+files exported by the INL Battery Chamber sputtering/annealing systems
+(<strong>PC03 CathodeChamber</strong>, <strong>PC04 ElectrolyteChamber</strong>).</p>
+<hr />
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Each chamber periodically exports a CSV log with the following structure:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Line 1: meta-column names  (Recording Name, Date Started, User)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Line 2: meta-values        (All Signals, YYYY-M-D HH-MM-SS, OperatorName)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Line 3: empty
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Line 4: data column headers (~460 columns)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>Lines 5+: data rows sampled at ~1 Hz
+</code></pre></div>
+<p>Uploading such a CSV automatically creates one of the following entries:</p>
+<table>
+<thead>
+<tr>
+<th>Entry type</th>
+<th>Chamber</th>
+<th>Populated when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PC03CathodeChamberDeposition</code></td>
+<td>PC03</td>
+<td>Filename starts with <code>PC03</code></td>
+</tr>
+<tr>
+<td><code>PC04ElectrolyteChamberDeposition</code></td>
+<td>PC04</td>
+<td>Filename starts with <code>PC04</code> <strong>and</strong> the log contains sputtering source columns</td>
+</tr>
+<tr>
+<td><code>PC04SubstrateAnnealing</code></td>
+<td>PC04</td>
+<td>Filename starts with <code>PC04</code> <strong>and</strong> the log contains only heater channels (no sputtering source columns)</td>
+</tr>
+</tbody>
+</table>
+<p><code>PC04ChamberParser</code> inspects the column headers (looking for the
+<code>PC Source 1 Active</code> marker) at parse time to decide which of the two PC04
+entry types to create — no separate configuration is needed.</p>
+<hr />
+<h2 id="filename-convention-automatic-sample-linking">Filename convention &amp; automatic sample linking<a class="headerlink" href="#filename-convention-automatic-sample-linking" title="Permanent link">&para;</a></h2>
+<p>Log filenames follow the convention:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>PC0X_All Signals_[Sample Name] Date.csv
+</code></pre></div>
+<p>e.g. <code>PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv</code> → sample name
+<code>LNbO_004</code>.</p>
+<p>If the filename matches this convention, the extracted name is stored in the
+entry's <code>sample_name</code> quantity and, during normalization, used to
+automatically find-or-create the corresponding sample:</p>
+<ol>
+<li>The current upload is searched for an existing <code>INLSubstrate</code>,
+   <code>INLThinFilmStack</code>, or <code>INLSampleFragment</code> entry whose <code>name</code> matches
+   <code>sample_name</code>. A bare <code>INLThinFilm</code> is <strong>never</strong> matched — sample linking
+   always deals with complete samples (a stack or substrate), not individual
+   thin-film layers.</li>
+<li><strong>Match found:</strong><ul>
+<li><code>INLThinFilmStack</code> → the newly deposited thin film (deposition
+    entries only) is appended to it as an additional layer, written back
+    to the stack's raw YAML file.</li>
+<li><code>INLSubstrate</code> → a new <code>INLThinFilmStack</code> is created referencing it,
+    with the newly deposited thin film (if any) as its first layer.</li>
+<li><code>INLSampleFragment</code> → linked as-is (a layer cannot be appended to a
+    fragment); a warning is logged.</li>
+</ul>
+</li>
+<li><strong>No match:</strong> a brand-new <code>INLThinFilmStack</code> named after <code>sample_name</code> is
+   created (with the deposited thin film as its first layer, if any).</li>
+</ol>
+<p>If the filename doesn't follow the convention, <code>sample_name</code> stays unset, a
+warning is logged, and parsing otherwise completes normally — no sample is
+linked or created.</p>
+<p>This behavior differs slightly between the deposition and annealing entries:</p>
+<ul>
+<li><strong><code>PC03CathodeChamberDeposition</code> / <code>PC04ElectrolyteChamberDeposition</code>:</strong> the
+  resolved sample reference is appended to the <code>samples</code> list (skipped if a
+  sample with that name is already present, so reprocessing doesn't create
+  duplicates).</li>
+<li><strong><code>PC04SubstrateAnnealing</code>:</strong> the resolved sample is assigned to
+  <code>thin_film_stack</code>, but only if that field (and <code>thin_film</code>) isn't already
+  set manually, and only if the match is an actual <code>INLThinFilmStack</code> (a
+  matched <code>INLSampleFragment</code> is left unset with a warning, since
+  <code>thin_film_stack</code> cannot reference that type).</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Test / CLI parsing</p>
+<p>Sample search relies on NOMAD's search index and is skipped when parsing
+outside of a live server (e.g. <code>nomad.client.parse()</code>, used in this
+plugin's test suite) — in that case a brand-new sample is always created.</p>
+</div>
+<hr />
+<h2 id="batterychambersputteringdeposition-base">BatteryChamberSputteringDeposition (base)<a class="headerlink" href="#batterychambersputteringdeposition-base" title="Permanent link">&para;</a></h2>
+<p><strong>Base class:</strong> <code>PlotSection</code>, <code>EntryData</code></p>
+<p>Shared base class for <code>PC03CathodeChamberDeposition</code> and
+<code>PC04ElectrolyteChamberDeposition</code>. All quantities, subsections, and
+normalization logic below are inherited by both.</p>
+<h3 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>recording_name</code></td>
+<td><code>str</code></td>
+<td>Recording name from the CSV header</td>
+</tr>
+<tr>
+<td><code>operator</code></td>
+<td><code>str</code></td>
+<td>Operator name from the CSV header</td>
+</tr>
+<tr>
+<td><code>start_datetime</code></td>
+<td><code>Datetime</code></td>
+<td>Recording start time</td>
+</tr>
+<tr>
+<td><code>base_pressure</code></td>
+<td><code>float</code> (Pa)</td>
+<td>Minimum ion gauge pressure recorded (auto-computed)</td>
+</tr>
+<tr>
+<td><code>deposition_time</code></td>
+<td><code>float</code> (s)</td>
+<td>Total elapsed time with the substrate shutter open (auto-computed)</td>
+</tr>
+<tr>
+<td><code>substrate_type</code></td>
+<td><code>str</code></td>
+<td>Substrate type identified by the system</td>
+</tr>
+<tr>
+<td><code>sample_name</code></td>
+<td><code>str</code></td>
+<td>Sample name extracted from the filename — see <a href="#filename-convention-automatic-sample-linking">above</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="sample-references">Sample references<a class="headerlink" href="#sample-references" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Sub-section</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>substrate</code></td>
+<td><code>INLSubstrateReference</code></td>
+<td>Single substrate reference (fallback)</td>
+</tr>
+<tr>
+<td><code>substrates</code></td>
+<td><code>INLSubstrateReference</code> (repeats)</td>
+<td>Individual substrate pieces loaded in the run; one <code>INLThinFilmStack</code> is created per entry</td>
+</tr>
+<tr>
+<td><code>samples</code></td>
+<td><code>INLSampleReference</code> (repeats)</td>
+<td>Samples linked automatically via <code>sample_name</code>, plus any additional manual references</td>
+</tr>
+</tbody>
+</table>
+<h3 id="time-series-process-data">Time-series &amp; process data<a class="headerlink" href="#time-series-process-data" title="Permanent link">&para;</a></h3>
+<p>All time-series quantities are NumPy arrays sampled at ~1 Hz and trimmed to
+the periods where at least one source was active: <code>timestamps</code>,
+<code>process_phase</code>, <code>process_time</code>, <code>substrate_shutter_open</code>,
+<code>substrate_temperature[_2]</code>, <code>substrate_temperature_setpoint</code>,
+<code>substrate_heater_current</code>, <code>substrate_rotation_speed</code>,
+<code>substrate_bias_active/voltage/current/power</code>, <code>tc1_temperature</code> … <code>tc6_temperature</code>.</p>
+<h3 id="sub-sections">Sub-sections<a class="headerlink" href="#sub-sections" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Sub-section</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>chamber_environment</code></td>
+<td><code>SputteringChamberEnvironment</code></td>
+<td>Gas flows (MFC 1–3) and pressure gauges (Capman, ion gauge, wide-range, roughing)</td>
+</tr>
+<tr>
+<td><code>sources</code></td>
+<td><code>SputteringSource</code> (repeats, 1–4)</td>
+<td>Per-source material, target, shutter, rate, thickness</td>
+</tr>
+<tr>
+<td><code>rf_power_supplies</code></td>
+<td><code>SputteringRFPowerSupply</code> (repeats, PS1/PS3/PS5)</td>
+<td>Forward/reflected power, DC bias, tuning</td>
+</tr>
+<tr>
+<td><code>dc_power_supply</code></td>
+<td><code>SputteringDCPowerSupply</code> (PS4)</td>
+<td>Pulsed DC current/voltage/power, arc/spark counts</td>
+</tr>
+<tr>
+<td><code>plot_config</code></td>
+<td><code>PlotConfig</code></td>
+<td>Controls which figures are generated</td>
+</tr>
+</tbody>
+</table>
+<h3 id="normalization">Normalization<a class="headerlink" href="#normalization" title="Permanent link">&para;</a></h3>
+<p>On normalization the entry:</p>
+<ol>
+<li>Trims inactive time steps and re-zeros the time axis.</li>
+<li>Recomputes <code>base_pressure</code> and <code>deposition_time</code>.</li>
+<li>Builds Plotly figures according to <code>plot_config</code>.</li>
+<li>Creates the deposited <code>INLThinFilm</code> entry (from active source materials)
+   and, for each entry in <code>substrates</code>, a new <code>INLThinFilmStack</code>.</li>
+<li>Resolves <code>sample_name</code> (if any) into <code>samples</code> — see
+   <a href="#filename-convention-automatic-sample-linking">filename convention</a>.</li>
+</ol>
+<h3 id="pc03cathodechamberdeposition">PC03CathodeChamberDeposition<a class="headerlink" href="#pc03cathodechamberdeposition" title="Permanent link">&para;</a></h3>
+<p><strong>Inherits:</strong> <code>BatteryChamberSputteringDeposition</code>
+<strong>Label:</strong> <code>PC03 Cathode Chamber Deposition</code></p>
+<p>Populated automatically by uploading a CSV file whose filename starts with
+<code>PC03</code>.</p>
+<h3 id="pc04electrolytechamberdeposition">PC04ElectrolyteChamberDeposition<a class="headerlink" href="#pc04electrolytechamberdeposition" title="Permanent link">&para;</a></h3>
+<p><strong>Inherits:</strong> <code>BatteryChamberSputteringDeposition</code>
+<strong>Label:</strong> <code>PC04 Electrolyte Chamber Deposition</code></p>
+<p>Populated automatically by uploading a PC04 CSV file that contains
+sputtering source columns.</p>
+<hr />
+<h2 id="pc04substrateannealing">PC04SubstrateAnnealing<a class="headerlink" href="#pc04substrateannealing" title="Permanent link">&para;</a></h2>
+<p><strong>Base class:</strong> <code>PlotSection</code>, <code>Annealing</code>
+<strong>Label:</strong> <code>PC04 Substrate Annealing</code></p>
+<p>Populated automatically when a PC04 CSV log contains only heater channels
+and no sputtering source columns. Inherits <code>duration</code>, <code>steps</code>, and <code>samples</code>
+from <code>nomad_material_processing.general.Annealing</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>recording_name</code></td>
+<td><code>str</code></td>
+<td>Recording name from the CSV header</td>
+</tr>
+<tr>
+<td><code>operator</code></td>
+<td><code>str</code></td>
+<td>Operator name from the CSV header</td>
+</tr>
+<tr>
+<td><code>start_datetime</code></td>
+<td><code>Datetime</code></td>
+<td>Recording start time</td>
+</tr>
+<tr>
+<td><code>substrate_type</code></td>
+<td><code>str</code></td>
+<td>Substrate type identified by the system</td>
+</tr>
+<tr>
+<td><code>sample_name</code></td>
+<td><code>str</code></td>
+<td>Sample name extracted from the filename — see <a href="#filename-convention-automatic-sample-linking">above</a></td>
+</tr>
+<tr>
+<td><code>peak_temperature</code></td>
+<td><code>float</code> (K)</td>
+<td>Maximum substrate heater temperature reached (auto-computed)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Sub-section</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>thin_film</code></td>
+<td><code>INLThinFilmReference</code></td>
+<td>Thin film that was annealed in this run (manual)</td>
+</tr>
+<tr>
+<td><code>thin_film_stack</code></td>
+<td><code>INLThinFilmStackReference</code></td>
+<td>Stack that was annealed in this run (manual, or auto-linked via <code>sample_name</code>)</td>
+</tr>
+<tr>
+<td><code>plot_config</code></td>
+<td><code>PlotConfig</code></td>
+<td>Controls which figures are generated (defaults to <code>Thermal Treatment</code> mode)</td>
+</tr>
+</tbody>
+</table>
+<p>Time-series quantities: <code>timestamps</code>, <code>process_phase</code>, <code>wide_range_pressure</code>,
+<code>substrate_temperature[_2]</code>, <code>substrate_temperature_setpoint</code>,
+<code>substrate_heater_current</code>, <code>tc1_temperature</code> … <code>tc6_temperature</code>.</p>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="testo.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Testo Environmental Logger" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Testo Environmental Logger
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="wet_deposition.html" class="md-footer__link md-footer__link--next" aria-label="Next: Wet Deposition" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Wet Deposition
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant"], "search": "../assets/javascripts/workers/search.c7dec7e7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.da79ceb7.min.js"></script>
+      
+        <script src="../javascript.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
