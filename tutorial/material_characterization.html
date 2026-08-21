@@ -1,0 +1,1243 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A plugin to manage the data from LaNaSC">
+      
+      
+        <meta name="author" content="Diego Garzon">
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-8.1.1">
+    
+    
+      
+        <title>Material Characterization - nomad-inl-base</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.23b6d78a.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+          
+          
+          <meta name="theme-color" content="">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,400i,700%7C&display=fallback">
+        <style>:root{--md-text-font:"Titillium Web";--md-code-font:""}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="#2a4cdf" data-md-color-accent="#008a67">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tutorial-material-characterization-workflow" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-header__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            nomad-inl-base
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Material Characterization
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-nav__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    nomad-inl-base
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tutorial.html" class="md-nav__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Material Characterization
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="material_characterization.html" class="md-nav__link md-nav__link--active">
+        Material Characterization
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lab-workflow-nomad-mapping" class="md-nav__link">
+    Lab workflow → NOMAD mapping
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-create-the-substrate-entry" class="md-nav__link">
+    Step 1 – Create the substrate entry
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-record-the-deposition" class="md-nav__link">
+    Step 2 – Record the deposition
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 2 – Record the deposition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-spin-coating-eg-for-perovskites-organic-semiconductors" class="md-nav__link">
+    Option A – Spin coating (e.g., for perovskites, organic semiconductors)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-star-rfdc-sputtering-eg-for-metaloxide-layers" class="md-nav__link">
+    Option B – STAR RF/DC sputtering (e.g., for metal/oxide layers)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-c-meteor-e-beam-evaporation-eg-for-gold-contacts-metal-seed-layers" class="md-nav__link">
+    Option C – METEOR e-beam evaporation (e.g., for gold contacts, metal seed layers)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-upload-and-link-characterization-files" class="md-nav__link">
+    Step 3 – Upload and link characterization files
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3 – Upload and link characterization files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#uv-vis-transmission" class="md-nav__link">
+    UV-Vis transmission
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xrd-diffractogram" class="md-nav__link">
+    XRD diffractogram
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sem-images" class="md-nav__link">
+    SEM images
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-inspect-the-provenance-graph" class="md-nav__link">
+    Step 4 – Inspect the provenance graph
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parser-did-not-recognize-my-file" class="md-nav__link">
+    Parser did not recognize my file
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-linked-the-wrong-sample-reference" class="md-nav__link">
+    I linked the wrong sample reference
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-thin-film-stack-was-not-auto-created" class="md-nav__link">
+    The thin-film stack was not auto-created
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next steps
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cigs_solar_cell.html" class="md-nav__link">
+        CIGSe Solar Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="bisi_solar_cell.html" class="md-nav__link">
+        BiSI Solar Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="battery_deposition_workflow.html" class="md-nav__link">
+        Battery Deposition
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How-to guides" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/install_this_plugin.html" class="md-nav__link">
+        Install this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/upload_and_organize.html" class="md-nav__link">
+        Upload and organize entries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/use_this_plugin.html" class="md-nav__link">
+        Use this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_this_plugin.html" class="md-nav__link">
+        Contribute to this plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_the_documentation.html" class="md-nav__link">
+        Contribute to the documentation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explanation/explanation.html" class="md-nav__link">
+        Explanation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/references.html" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/entities.html" class="md-nav__link">
+        Entities
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/sputtering.html" class="md-nav__link">
+        STAR Sputtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/meteor.html" class="md-nav__link">
+        METEOR E-Beam
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/testo.html" class="md-nav__link">
+        Testo Environmental Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/batteries.html" class="md-nav__link">
+        Batteries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/wet_deposition.html" class="md-nav__link">
+        Wet Deposition
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/characterization.html" class="md-nav__link">
+        Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/analysis.html" class="md-nav__link">
+        Analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lab-workflow-nomad-mapping" class="md-nav__link">
+    Lab workflow → NOMAD mapping
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-create-the-substrate-entry" class="md-nav__link">
+    Step 1 – Create the substrate entry
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-record-the-deposition" class="md-nav__link">
+    Step 2 – Record the deposition
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 2 – Record the deposition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-spin-coating-eg-for-perovskites-organic-semiconductors" class="md-nav__link">
+    Option A – Spin coating (e.g., for perovskites, organic semiconductors)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-star-rfdc-sputtering-eg-for-metaloxide-layers" class="md-nav__link">
+    Option B – STAR RF/DC sputtering (e.g., for metal/oxide layers)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-c-meteor-e-beam-evaporation-eg-for-gold-contacts-metal-seed-layers" class="md-nav__link">
+    Option C – METEOR e-beam evaporation (e.g., for gold contacts, metal seed layers)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-upload-and-link-characterization-files" class="md-nav__link">
+    Step 3 – Upload and link characterization files
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3 – Upload and link characterization files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#uv-vis-transmission" class="md-nav__link">
+    UV-Vis transmission
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xrd-diffractogram" class="md-nav__link">
+    XRD diffractogram
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sem-images" class="md-nav__link">
+    SEM images
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-inspect-the-provenance-graph" class="md-nav__link">
+    Step 4 – Inspect the provenance graph
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parser-did-not-recognize-my-file" class="md-nav__link">
+    Parser did not recognize my file
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-linked-the-wrong-sample-reference" class="md-nav__link">
+    I linked the wrong sample reference
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-thin-film-stack-was-not-auto-created" class="md-nav__link">
+    The thin-film stack was not auto-created
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next steps
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="tutorial-material-characterization-workflow">Tutorial – Material Characterization Workflow<a class="headerlink" href="#tutorial-material-characterization-workflow" title="Permanent link">&para;</a></h1>
+<p>This tutorial guides you through a typical materials characterization experiment:
+<strong>substrate preparation → thin-film deposition → structural and optical characterization</strong>.</p>
+<p>We use SLG (soda-lime glass) as the substrate, deposit a material (e.g., via sputtering),
+and then characterize it with UV-Vis, XRD, and SEM.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A running NOMAD Oasis with the <code>nomad-inl-base</code> plugin installed
+  (see <a href="../how_to/install_this_plugin.html">Install this plugin</a>)</li>
+<li>An upload in NOMAD where you can add and edit entries</li>
+<li>Sample files from your characterization instruments (<code>.asc</code> for UV-Vis,
+  <code>.xrdml</code> / <code>.rasx</code> / <code>.brml</code> / <code>.raw</code> for XRD, <code>.tif</code> for SEM images)</li>
+</ul>
+<hr />
+<h2 id="lab-workflow-nomad-mapping">Lab workflow → NOMAD mapping<a class="headerlink" href="#lab-workflow-nomad-mapping" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Lab step</th>
+<th>NOMAD entry type</th>
+<th>Created</th>
+<th>Recipe?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Clean substrate</td>
+<td><code>INLSubstrate</code></td>
+<td>Manually</td>
+<td>–</td>
+<td>Create once, reference multiple times</td>
+</tr>
+<tr>
+<td>Deposit material</td>
+<td><code>INLSpinCoating</code> <em>or</em> <code>StarRFSputtering</code> <em>or</em> other deposition</td>
+<td>Manually</td>
+<td>Optional</td>
+<td>Use <strong>Creates new thin film</strong> toggle</td>
+</tr>
+<tr>
+<td>UV-Vis measurement</td>
+<td><code>INLUVVisTransmission</code></td>
+<td>Parser (upload <code>.asc</code>)</td>
+<td>–</td>
+<td>Auto-parsed, set operator + samples ref</td>
+</tr>
+<tr>
+<td>XRD measurement</td>
+<td><code>INLXRayDiffraction</code></td>
+<td>Parser (upload <code>.xrdml</code>/<code>.rasx</code>/etc.)</td>
+<td>–</td>
+<td>Auto-parsed, set operator + samples ref</td>
+</tr>
+<tr>
+<td>SEM images</td>
+<td><code>INLSEMSession</code></td>
+<td>Parser (upload <code>.tif</code> images)</td>
+<td>–</td>
+<td>Auto-grouped, set labels on images</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="step-1-create-the-substrate-entry">Step 1 – Create the substrate entry<a class="headerlink" href="#step-1-create-the-substrate-entry" title="Permanent link">&para;</a></h2>
+<ol>
+<li>In your upload, click <strong>Create new entry</strong>.</li>
+<li>Select <strong>INL Substrate</strong> (in the <em>INL Entities</em> category).</li>
+<li>Fill in:</li>
+<li><strong>Name</strong> – e.g. <code>SLG-MS-001</code> (MS = Material Scientist, or your lab ID)</li>
+<li><strong>Material</strong> – <code>SLG</code> (default)</li>
+<li><strong>Geometry</strong> – leave empty; a 25 × 25 × 1 mm rectangle will auto-fill</li>
+<li>Click <strong>Save</strong>. The geometry auto-populates on normalization.</li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The substrate is a <strong>shared entity</strong>. Create it once, then reference it from
+every deposition and characterization entry that uses it. This keeps your
+data graph clean and searchable.</p>
+</div>
+<hr />
+<h2 id="step-2-record-the-deposition">Step 2 – Record the deposition<a class="headerlink" href="#step-2-record-the-deposition" title="Permanent link">&para;</a></h2>
+<p>The exact entry type depends on your deposition method. Here are common examples:</p>
+<h3 id="option-a-spin-coating-eg-for-perovskites-organic-semiconductors">Option A – Spin coating (e.g., for perovskites, organic semiconductors)<a class="headerlink" href="#option-a-spin-coating-eg-for-perovskites-organic-semiconductors" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Create a new entry → <strong>INL Spin Coating</strong> (in <em>INL Wet Deposition</em>).</li>
+<li>Fill in:</li>
+<li><strong>Name</strong> – e.g. <code>SC-MS-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Substrate</strong> – reference <code>SLG-MS-001</code> from Step 1</li>
+<li><strong>Solution</strong> – add <code>PrecursorSolution</code> sub-section(s) with solvent and solute</li>
+<li><strong>Steps</strong> – add <code>SpinCoatingStep</code> (speed, duration, acceleration) and optional
+     annealing step</li>
+<li>Tick <strong>Creates new thin film</strong> and save.</li>
+</ol>
+<p>After normalization, you will have created two new entries:
+- <code>SC-MS-001_thin_film</code> – the deposited layer
+- <code>SC-MS-001_thin_film_stack</code> – the substrate + film stack</p>
+<h3 id="option-b-star-rfdc-sputtering-eg-for-metaloxide-layers">Option B – STAR RF/DC sputtering (e.g., for metal/oxide layers)<a class="headerlink" href="#option-b-star-rfdc-sputtering-eg-for-metaloxide-layers" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Create a new entry → <strong>STAR RF Sputtering</strong> or <strong>STAR DC Sputtering</strong>.</li>
+<li>Fill in:</li>
+<li><strong>Name</strong> – e.g. <code>STAR-MS-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Base pressure</strong> – chamber base pressure (mbar)</li>
+<li><strong>Samples</strong> – select <code>SLG-MS-001</code></li>
+<li>Add <strong>Steps</strong>:</li>
+<li>Add one or more sputtering step(s) with power, duration, and gas flow</li>
+<li>Set <strong>Substrate set temperature</strong> and <strong>Rotation</strong> if applicable</li>
+<li>Add <strong>Sources</strong> – one per magnetron gun; reference the target material</li>
+<li>Tick <strong>Creates new thin film</strong> on the step and save.</li>
+</ol>
+<p>After normalization, the same auto-creation occurs: new film + stack entries.</p>
+<h3 id="option-c-meteor-e-beam-evaporation-eg-for-gold-contacts-metal-seed-layers">Option C – METEOR e-beam evaporation (e.g., for gold contacts, metal seed layers)<a class="headerlink" href="#option-c-meteor-e-beam-evaporation-eg-for-gold-contacts-metal-seed-layers" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Create a new entry → <strong>METEOR E-Beam Evaporation</strong>.</li>
+<li>Fill in:</li>
+<li><strong>Name</strong> – e.g. <code>METEOR-MS-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Substrate</strong> – <code>SLG-MS-001</code></li>
+<li><strong>Mask</strong> – description of any shadow mask used</li>
+<li><strong>Pockets</strong> – Set the <strong>Material</strong> field for each pocket that was active.</li>
+<li><strong>QCM</strong> – The <code>.nbl</code> parser will fill <code>thickness</code> from the log file.
+   If you have an independent thickness measurement, set <strong>Thickness override</strong>.</li>
+<li>Tick <strong>Creates new thin film</strong> and save.</li>
+</ol>
+<hr />
+<h2 id="step-3-upload-and-link-characterization-files">Step 3 – Upload and link characterization files<a class="headerlink" href="#step-3-upload-and-link-characterization-files" title="Permanent link">&para;</a></h2>
+<h3 id="uv-vis-transmission">UV-Vis transmission<a class="headerlink" href="#uv-vis-transmission" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Upload your <code>.asc</code> file from the UV-Vis instrument.</li>
+<li>NOMAD auto-detects the format and creates an <code>INLUVVisTransmission</code> entry.</li>
+<li>Open the entry and:</li>
+<li>Set <strong>Operator</strong> to your name</li>
+<li>Add a <strong>Samples</strong> reference pointing to the <code>&lt;deposition_name&gt;_thin_film_stack</code>
+     entry from Step 2</li>
+<li>Save. The measurement is now linked to your sample.</li>
+</ol>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>If the <code>.asc</code> file parsing fails or creates no entry, check the file format
+matches the expected columns. See <a href="../reference/characterization.html">Characterization Reference</a>
+for supported formats.</p>
+</div>
+<h3 id="xrd-diffractogram">XRD diffractogram<a class="headerlink" href="#xrd-diffractogram" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Upload your XRD file (<code>.xrdml</code>, <code>.rasx</code>, <code>.brml</code>, or <code>.raw</code>).</li>
+<li>NOMAD creates an <code>INLXRayDiffraction</code> entry automatically.</li>
+<li>Open the entry and:</li>
+<li>Set <strong>Operator</strong></li>
+<li>Add a <strong>Samples</strong> reference to the thin-film stack</li>
+<li>Save. NOMAD's graph view will now show: <em>Substrate → ThinFilm → Stack → Deposition → XRD</em>.</li>
+</ol>
+<h3 id="sem-images">SEM images<a class="headerlink" href="#sem-images" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Upload all your SEM <code>.tif</code> files in one batch.</li>
+<li>If your filenames follow the FEI pattern <code>YYMMDD - &lt;name&gt;.tif</code> and related images
+     (<code>YYMMDD - &lt;name&gt;_001.tif</code>, <code>_002.tif</code>, …), the parser groups them automatically
+     into one <code>INLSEMSession</code> entry.</li>
+<li>Otherwise, upload any <code>.tif</code> files and the parser creates an entry per image or
+     session depending on metadata.</li>
+<li>Open the <code>INLSEMSession</code> entry and:</li>
+<li>Set <strong>Operator</strong></li>
+<li>Add a <strong>Samples</strong> reference</li>
+<li>(Optional) Set <strong>Label</strong> on individual <code>INLSEMImage</code> sub-sections to annotate
+     regions of interest</li>
+<li>Save.</li>
+</ol>
+<hr />
+<h2 id="step-4-inspect-the-provenance-graph">Step 4 – Inspect the provenance graph<a class="headerlink" href="#step-4-inspect-the-provenance-graph" title="Permanent link">&para;</a></h2>
+<p>Once all entries are saved and linked, use NOMAD's <strong>Graph</strong> view to see the full chain:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Substrate (SLG-MS-001)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    ↓
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Deposition (SC-MS-001 or STAR-MS-001 or METEOR-MS-001)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    ↓
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>Thin Film (auto-created)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    ↓
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Thin Film Stack (auto-created)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    ↓
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>Characterization measurements (UV-Vis, XRD, SEM)
+</code></pre></div>
+<p>Verify that:
+- All characterization entries have a <strong>Samples</strong> reference pointing to the stack
+- The stack lists the substrate and deposited layer(s)
+- The deposition entry shows the operator, conditions, and substrate reference</p>
+<hr />
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="parser-did-not-recognize-my-file">Parser did not recognize my file<a class="headerlink" href="#parser-did-not-recognize-my-file" title="Permanent link">&para;</a></h3>
+<p><strong>Issue:</strong> I uploaded a <code>.asc</code> or <code>.xrdml</code> file but no entry was created.</p>
+<p><strong>Solution:</strong>
+1. Verify the file format matches the expected standard for your instrument.
+2. Check the upload's <strong>Parser Issues</strong> or <strong>Errors</strong> tab for diagnostic messages.
+3. If the file is in a vendor-specific format not yet supported, ask your plugin maintainers to extend the parsers.</p>
+<h3 id="i-linked-the-wrong-sample-reference">I linked the wrong sample reference<a class="headerlink" href="#i-linked-the-wrong-sample-reference" title="Permanent link">&para;</a></h3>
+<p><strong>Issue:</strong> I set the <strong>Samples</strong> reference on a measurement to the wrong thin-film stack.</p>
+<p><strong>Solution:</strong>
+1. Open the measurement entry.
+2. Edit the <strong>Samples</strong> field to remove the old reference.
+3. Add the correct stack reference.
+4. Save and re-normalize if needed.</p>
+<h3 id="the-thin-film-stack-was-not-auto-created">The thin-film stack was not auto-created<a class="headerlink" href="#the-thin-film-stack-was-not-auto-created" title="Permanent link">&para;</a></h3>
+<p><strong>Issue:</strong> I ticked <strong>Creates new thin film</strong> but no stack entry appeared.</p>
+<p><strong>Solution:</strong>
+1. Verify that you set either a <strong>Substrate</strong> reference (to create a new stack)
+   or a <strong>Sample</strong> reference (to append a layer to an existing stack).
+2. Save the deposition entry and wait for normalization to complete.
+3. Check the upload's <strong>Entries</strong> list for entries named <code>&lt;deposition_name&gt;_thin_film</code>
+   and <code>&lt;deposition_name&gt;_thin_film_stack</code>.</p>
+<hr />
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../how_to/use_this_plugin.html#using-recipes">How to use recipes</a> to standardize
+  your deposition conditions</li>
+<li><a href="../reference/wet_deposition.html">Reference – Wet Deposition</a> for all spin-coating options</li>
+<li><a href="../reference/sputtering.html">Reference – STAR Sputtering</a> for PVD details</li>
+<li><a href="../reference/meteor.html">Reference – METEOR E-Beam</a> for e-beam evaporation</li>
+<li><a href="../reference/characterization.html">Reference – Characterization</a> for all supported
+  measurement types and file formats</li>
+</ul>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="tutorial.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Getting Started" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Getting Started
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="cigs_solar_cell.html" class="md-footer__link md-footer__link--next" aria-label="Next: CIGSe Solar Cell" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              CIGSe Solar Cell
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant"], "search": "../assets/javascripts/workers/search.c7dec7e7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.da79ceb7.min.js"></script>
+      
+        <script src="../javascript.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
