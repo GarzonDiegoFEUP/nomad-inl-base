@@ -729,6 +729,18 @@ class INLThinFilmDeposition(SampleDeposition, EntryData):
         ),
     )
 
+    def _get_target_entries(self) -> list:
+        """Resolve target entries for deposition, preferring samples list over legacy sample field.
+
+        Returns:
+            list: Either the samples list if populated, or a list containing the single legacy sample.
+        """
+        if self.samples:
+            return list(self.samples)
+        elif self.sample is not None:
+            return [self.sample]
+        return []
+
     def _update_sample(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         """Create a new ThinFilm and register it with the sample stack.
 
