@@ -17,6 +17,8 @@ def _patch_transmission_reader():
     
     This ALWAYS converts commas to periods for European format files.
     Safe because European .asc files ONLY use comma for decimal separation.
+    
+    Also sanitizes detector module field to a standard value to avoid parsing issues.
     """
     patch_log = []
     try:
@@ -30,26 +32,37 @@ def _patch_transmission_reader():
         
         def patched_read_perkin(filename, logger=None):
             """
-            Patched read_perkin_elmer_asc that ALWAYS converts comma decimals.
+            Patched read_perkin_elmer_asc that:
+            1. Converts comma decimals to periods
+            2. Sanitizes detector module field to standard value
             
             For European format .asc files, commas are ONLY used as decimal separators.
-            This converts all commas to periods BEFORE parsing, ensuring the parser
-            always sees standard decimal point notation.
+            The detector field often contains commas that confuse the parser.
             """
             # Read the original file
             with open(filename, 'r', encoding='utf-8') as f:
                 content = f.read()
             
             # ALWAYS convert ALL commas to periods for European format handling
-            # This is safe because commas in European .asc files are ONLY decimal separators
             content_cleaned = content.replace(',', '.')
+            
+            # Also sanitize the detector module field
+            # Replace complex detector descriptions with a standard integrated sphere value
+            # Pattern: any line starting with "Detector Module" up to end of line
+            import re as regex_module
+            content_cleaned = regex_module.sub(
+                r'^Detector Module\s*:\s*.+$',
+                'Detector Module: Integrated Sphere',
+                content_cleaned,
+                flags=regex_module.MULTILINE
+            )
             
             # Only write temp file if content actually changed
             if content_cleaned == content:
-                # No commas found, use original file
+                # No changes needed, use original file
                 return original_read_perkin(filename, logger)
             
-            # Commas were found and converted - parse the cleaned version
+            # Changes were made - parse the cleaned version
             import tempfile
             import os
             
@@ -63,7 +76,7 @@ def _patch_transmission_reader():
                 result = original_read_perkin(tmp_name, logger)
                 if logger:
                     logger.info(
-                        f'Successfully parsed {filename} after converting commas to periods'
+                        f'Successfully parsed {filename} after converting commas and sanitizing detector module'
                     )
                 return result
             finally:
