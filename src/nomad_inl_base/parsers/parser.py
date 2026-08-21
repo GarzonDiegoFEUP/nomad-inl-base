@@ -8,8 +8,10 @@ if TYPE_CHECKING:
         EntryArchive,
     )
 
+import os
 import re
 import struct
+import tempfile
 
 import numpy as np
 import pandas as pd
@@ -2810,3 +2812,70 @@ class TestoVI2Parser(MatchingParser):
             logger=logger,
         )
         archive.metadata.entry_name = data_file
+
+
+class INLUVVisTransmissionParser(MatchingParser):
+    """Parser for PerkinElmer UV-Vis .asc files with European decimal separators.
+
+    This parser wraps the standard nomad_measurements transmission parser but
+    adds preprocessing to handle European decimal separators (commas) that appear
+    in .asc files from European locales. The preprocessing replaces commas with
+    periods before passing the file to the standard transmission parser.
+    """
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger=None) -> None:
+        from fairmat_readers_transmission.readers import read_file
+        from nomad_measurements.transmission.schema import (
+            ELNUVVisNirTransmission,
+            RawFileTransmissionData,
+        )
+        from nomad_measurements.utils import (
+            create_archive as create_measurement_archive,
+        )
+
+        # Read the .asc file and preprocess to handle European decimal separators
+        with open(mainfile, encoding='utf-8') as f:
+            content = f.read()
+
+        # Replace comma decimal separators with periods
+        # Pattern: comma surrounded by digits (e.g., "123,456" -> "123.456")
+        processed_content = re.sub(r'(\d),(\d)', r'\1.\2', content)
+
+        # Write preprocessed content to a temporary file
+        with tempfile.NamedTemporaryFile(
+            mode='w', suffix='.asc', delete=False, encoding='utf-8'
+        ) as temp_file:
+            temp_file.write(processed_content)
+            temp_filename = temp_file.name
+
+        try:
+            # Use the fairmat_readers_transmission parser to read the preprocessed file
+            transmission_data = read_file(temp_filename, logger)
+
+            data_file = mainfile.rsplit('/', maxsplit=1)[-1]
+            if hasattr(archive, 'm_context') and hasattr(archive.m_context, 'raw_path'):
+                if '/raw/' in mainfile:
+                    data_file = mainfile.split('/raw/', 1)[1]
+
+            entry = ELNUVVisNirTransmission.m_from_dict(
+                ELNUVVisNirTransmission.m_def.a_template
+            )
+            entry.data_file = data_file
+
+            # Update entry with parsed transmission data
+            if transmission_data:
+                entry.m_update_from_dict(transmission_data)
+
+            file_name = f'{".".join(data_file.split(".")[:-1])}.archive.json'
+            archive.data = RawFileTransmissionData(
+                measurement=create_measurement_archive(entry, archive, file_name)
+            )
+            archive.metadata.entry_name = f'{data_file} data file'
+
+        finally:
+            # Clean up temporary file
+            try:
+                os.unlink(temp_filename)
+            except Exception as e:
+                if logger:
+                    logger.warning(f'Failed to clean up temporary file: {e}')

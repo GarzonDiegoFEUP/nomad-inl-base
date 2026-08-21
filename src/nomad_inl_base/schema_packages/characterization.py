@@ -42,8 +42,8 @@ def _coerce_string_floats(dct: dict, handle_comma_decimals: bool = True) -> dict
     (comma) to period before conversion, allowing files with locale-specific
     decimal formatting (e.g., "3,14" → "3.14") to work correctly.
     
-    Only top-level (non-nested) values are touched here; subsections are handled
-    by their own m_update_from_dict overrides when NOMAD recurses into them.
+    This function recursively processes nested dictionaries and lists to ensure
+    comma decimals in nested structures are also converted.
     """
     out = {}
     for key, val in dct.items():
@@ -62,6 +62,19 @@ def _coerce_string_floats(dct: dict, handle_comma_decimals: bool = True) -> dict
                     out[key] = float(val)
             except (ValueError, TypeError):
                 out[key] = val
+        elif isinstance(val, dict):
+            # Recursively process nested dictionaries
+            out[key] = _coerce_string_floats(val, handle_comma_decimals)
+        elif isinstance(val, list):
+            # Recursively process lists (which may contain dicts or strings)
+            out[key] = [
+                _coerce_string_floats(item, handle_comma_decimals) if isinstance(item, dict)
+                else (
+                    float(item.strip().replace(',', '.')) if handle_comma_decimals and isinstance(item, str)
+                    else (float(item) if isinstance(item, str) else item)
+                )
+                for item in val
+            ]
         else:
             out[key] = val
     return out

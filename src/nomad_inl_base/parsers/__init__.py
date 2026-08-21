@@ -242,3 +242,22 @@ testo_vi2_parser_entry_point = TestoVI2ParserEntryPoint(
     ),
     mainfile_name_re=r'(?i).*\.vi2$',
 )
+
+
+class INLUVVisTransmissionParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import INLUVVisTransmissionParser
+
+        return INLUVVisTransmissionParser(**self.dict())
+
+
+inl_uvvis_transmission_parser_entry_point = INLUVVisTransmissionParserEntryPoint(
+    name='INLUVVisTransmissionParser',
+    description=(
+        'Parser for PerkinElmer UV-Vis .asc files with European decimal separators. '
+        'Handles files using commas as decimal separators (e.g., "79,803313") '
+        'in addition to the standard period format.'
+    ),
+    mainfile_name_re=r'(?i).*\.asc$',
+    mainfile_mime_re=r'text/plain',
+)
