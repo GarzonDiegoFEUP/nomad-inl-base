@@ -32,17 +32,24 @@ def _patch_transmission_reader():
         def patched_read_perkin(filename, logger=None):
             """
             Patched read_perkin_elmer_asc that preprocesses European decimal separators.
+            
+            Uses a two-stage approach:
+            1. Try parsing original file
+            2. If it fails, convert ALL commas in numeric contexts to periods and retry
             """
-            # Read the file
-            with open(filename, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            # Preprocess: replace comma decimal separators with periods
-            # Pattern: digit, digit (e.g., "123,456" -> "123.456")
-            content_cleaned = re.sub(r'(\d),(\d)', r'\1.\2', content)
-            
-            # If content changed, write to temp and parse temp file
-            if content_cleaned != content:
+            try:
+                # First, try to read the original file
+                return original_read_perkin(filename, logger)
+            except (AssertionError, ValueError, TypeError) as e:
+                # If parsing fails, it might be due to European decimals
+                # Read the file and do more aggressive comma conversion
+                with open(filename, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # More aggressive: convert ALL commas to periods, then retry
+                # This is safe for European format files where comma is ALWAYS decimal separator
+                content_cleaned = content.replace(',', '.')
+                
                 import tempfile
                 import os
                 with tempfile.NamedTemporaryFile(
@@ -53,15 +60,16 @@ def _patch_transmission_reader():
                 
                 try:
                     result = original_read_perkin(tmp_name, logger)
+                    if logger:
+                        logger.info(
+                            f'Successfully parsed {filename} after converting commas to periods'
+                        )
                     return result
                 finally:
                     try:
                         os.unlink(tmp_name)
                     except Exception:
                         pass
-            else:
-                # No commas found, use original file
-                return original_read_perkin(filename, logger)
         
         fairmat_readers_transmission.read_perkin_elmer_asc = patched_read_perkin
         patch_log.append('Successfully patched fairmat_readers_transmission.read_perkin_elmer_asc')
