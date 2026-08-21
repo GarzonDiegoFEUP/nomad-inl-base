@@ -1,14 +1,17 @@
-# Tutorial
+# Tutorial – Getting Started
 
-This tutorial guides you through a complete thin-film experiment using the
-`nomad-inl-base` plugin: creating shared entity entries, running a spin-coating
-deposition, and recording an XRD measurement – all linked together.
+This tutorial walks you through the essential workflow for using the `nomad-inl-base` plugin:
+**creating shared entities, recording a deposition, uploading characterization data, and linking everything together**.
+
+We use a simple spin-coating example on a glass substrate with an XRD measurement, so you can learn the core concepts
+before exploring more complex workflows in the other tutorials.
 
 ## Prerequisites
 
 - A running NOMAD Oasis with this plugin installed (see
   [Install this plugin](../how_to/install_this_plugin.md))
-- An upload created in NOMAD where you can add new entries
+- An upload created in NOMAD where you can add and edit entries
+- (Optional) An XRD data file (`.xrdml`, `.rasx`, `.brml`, or `.raw`) to upload
 
 ---
 

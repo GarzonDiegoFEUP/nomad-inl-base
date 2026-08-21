@@ -7,9 +7,14 @@ edit_uri: ""
 
 nav:
   - Home: index.md
-  - Tutorial: tutorial/tutorial.md
+  - Tutorials:
+      - Getting Started: tutorial/tutorial.md
+      - Material Characterization: tutorial/material_characterization.md
+      - CIGSe Solar Cell: tutorial/cigs_solar_cell.md
+      - BiSI Solar Cell: tutorial/bisi_solar_cell.md
   - How-to guides:
       - Install this Plugin: how_to/install_this_plugin.md
+      - Upload and organize entries: how_to/upload_and_organize.md
       - Use this Plugin: how_to/use_this_plugin.md
       - Contribute to this plugin: how_to/contribute_to_this_plugin.md
       - Contribute to the documentation: how_to/contribute_to_the_documentation.md

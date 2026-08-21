@@ -16,13 +16,14 @@ It provides ELN (Electronic Lab Notebook) schemas and automatic normalization ro
 <div markdown="block" class="home-grid">
 <div markdown="block">
 
-### Tutorial
+### Tutorials
 
-New to the plugin? The tutorial walks you through a complete experiment:
-creating a substrate, running a spin-coating deposition, and recording an
-XRD measurement – all linked together through shared entity references.
+New to the plugin? Start with our tutorials for common lab workflows:
 
-- [Start the tutorial](tutorial/tutorial.md)
+- [Getting started](tutorial/tutorial.md) – Basic concepts: create substrate, deposit, measure, link
+- [Material characterization](tutorial/material_characterization.md) – SLG substrate with spin coating or sputtering, then UV-Vis, XRD, SEM
+- [CIGSe solar cell](tutorial/cigs_solar_cell.md) – Multi-step PVD/CBD device: Mo → In → CuGa+Se → selenization → CdS → TCO → measurements
+- [BiSI solar cell](tutorial/bisi_solar_cell.md) – Spin-coating workflow: FTO → SnO₂ → BiSI → PTAA → Au contact
 
 </div>
 <div markdown="block">
@@ -32,6 +33,7 @@ XRD measurement – all linked together through shared entity references.
 Practical step-by-step instructions for common tasks:
 
 - [Install this plugin](how_to/install_this_plugin.md)
+- [Upload and organize entries](how_to/upload_and_organize.md)
 - [Use this plugin](how_to/use_this_plugin.md)
 - [Contribute to this plugin](how_to/contribute_to_this_plugin.md)
 - [Contribute to the documentation](how_to/contribute_to_the_documentation.md)
