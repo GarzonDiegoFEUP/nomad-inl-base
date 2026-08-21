@@ -24,6 +24,7 @@ New to the plugin? Start with our tutorials for common lab workflows:
 - [Material characterization](tutorial/material_characterization.md) – SLG substrate with spin coating or sputtering, then UV-Vis, XRD, SEM
 - [CIGSe solar cell](tutorial/cigs_solar_cell.md) – Multi-step PVD/CBD device: Mo → In → CuGa+Se → selenization → CdS → TCO → measurements
 - [BiSI solar cell](tutorial/bisi_solar_cell.md) – Spin-coating workflow: FTO → SnO₂ → BiSI → PTAA → Au contact
+- [Battery deposition](tutorial/battery_deposition_workflow.md) – PC03/PC04 chamber workflows with automatic sample linking via filename
 
 </div>
 <div markdown="block">

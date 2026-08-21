@@ -12,6 +12,7 @@ nav:
       - Material Characterization: tutorial/material_characterization.md
       - CIGSe Solar Cell: tutorial/cigs_solar_cell.md
       - BiSI Solar Cell: tutorial/bisi_solar_cell.md
+      - Battery Deposition: tutorial/battery_deposition_workflow.md
   - How-to guides:
       - Install this Plugin: how_to/install_this_plugin.md
       - Upload and organize entries: how_to/upload_and_organize.md
