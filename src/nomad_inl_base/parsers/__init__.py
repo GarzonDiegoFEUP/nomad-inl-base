@@ -260,5 +260,5 @@ inl_uvvis_transmission_parser_entry_point = INLUVVisTransmissionParserEntryPoint
     ),
     mainfile_name_re=r'(?i).*\.asc$',
     mainfile_mime_re=r'text/plain',
-    mainfile_contents_re=r'PE\s+UV',
+    mainfile_contents_re=r'PE\s+UV\s+SUBTECH\s+SPECTRUM\s+ASCII',
 )
