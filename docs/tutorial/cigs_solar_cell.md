@@ -22,7 +22,7 @@ the final device with standard solar-cell measurements.
 | Deposit Mo (cathode) | `StarDCSputtering` | Manually | ✓ |
 | Deposit In (METEOR) | `METEORDeposition` | Manually | – |
 | Deposit CuGa (STAR) | `STARDCReactiveSputtering` | Manually | ✓ |
-| Selenize (STAR) | `STARSelenizationAnnealing` | Manually | ✓ |
+| Selenize (STAR or tube furnace) | `STARSelenizationAnnealing` or `INLTubeFurnaceAnnealing` | Manually | ✓ |
 | Deposit CdS (CBD) | `INLChemicalBathDeposition` | Manually | ✓ |
 | Deposit iZnO + ZnO:Al (STAR RF) | `StarRFSputtering` | Manually | ✓ |
 | EQE measurement | `INLEQE` | Parser (`.txt`) | – |
@@ -116,9 +116,11 @@ After normalization:
 
 ---
 
-## Step 4 – Selenization annealing (STAR)
+## Step 4 – Selenization annealing (STAR or tube furnace)
 
-Post-deposition annealing in a selenium atmosphere to improve absorber quality.
+Post-deposition annealing in a selenium atmosphere to improve absorber quality. Selenization can be done in two ways:
+
+### Option A: STAR Selenization Annealing (in-situ with selenium cell)
 
 1. Create **STAR Selenization Annealing** entry:
    - **Name** – e.g. `Selenize-CIGS-001`
@@ -137,6 +139,27 @@ Post-deposition annealing in a selenium atmosphere to improve absorber quality.
     Unlike deposition, selenization annealing may not create a new film entry
     if it is considered part of the absorber processing rather than a distinct layer.
     Consult your lab's conventions.
+
+### Option B: Tube Furnace Annealing (separate selenization step)
+
+If your lab uses a tube furnace for selenization with external selenium source or Se powder:
+
+1. Create **INL Tube Furnace Annealing** entry:
+   - **Name** – e.g. `TubeFurnace-Selenize-CIGS-001`
+   - **Operator** – your name
+   - **Samples** – reference `CuGa-Se-CIGS-001_thin_film_stack`
+2. Add one or more **Annealing Step** sub-sections, each with:
+   - **Start time** and **Duration** (min)
+   - **Temperature** profile (ramp rate and peak temperature, typically 400–550 °C)
+   - **Atmosphere** – e.g. "Selenium vapor" or "Ar + Se"
+3. **Notes** – document the selenium source (e.g. "Se powder in graphite boat", "Se evaporation setup")
+4. Save.
+
+!!! tip
+    **Choosing between STAR and tube furnace:**
+    - Use **STAR** if you have pulsed selenium injection in the chamber
+    - Use **Tube Furnace** if you perform selenization in a separate vacuum or controlled-atmosphere anneal step
+    - Both approaches produce high-quality CIGS absorbers; the choice depends on your equipment and recipes
 
 ---
 
@@ -236,7 +259,7 @@ In (seed layer)
     ↓
 CuGa+Se (absorber)
     ↓
-Selenization (annealing, if tracked)
+Selenization: STAR or Tube Furnace (annealing)
     ↓
 CdS (buffer)
     ↓
