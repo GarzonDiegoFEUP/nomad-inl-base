@@ -12,7 +12,7 @@ import re
 
 def _patch_transmission_reader():
     """
-    Patch fairmat_readers_transmission.readers.read_file() to preprocess
+    Patch fairmat_readers_transmission.read_perkin_elmer_asc() to preprocess
     European decimal separators BEFORE parsing.
     
     This is more reliable than schema-level patching because it handles the
@@ -23,15 +23,15 @@ def _patch_transmission_reader():
     try:
         patch_log.append('Starting patch_transmission_reader...')
         
-        from fairmat_readers_transmission import readers
-        patch_log.append('Successfully imported fairmat_readers_transmission.readers')
+        import fairmat_readers_transmission
+        patch_log.append('Successfully imported fairmat_readers_transmission')
         
-        original_read_file = readers.read_file
-        patch_log.append(f'Original read_file: {original_read_file}')
+        original_read_perkin = fairmat_readers_transmission.read_perkin_elmer_asc
+        patch_log.append(f'Original read_perkin_elmer_asc: {original_read_perkin}')
         
-        def patched_read_file(filename, logger=None):
+        def patched_read_perkin(filename, logger=None):
             """
-            Patched read_file that preprocesses European decimal separators.
+            Patched read_perkin_elmer_asc that preprocesses European decimal separators.
             """
             # Read the file
             with open(filename, 'r', encoding='utf-8') as f:
@@ -44,6 +44,7 @@ def _patch_transmission_reader():
             # If content changed, write to temp and parse temp file
             if content_cleaned != content:
                 import tempfile
+                import os
                 with tempfile.NamedTemporaryFile(
                     mode='w', suffix='.asc', delete=False, encoding='utf-8'
                 ) as tmp:
@@ -51,20 +52,19 @@ def _patch_transmission_reader():
                     tmp_name = tmp.name
                 
                 try:
-                    result = original_read_file(tmp_name, logger)
+                    result = original_read_perkin(tmp_name, logger)
                     return result
                 finally:
                     try:
-                        import os
                         os.unlink(tmp_name)
                     except Exception:
                         pass
             else:
                 # No commas found, use original file
-                return original_read_file(filename, logger)
+                return original_read_perkin(filename, logger)
         
-        readers.read_file = patched_read_file
-        patch_log.append('Successfully patched fairmat_readers_transmission.readers.read_file')
+        fairmat_readers_transmission.read_perkin_elmer_asc = patched_read_perkin
+        patch_log.append('Successfully patched fairmat_readers_transmission.read_perkin_elmer_asc')
         
         print(
             f'[nomad-inl-base] Transmission reader patch applied: {" | ".join(patch_log)}',
