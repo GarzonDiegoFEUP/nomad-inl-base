@@ -1,92 +1,87 @@
 """
 nomad-inl-base: INL customizations and extensions for NOMAD.
 
-This module patches nomad_measurements schemas to handle European decimal separators
-(commas) transparently, ensuring compatibility with localized instrument output files.
+This module patches nomad_measurements and related parsers to handle European
+decimal separators (commas) transparently, ensuring compatibility with localized
+instrument output files.
 """
 
 import sys
+import re
 
 
-def _coerce_comma_decimals_inline(dct):
-    """Inline coercion function to avoid circular imports.
-    
-    Converts comma decimal separators to periods recursively throughout a dict.
+def _patch_transmission_reader():
     """
-    def _convert_value(val):
-        if isinstance(val, str):
-            try:
-                val_normalized = val.strip()
-                if ',' in val_normalized:
-                    val_normalized = val_normalized.replace(',', '.')
-                return float(val_normalized)
-            except (ValueError, TypeError):
-                return val
-        elif isinstance(val, dict):
-            return _coerce_comma_decimals_inline(val)
-        else:
-            return val
-
-    out = {}
-    for key, val in dct.items():
-        if isinstance(val, list):
-            out[key] = [_convert_value(item) for item in val]
-        elif isinstance(val, dict):
-            out[key] = _coerce_comma_decimals_inline(val)
-        else:
-            out[key] = _convert_value(val)
-    return out
-
-
-def _patch_transmission_schema():
-    """
-    Monkey-patch nomad_measurements.transmission.schema.ELNUVVisNirTransmission
-    to handle European decimal separators (commas).
+    Patch fairmat_readers_transmission.readers.read_file() to preprocess
+    European decimal separators BEFORE parsing.
     
-    This ensures that regardless of which parser processes the file, the schema
-    will correctly convert comma-separated decimals (e.g., "79,803") to floats.
+    This is more reliable than schema-level patching because it handles the
+    conversion at the file level, ensuring ALL downstream parsers/schemas
+    receive correctly formatted data.
     """
     patch_log = []
     try:
-        patch_log.append('Starting patch_transmission_schema...')
+        patch_log.append('Starting patch_transmission_reader...')
         
-        from nomad_measurements.transmission.schema import ELNUVVisNirTransmission
-        patch_log.append('Successfully imported ELNUVVisNirTransmission')
+        from fairmat_readers_transmission import readers
+        patch_log.append('Successfully imported fairmat_readers_transmission.readers')
         
-        # Store the original method
-        original_update = ELNUVVisNirTransmission.m_update_from_dict
-        patch_log.append(f'Original m_update_from_dict: {original_update}')
+        original_read_file = readers.read_file
+        patch_log.append(f'Original read_file: {original_read_file}')
         
-        def patched_update(self, dct, **kwargs):
+        def patched_read_file(filename, logger=None):
             """
-            Patched m_update_from_dict that preprocesses comma decimals.
+            Patched read_file that preprocesses European decimal separators.
             """
-            # Preprocess the dictionary to convert comma decimals to periods
-            dct_cleaned = _coerce_comma_decimals_inline(dct)
-            # Call the original update with cleaned data
-            return original_update(self, dct_cleaned, **kwargs)
+            # Read the file
+            with open(filename, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Preprocess: replace comma decimal separators with periods
+            # Pattern: digit, digit (e.g., "123,456" -> "123.456")
+            content_cleaned = re.sub(r'(\d),(\d)', r'\1.\2', content)
+            
+            # If content changed, write to temp and parse temp file
+            if content_cleaned != content:
+                import tempfile
+                with tempfile.NamedTemporaryFile(
+                    mode='w', suffix='.asc', delete=False, encoding='utf-8'
+                ) as tmp:
+                    tmp.write(content_cleaned)
+                    tmp_name = tmp.name
+                
+                try:
+                    result = original_read_file(tmp_name, logger)
+                    return result
+                finally:
+                    try:
+                        import os
+                        os.unlink(tmp_name)
+                    except Exception:
+                        pass
+            else:
+                # No commas found, use original file
+                return original_read_file(filename, logger)
         
-        # Replace the method
-        ELNUVVisNirTransmission.m_update_from_dict = patched_update
-        patch_log.append('Successfully patched ELNUVVisNirTransmission.m_update_from_dict')
+        readers.read_file = patched_read_file
+        patch_log.append('Successfully patched fairmat_readers_transmission.readers.read_file')
         
-        # Print patch log to stderr so we can see it in logs
         print(
-            f'[nomad-inl-base] Transmission schema patch applied: {" | ".join(patch_log)}',
+            f'[nomad-inl-base] Transmission reader patch applied: {" | ".join(patch_log)}',
             file=sys.stderr
         )
         
     except ImportError as e:
         print(
-            f'[nomad-inl-base] Skipping transmission patch (nomad_measurements not available): {e}',
+            f'[nomad-inl-base] Skipping reader patch (fairmat_readers_transmission not available): {e}',
             file=sys.stderr
         )
     except Exception as e:
         print(
-            f'[nomad-inl-base] ERROR applying transmission patch: {e}',
+            f'[nomad-inl-base] ERROR applying reader patch: {e}',
             file=sys.stderr
         )
 
 
-# Apply the patch when the module is imported
-_patch_transmission_schema()
+# Apply patches when the module is imported
+_patch_transmission_reader()
