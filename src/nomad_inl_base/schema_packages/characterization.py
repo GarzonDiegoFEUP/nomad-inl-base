@@ -45,38 +45,32 @@ def _coerce_string_floats(dct: dict, handle_comma_decimals: bool = True) -> dict
     This function recursively processes nested dictionaries and lists to ensure
     comma decimals in nested structures are also converted.
     """
-    out = {}
-    for key, val in dct.items():
+    def _convert_value(val):
+        """Helper to convert individual values (scalar, in list, etc)."""
         if isinstance(val, str):
             try:
-                # If handle_comma_decimals is True, replace European commas with periods
-                if handle_comma_decimals:
-                    # Only replace comma if it looks like a decimal separator
-                    # (i.e., surrounded by digits or in scientific notation context)
-                    val_normalized = val.strip()
-                    if ',' in val_normalized:
-                        # Replace comma with period for European decimal format
-                        val_normalized = val_normalized.replace(',', '.')
-                    out[key] = float(val_normalized)
-                else:
-                    out[key] = float(val)
+                val_normalized = val.strip()
+                if handle_comma_decimals and ',' in val_normalized:
+                    val_normalized = val_normalized.replace(',', '.')
+                return float(val_normalized)
             except (ValueError, TypeError):
-                out[key] = val
+                return val
+        elif isinstance(val, dict):
+            return _coerce_string_floats(val, handle_comma_decimals)
+        else:
+            return val
+
+    out = {}
+    for key, val in dct.items():
+        if isinstance(val, list):
+            # Recursively process lists (which may contain dicts or strings)
+            out[key] = [_convert_value(item) for item in val]
         elif isinstance(val, dict):
             # Recursively process nested dictionaries
             out[key] = _coerce_string_floats(val, handle_comma_decimals)
-        elif isinstance(val, list):
-            # Recursively process lists (which may contain dicts or strings)
-            out[key] = [
-                _coerce_string_floats(item, handle_comma_decimals) if isinstance(item, dict)
-                else (
-                    float(item.strip().replace(',', '.')) if handle_comma_decimals and isinstance(item, str)
-                    else (float(item) if isinstance(item, str) else item)
-                )
-                for item in val
-            ]
         else:
-            out[key] = val
+            # Handle scalar values (strings, numbers, etc)
+            out[key] = _convert_value(val)
     return out
 
 
