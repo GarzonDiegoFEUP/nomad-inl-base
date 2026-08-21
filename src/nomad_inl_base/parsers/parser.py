@@ -1504,6 +1504,7 @@ class SolarCellIVParser(MatchingParser):
             raw_name=data_file + '_raw',
             raw_ref=get_hash_ref(archive.m_context.upload_id, data_file),
             logger=logger,
+            guard=True,
         )
         archive.metadata.entry_name = sample_prefix
 
