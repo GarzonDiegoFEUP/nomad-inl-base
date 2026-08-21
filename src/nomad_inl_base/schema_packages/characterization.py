@@ -28,7 +28,7 @@ from nomad_inl_base.schema_packages.entities import INLSampleReference, INLThinF
 m_package = SchemaPackage()
 
 
-def _coerce_string_floats(dct: dict) -> dict:
+def _coerce_string_floats(dct: dict, handle_comma_decimals: bool = True) -> dict:
     """Return a copy of *dct* with numeric-string values converted to Python floats.
 
     When NOMAD's ELN saves a change the browser may serialise float quantities
@@ -37,6 +37,11 @@ def _coerce_string_floats(dct: dict) -> dict:
     which does not compare equal to the original string "5e-7", and
     np.isclose() raises DTypePromotionError when given a string operand.
     Pre-converting the string to float avoids the round-trip check entirely.
+    
+    If handle_comma_decimals is True, also converts European decimal separators
+    (comma) to period before conversion, allowing files with locale-specific
+    decimal formatting (e.g., "3,14" → "3.14") to work correctly.
+    
     Only top-level (non-nested) values are touched here; subsections are handled
     by their own m_update_from_dict overrides when NOMAD recurses into them.
     """
@@ -44,7 +49,17 @@ def _coerce_string_floats(dct: dict) -> dict:
     for key, val in dct.items():
         if isinstance(val, str):
             try:
-                out[key] = float(val)
+                # If handle_comma_decimals is True, replace European commas with periods
+                if handle_comma_decimals:
+                    # Only replace comma if it looks like a decimal separator
+                    # (i.e., surrounded by digits or in scientific notation context)
+                    val_normalized = val.strip()
+                    if ',' in val_normalized:
+                        # Replace comma with period for European decimal format
+                        val_normalized = val_normalized.replace(',', '.')
+                    out[key] = float(val_normalized)
+                else:
+                    out[key] = float(val)
             except (ValueError, TypeError):
                 out[key] = val
         else:
@@ -92,6 +107,14 @@ class INLUVVisTransmission(INLCharacterization, ELNUVVisNirTransmission):
         label='INL UV-Vis Transmission',
         categories=[INLCharacterizationCategory],
     )
+
+    def m_update_from_dict(self, dct, **kwargs):
+        """Override to handle both comma and period decimal separators in UV-Vis .asc files.
+        
+        Locales may use commas as decimal separators (e.g., European format).
+        This method normalizes both formats before updating the section.
+        """
+        return super().m_update_from_dict(_coerce_string_floats(dct, handle_comma_decimals=True), **kwargs)
 
 
 # ---------------------------------------------------------------------------

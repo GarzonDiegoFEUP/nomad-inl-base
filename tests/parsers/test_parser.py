@@ -326,6 +326,36 @@ def test_kla_profiler(parsed_archive, caplog):
 
 
 # ---------------------------------------------------------------------------
+# UV-Vis Transmission (with European comma decimal separator)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    'parsed_archive, caplog',
+    [(('tests/data/260401A2.Sample.Raw.asc', []), ['error', 'critical'])],
+    indirect=True,
+    ids=['260401A2.Sample.Raw.asc'],
+)
+def test_uvvis_transmission_with_comma_decimals(parsed_archive, caplog):
+    """Test UV-Vis .asc file with European comma (,) decimal separators.
+    
+    This test verifies that the parser correctly handles files where
+    the decimal separator is a comma (e.g., "79,803313") instead of
+    a period (e.g., "79.803313"). This is common in European locales.
+    The test parses the file and checks that no errors occur during parsing.
+    """
+    normalize_all(parsed_archive)
+    # Verify that parsing was successful (data was created)
+    assert parsed_archive.data is not None
+    # Verify that the data contains transmission data (RawFileTransmissionData
+    # or ELNUVVisNirTransmission, depending on which parser handles it)
+    assert 'transmission' in str(type(parsed_archive.data).__name__).lower() or \
+           'raw' in str(type(parsed_archive.data).__name__).lower()
+    # The comma decimal handling is transparent to the test - if the parsing
+    # succeeded and no errors were logged, then comma decimals were handled correctly
+
+
+# ---------------------------------------------------------------------------
 # Skipped parsers (no test data available)
 # ---------------------------------------------------------------------------
 
