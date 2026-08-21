@@ -1083,6 +1083,62 @@ class INLSolarCellIV(INLCharacterization, PlotSection):
                     PlotlyFigure(label='Best JV', figure=json.loads(pio.to_json(fig)))
                 )
 
+        # Plot all JV curves overlaid
+        if self.iv_curves:
+            fig_all = go.Figure()
+            
+            # Build a mapping of measurement_name → cell_area for unit conversion
+            area_map = {}
+            if self.results:
+                for r in self.results:
+                    if r.measurement_name and r.cell_area:
+                        area_map[r.measurement_name] = float(
+                            r.cell_area.to('centimeter**2').magnitude
+                        )
+            
+            # Determine if we can use current density or fall back to current
+            can_use_density = any(area > 0 for area in area_map.values()) if area_map else False
+            y_label = 'Current Density (mA/cm²)' if can_use_density else 'Current (mA)'
+            
+            # Add each curve as a trace
+            for curve in self.iv_curves:
+                if curve.voltage is not None and curve.current is not None:
+                    v_arr = np.array(curve.voltage)
+                    i_arr = np.array(curve.current) * 1000.0  # A → mA
+                    
+                    # Apply area normalization if available
+                    if can_use_density:
+                        area_cm2 = area_map.get(curve.measurement_name, None)
+                        if area_cm2 and area_cm2 > 0:
+                            j_arr = i_arr / area_cm2
+                        else:
+                            j_arr = i_arr
+                    else:
+                        j_arr = i_arr
+                    
+                    v = [None if not np.isfinite(x) else float(x) for x in v_arr]
+                    j = [None if not np.isfinite(x) else float(x) for x in j_arr]
+                    label = curve.measurement_name or f'Curve {len(fig_all.data)}'
+                    fig_all.add_trace(
+                        go.Scatter(x=v, y=j, mode='lines', name=label)
+                    )
+            
+            fig_all.update_layout(
+                template='plotly_white',
+                height=400,
+                width=716,
+                xaxis_title='Voltage (V)',
+                yaxis_title=y_label,
+                title_text='All JV Curves',
+                dragmode='zoom',
+                xaxis=dict(fixedrange=False),
+                yaxis=dict(fixedrange=False),
+                hovermode='x unified',
+            )
+            self.figures.append(
+                PlotlyFigure(label='All JV Curves', figure=json.loads(pio.to_json(fig_all)))
+            )
+
         # Boxplots of key parameters
         if self.results and len(self.results) > 1:
             params = {
