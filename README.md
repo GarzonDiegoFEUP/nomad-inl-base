@@ -2,6 +2,17 @@
 
 A plugin to manage the data from the Sadewasser Research Group at INL. 
 
+This plugin provides ELN (Electronic Lab Notebook) schemas and automatic parsers for:
+- **Thin-film deposition:** STAR magnetron sputtering (DC, RF, reactive), METEOR e-beam evaporation, wet deposition (spin coating, CBD, etc.), and tube furnace annealing
+- **Battery research:** PC03/PC04 chamber log parsing with automatic sample linking
+- **Characterization:** XRD, UV-Vis, EQE, solar cell IV, 4-point probe, SEM, EDX, electrochemistry (CV, EIS, chronoamperometry), and AFM
+- **Data analysis:** Jupyter notebook-based analysis pipelines for XRD, EQE, IV, and GDOES
+- **Sample tracking:** Entities for substrates, thin films, thin-film stacks, and sample fragments with automatic stack creation
+
+**📖 Documentation:** Start with our [tutorials](docs/tutorial/) to learn common workflows, or see [how-to guides](docs/how_to/) for specific tasks.
+
+---
+
 This `nomad` plugin was generated with `Cookiecutter` along with `@nomad`'s [`cookiecutter-nomad-plugin`](https://github.com/FAIRmat-NFDI/cookiecutter-nomad-plugin) template.
 
 
@@ -129,9 +140,14 @@ without any manual steps.
 | EIS / CV / IV (Bio-Logic) | `*.mpr` *(technique auto-detected)* | `sample EIS.mpr` |
 | METEOR (Metal EvaporaTion by Electron-beam for SOlar Research) e-beam evaporation (Korvus) | `*.nbl` | `260508_Au_contacts.nbl` |
 | Testo environmental logger (temperature/humidity) | `*.vi2` | `STAR LAB_44675156_2026_07_22_09_42_20.vi2` |
+| Battery chamber (PC03/PC04) | `PC0X_All Signals_[SampleName] YYYY.MM.DD-HH.MM.SS.csv` | `PC03_All Signals_LNbO_001 2026.08.15-14.30.22.csv` |
 
 > **Note:** For XRD (`.xrdml`, `.rasx`, `.brml`, `.raw`) and UV-Vis (`.asc`),
 > file naming is handled by `nomad-measurements` — no special naming is required.
+
+> **Note on battery chambers:** PC03/PC04 CSV logs must follow the naming convention to enable automatic sample linking.
+> The sample name is extracted from the filename and used to automatically find or create a matching `INLThinFilmStack` or `INLSubstrate`.
+> See the [Battery deposition tutorial](docs/tutorial/battery_deposition_workflow.md) for details.
 
 ---
 
