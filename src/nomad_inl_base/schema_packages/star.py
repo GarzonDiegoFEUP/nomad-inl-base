@@ -1228,12 +1228,13 @@ class StarSputtering(SputterDeposition, EntryData):
 
     samples = SubSection(section_def=INLSampleReference, repeats=True)
 
-    substrate = SubSection(
+    substrates = SubSection(
         section_def=INLSubstrateReference,
+        repeats=True,
         description=(
-            'Substrate to use when no samples are pre-set. '
-            'Set this to a cleaned or purchased substrate — the initial stack '
-            'will be created from it when the first film-creating step runs.'
+            'Substrates to use when no samples are pre-set. '
+            'Set these to cleaned or purchased substrates — the initial stack '
+            'will be created from them when the first film-creating step runs.'
         ),
     )
 
@@ -1253,6 +1254,55 @@ class StarSputtering(SputterDeposition, EntryData):
         description='If True, apply the selected recipe once during normalize.',
         a_eln=ELNAnnotation(component=ELNComponentEnum.BoolEditQuantity),
     )
+
+    def _get_or_create_target_stacks(
+        self, archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> list:
+        """Resolve or create target stacks for this deposition.
+
+        Returns a list of INLSampleReference objects representing the target stacks.
+        If samples exist, they are used as-is. If not, new stacks are created from
+        each substrate and registered in self.samples.
+        """
+        if self.samples:
+            return list(self.samples)
+
+        if not self.substrates:
+            logger.warning(
+                'StarSputtering: no target samples or substrates set. '
+                'Cannot create target stacks.'
+            )
+            return []
+
+        data_file = (self.name or 'star').replace(' ', '_')
+        filetype = 'yaml'
+
+        created_stacks = []
+        for substrate in self.substrates:
+            new_stack = StarStack()
+            new_stack.substrate = substrate
+
+            stack_filename, stack_archive = create_filename(
+                data_file + '_initial_stack',
+                new_stack,
+                'ThinFilmStack',
+                archive,
+                logger,
+            )
+
+            stackRef = create_archive(
+                stack_archive.m_to_dict(),
+                archive.m_context,
+                stack_filename,
+                filetype,
+                logger,
+            )
+
+            sample_ref = INLSampleReference(reference=stackRef)
+            self.samples.append(sample_ref)
+            created_stacks.append(sample_ref)
+
+        return created_stacks
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -1308,12 +1358,15 @@ class StarSputtering(SputterDeposition, EntryData):
             self.apply_recipe = False
 
         filetype = 'yaml'
-        data_file = self.name.replace(' ', '_')
+        data_file = (self.name or 'star').replace(' ', '_')
         date_str = (
             self.start_time.strftime('%y%m%d')
             if self.start_time is not None
             else _date.today().strftime('%y%m%d')
         )
+
+        # Resolve target stacks once, at the start of the step loop
+        target_stacks = self._get_or_create_target_stacks(archive, logger)
 
         for idx, step in enumerate(self.steps):
             step.name = str(idx + 1) + '_' + step.m_def.label.replace(' ', '_')
@@ -1341,23 +1394,17 @@ class StarSputtering(SputterDeposition, EntryData):
                         new_source.vapor_source.append(new_sputter)
                         step.sources.append(new_source)
 
-            # Create a sample for each step that creat a new film
-
-            film_index = 0
-
             if step.creates_new_thin_film and self.sources is not None:
                 if not self.sources or not self.sources[0].material:
                     logger.warning(
                         'Skipping thin film creation: no material defined on the first source.'
                     )
                     continue
-                film_index += 1
 
                 deposited_system = self.sources[0].material[0].system.components
-
                 sample_parameters = []
 
-                # new thin film
+                # Create the new ThinFilm entry
                 new_thinFilm = StarThinFilm()
 
                 material_parts = [
@@ -1397,79 +1444,30 @@ class StarSputtering(SputterDeposition, EntryData):
 
                 new_thinFilmReference = StarThinFilmReference(reference=thinFilmRef)
 
-                if len(self.samples) > 0:
-                    for sample in self.samples:
+                # Attach film to all target stacks
+                for target_stack in target_stacks:
+                    if target_stack.reference is not None:
                         new_sample_par = StarSampleParameters()
                         new_sample_substrate = StarStackReference(
-                            reference=sample.reference
+                            reference=target_stack.reference
                         )
                         new_sample_par.substrate = new_sample_substrate
                         new_sample_par.layer = new_thinFilmReference
-
                         sample_parameters.append(new_sample_par)
-                else:
-                    if self.substrate is None:
-                        logger.warning(
-                            'StarSputtering: cannot create sample — no substrate set '
-                            'and no existing samples. Set the "substrate" field to a '
-                            'cleaned or purchased substrate first.'
-                        )
-                        continue
+                        target_stack.reference.layers.append(new_thinFilmReference)
 
-                    new_substrateReference = self.substrate
-
-                    # new stack built from the provided substrate
-                    new_Stack = StarStack()
-                    stack_filename, stack_archive = create_filename(
-                        data_file + '_sample',
-                        new_Stack,
-                        'ThinFilmStack',
-                        archive,
-                        logger,
-                    )
-
-                    new_Stack.substrate = new_substrateReference
-                    new_Stack.layers.append(new_thinFilmReference)
-
-                    stackRef = create_archive(
-                        stack_archive.m_to_dict(),
-                        archive.m_context,
-                        stack_filename,
-                        filetype,
-                        logger,
-                    )
-
-                    new_StackReference = StarStackReference(reference=stackRef)
-                    new_StackSampleRef = INLSampleReference(reference=stackRef)
-
-                    if self.is_a_calibration_experiment:
-                        new_sample_par = StarCalibrationSampleParameters()
-
-                    else:
-                        new_sample_par = StarSampleParameters()
-
-                    new_sample_par.substrate = new_StackReference
-                    new_sample_par.layer = new_thinFilmReference
-
-                    sample_parameters.append(new_sample_par)
-
-                    if self.is_a_calibration_experiment:
-                        new_sample_par.deposition_rate = (
-                            new_sample_par.film_thickness / step.duration
-                        )
+                        if self.is_a_calibration_experiment:
+                            if isinstance(new_sample_par, StarSampleParameters):
+                                new_sample_par_cal = StarCalibrationSampleParameters()
+                                new_sample_par_cal.substrate = new_sample_substrate
+                                new_sample_par_cal.layer = new_thinFilmReference
+                                if new_sample_par_cal.film_thickness is not None and step.duration is not None:
+                                    new_sample_par_cal.deposition_rate = (
+                                        new_sample_par_cal.film_thickness / step.duration
+                                    )
 
                 if step.sample_parameters is None:
                     step.sample_parameters = sample_parameters
-
-                if len(self.samples) == 0:
-                    self.samples.append(new_StackSampleRef)
-
-                for sample in self.samples:
-                    if step.sample_parameters is not None:
-                        for sample_par in step.sample_parameters:
-                            if sample_par.substrate.reference == sample.reference:
-                                logger.info(sample_par.substrate.reference)
-                                sample.reference.layers.append(sample_par.layer)
 
         # --- Update target deposition records ---
         # Compute total powered time and energy across all steps.
