@@ -2825,12 +2825,13 @@ class INLUVVisTransmissionParser(MatchingParser):
 
     def parse(self, mainfile: str, archive: EntryArchive, logger=None) -> None:
         from fairmat_readers_transmission.readers import read_file
-        from nomad_measurements.transmission.schema import (
-            ELNUVVisNirTransmission,
-            RawFileTransmissionData,
-        )
+        from nomad_measurements.transmission.schema import RawFileTransmissionData
         from nomad_measurements.utils import (
             create_archive as create_measurement_archive,
+        )
+
+        from nomad_inl_base.schema_packages.characterization import (
+            INLUVVisTransmission,
         )
 
         # Read the .asc file and preprocess to handle European decimal separators
@@ -2857,12 +2858,14 @@ class INLUVVisTransmissionParser(MatchingParser):
                 if '/raw/' in mainfile:
                     data_file = mainfile.split('/raw/', 1)[1]
 
-            entry = ELNUVVisNirTransmission.m_from_dict(
-                ELNUVVisNirTransmission.m_def.a_template
+            # Create INLUVVisTransmission entry (inherits from ELNUVVisNirTransmission)
+            entry = INLUVVisTransmission.m_from_dict(
+                INLUVVisTransmission.m_def.a_template
             )
             entry.data_file = data_file
 
-            # Update entry with parsed transmission data
+            # Update entry with parsed transmission data (will use INLUVVisTransmission's
+            # m_update_from_dict override which handles comma decimals)
             if transmission_data:
                 entry.m_update_from_dict(transmission_data)
 
