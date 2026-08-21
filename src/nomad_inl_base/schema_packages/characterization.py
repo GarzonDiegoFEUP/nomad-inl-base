@@ -115,14 +115,6 @@ class INLUVVisTransmission(INLCharacterization, ELNUVVisNirTransmission):
         categories=[INLCharacterizationCategory],
     )
 
-    def m_update_from_dict(self, dct, **kwargs):
-        """Override to handle both comma and period decimal separators in UV-Vis .asc files.
-        
-        Locales may use commas as decimal separators (e.g., European format).
-        This method normalizes both formats before updating the section.
-        """
-        return super().m_update_from_dict(_coerce_string_floats(dct, handle_comma_decimals=True), **kwargs)
-
 
 # ---------------------------------------------------------------------------
 # Cyclic voltammetry / electrochemistry
