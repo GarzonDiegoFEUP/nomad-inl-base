@@ -7,6 +7,7 @@ instrument output files.
 """
 
 import sys
+import os
 import re
 
 
@@ -91,8 +92,124 @@ def _patch_transmission_reader():
                 except Exception:
                     pass
         
-        fairmat_readers_transmission.read_perkin_elmer_asc = patched_read_perkin
-        patch_log.append('Patched read_perkin_elmer_asc for comma conversion')
+        # Now replace with fully corrected version
+        def patched_read_perkin_with_indices(filename, logger=None):
+            """
+            Final wrapper: handles both comma conversion AND index correction.
+            """
+            from collections import defaultdict
+            from inspect import isfunction
+            import pandas as pd
+            import numpy as np
+            import pint
+            
+            ureg = pint.get_application_registry()
+            
+            # Read and clean commas
+            with open(filename, 'r', encoding='utf-8') as f:
+                content = f.read()
+            content_cleaned = content.replace(',', '.')
+            
+            if content_cleaned != content:
+                import tempfile
+                import os
+                with tempfile.NamedTemporaryFile(
+                    mode='w', suffix='.asc', delete=False, encoding='utf-8'
+                ) as tmp:
+                    tmp.write(content_cleaned)
+                    tmp_name = tmp.name
+            else:
+                tmp_name = filename
+            
+            try:
+                # Parse metadata and data
+                metadata = []
+                data_start_ind = '#DATA'
+                
+                with open(tmp_name, encoding='utf-8') as file_obj:
+                    for line in file_obj:
+                        if line.strip() == data_start_ind:
+                            break
+                        metadata.append(line.strip())
+                    data = pd.read_csv(file_obj, sep='\\s+', header=None, index_col=0)
+                
+                # Import the read functions from perkin_elmers_asc
+                from fairmat_readers_transmission.perkin_elmers_asc import (
+                    read_attenuation_percentage,
+                    read_detector_change_wavelength,
+                    read_detector_integration_time,
+                    read_detector_module,
+                    read_detector_nir_gain,
+                    read_is_common_beam_depolarizer_on,
+                    read_is_d2_lamp_used,
+                    read_is_tungsten_lamp_used,
+                    read_lamp_change_wavelength,
+                    read_monochromator_change_wavelength,
+                    read_monochromator_slit_width,
+                    read_polarizer_angle,
+                    read_sample_name,
+                    read_start_datetime,
+                )
+                
+                # Use CORRECTED metadata indices
+                metadata_map = {
+                    'sample_name': read_sample_name,
+                    'start_datetime': read_start_datetime,
+                    'analyst_name': 7,
+                    'instrument_name': 11,
+                    'instrument_serial_number': 12,
+                    'instrument_firmware_version': 13,
+                    'is_d2_lamp_used': read_is_d2_lamp_used,
+                    'is_tungsten_lamp_used': read_is_tungsten_lamp_used,
+                    'sample_beam_position': 44,
+                    'common_beam_mask_percentage': 45,
+                    'is_common_beam_depolarizer_on': read_is_common_beam_depolarizer_on,
+                    'attenuation_percentage': read_attenuation_percentage,
+                    'detector_integration_time': read_detector_integration_time,
+                    'detector_NIR_gain': read_detector_nir_gain,
+                    'detector_change_wavelength': read_detector_change_wavelength,
+                    'detector_module': read_detector_module,
+                    'polarizer_angle': read_polarizer_angle,
+                    'ordinate_type': 84,  # FIXED: was 80
+                    'wavelength_units': 83,  # FIXED: was 79
+                    'monochromator_slit_width': read_monochromator_slit_width,
+                    'monochromator_change_wavelength': read_monochromator_change_wavelength,
+                    'lamp_change_wavelength': read_lamp_change_wavelength,
+                }
+                
+                output = defaultdict(lambda: None)
+                
+                for path, val in metadata_map.items():
+                    if isinstance(val, int):
+                        if metadata[val]:
+                            try:
+                                output[path] = float(metadata[val]) * ureg.dimensionless
+                            except ValueError:
+                                output[path] = metadata[val]
+                    elif isfunction(val):
+                        output[path] = val(metadata, logger)
+                    else:
+                        raise ValueError(f'Invalid type for {path}')
+                
+                # Restructure measured data
+                output['measured_wavelength'] = data.index.values
+                output['measured_ordinate'] = data.values[:, 0] * ureg.dimensionless
+                output['measured_wavelength'] *= ureg(output['wavelength_units'])
+                
+                if logger:
+                    logger.info(f'Parsed {filename} with corrected metadata indices')
+                
+                return dict(output)
+                
+            finally:
+                if tmp_name != filename:
+                    try:
+                        os.unlink(tmp_name)
+                    except Exception:
+                        pass
+        
+        fairmat_readers_transmission.read_perkin_elmer_asc = patched_read_perkin_with_indices
+        patch_log.append('Fixed metadata_map indices (79→83, 80→84)')
         
         print(
             f'[nomad-inl-base] Transmission patches applied: {" | ".join(patch_log)}',
