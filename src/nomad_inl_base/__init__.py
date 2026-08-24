@@ -231,7 +231,7 @@ def _patch_transmission_schema():
     1. reflectance field to UVVisNirTransmissionResult
     2. Updates the schema section order to include reflectance
     3. Updates generate_plots to plot reflectance
-    4. Adds reflectance support to _populate_transmission_from_file
+    4. Fixes write_transmission_data to handle ordinate_type key and %R
     
     Now supports measuring: absorbance (A), transmittance (%T), and reflectance (%R).
     """
@@ -325,104 +325,6 @@ def _patch_transmission_schema():
             return figures
 
         UVVisNirTransmissionResult.generate_plots = patched_generate_plots
-        
-        # Patch 4: Update _populate_transmission_from_file to handle all three types
-        original_populate = UVVisNirTransmission._populate_transmission_from_file
-        
-        def patched_populate_transmission_from_file(
-            transmission, data_dict, archive, logger
-        ):
-            """
-            Patched version that supports absorbance (A), transmittance (%T), and reflectance (%R).
-            
-            - Absorbance (A): Stored as-is
-            - Transmittance (%T): Divided by 100
-            - Reflectance (%R): Divided by 100
-            """
-            transmission.user = data_dict['analyst_name']
-            if data_dict['start_datetime'] is not None:
-                transmission.datetime = data_dict['start_datetime']
-
-            # add results
-            transmission.m_setdefault('results/0')
-            transmission.results[0].wavelength = data_dict['measured_wavelength']
-            
-            # Handle different ordinate types
-            ordinate_type = data_dict.get('ordinate_type', '')
-            if ordinate_type == 'A':
-                transmission.results[0].absorbance = data_dict['measured_ordinate']
-            elif ordinate_type == '%T':
-                transmission.results[0].transmittance = data_dict['measured_ordinate'] / 100
-            elif ordinate_type == '%R':
-                transmission.results[0].reflectance = data_dict['measured_ordinate'] / 100
-            else:
-                logger.warning(f"Unknown ordinate type '{ordinate_type}'.")
-            
-            transmission.results[0].normalize(archive, logger)
-
-            # add settings
-            transmission.m_setdefault('transmission_settings')
-            transmission.transmission_settings.sample_beam_position = data_dict[
-                'sample_beam_position'
-            ]
-            transmission.transmission_settings.common_beam_depolarizer = data_dict[
-                'is_common_beam_depolarizer_on'
-            ]
-            if data_dict['common_beam_mask_percentage'] is not None:
-                transmission.transmission_settings.common_beam_mask_percentage = (
-                    data_dict['common_beam_mask_percentage']
-                )
-            
-            # Copy the rest of the settings
-            transmission.transmission_settings.is_d2_lamp_used = data_dict[
-                'is_d2_lamp_used'
-            ]
-            transmission.transmission_settings.is_tungsten_lamp_used = data_dict[
-                'is_tungsten_lamp_used'
-            ]
-            transmission.transmission_settings.detector_integration_time = data_dict[
-                'detector_integration_time'
-            ]
-            transmission.transmission_settings.detector_NIR_gain = data_dict[
-                'detector_NIR_gain'
-            ]
-            transmission.transmission_settings.detector_change_wavelength = data_dict[
-                'detector_change_wavelength'
-            ]
-            transmission.transmission_settings.monochromator_slit_width = data_dict[
-                'monochromator_slit_width'
-            ]
-            transmission.transmission_settings.monochromator_change_wavelength = (
-                data_dict['monochromator_change_wavelength']
-            )
-            transmission.transmission_settings.lamp_change_wavelength = data_dict[
-                'lamp_change_wavelength'
-            ]
-            transmission.transmission_settings.polarizer_angle = data_dict[
-                'polarizer_angle'
-            ]
-            transmission.transmission_settings.attenuation_percentage = data_dict[
-                'attenuation_percentage'
-            ]
-            
-            # add detector info
-            transmission.m_setdefault('detector')
-            transmission.detector.detector_type = data_dict['detector_module']
-            
-            # add instrument info
-            transmission.m_setdefault('instrument')
-            transmission.instrument.instrument_name = data_dict['instrument_name']
-            transmission.instrument.instrument_serial_number = (
-                data_dict['instrument_serial_number']
-            )
-            transmission.instrument.instrument_firmware_version = (
-                data_dict['instrument_firmware_version']
-            )
-        
-        # Replace the original method
-        UVVisNirTransmission._populate_transmission_from_file = (
-            staticmethod(patched_populate_transmission_from_file)
-        )
         
         # Patch 5: Fix write_transmission_data to handle ordinate_type key and %R
         # The original function uses wrong key name and doesn't support reflectance
