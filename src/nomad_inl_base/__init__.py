@@ -12,57 +12,65 @@ import re
 
 def _patch_transmission_reader():
     """
-    Patch fairmat_readers_transmission.read_perkin_elmer_asc() to preprocess
-    European decimal separators BEFORE parsing.
+    Patch fairmat_readers_transmission functions to handle European decimal separators
+    and problematic metadata fields.
     
-    This ALWAYS converts commas to periods for European format files.
-    Safe because European .asc files ONLY use comma for decimal separation.
-    
-    Also sanitizes detector module field to a standard value to avoid parsing issues.
+    Two-level patching strategy:
+    1. Patch file reader to convert commas to periods
+    2. Patch read_detector_module function to return standard value
     """
     patch_log = []
     try:
         patch_log.append('Starting patch_transmission_reader...')
         
         import fairmat_readers_transmission
-        patch_log.append('Successfully imported fairmat_readers_transmission')
+        patch_log.append('Imported fairmat_readers_transmission')
         
+        # Import and patch the perkin_elmers_asc module functions
+        import fairmat_readers_transmission.perkin_elmers_asc as perkin_module
+        patch_log.append('Imported perkin_elmers_asc')
+        
+        # Patch read_detector_module to return standard value
+        original_read_detector = perkin_module.read_detector_module
+        
+        def patched_read_detector_module(metadata, logger=None):
+            """Patched version that returns standard Integrated Sphere value."""
+            try:
+                # Try original function first
+                return original_read_detector(metadata, logger)
+            except Exception as e:
+                # If it fails (due to commas or parsing issues), return standard value
+                if logger:
+                    logger.warning(
+                        f'read_detector_module failed ({e}), using default "Integrated Sphere"'
+                    )
+                return 'Integrated Sphere'
+        
+        perkin_module.read_detector_module = patched_read_detector_module
+        patch_log.append('Patched read_detector_module to handle parsing errors')
+        
+        # Also patch the main read_perkin_elmer_asc function
         original_read_perkin = fairmat_readers_transmission.read_perkin_elmer_asc
-        patch_log.append(f'Original read_perkin_elmer_asc found')
         
         def patched_read_perkin(filename, logger=None):
             """
-            Patched read_perkin_elmer_asc that:
-            1. Converts comma decimals to periods
-            2. Sanitizes detector module field to standard value
+            Patched read_perkin_elmer_asc that converts comma decimals to periods.
             
-            For European format .asc files, commas are ONLY used as decimal separators.
-            The detector field often contains commas that confuse the parser.
+            European .asc files use commas as decimal separators.
+            This converts them to periods BEFORE parsing.
             """
             # Read the original file
             with open(filename, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            # ALWAYS convert ALL commas to periods for European format handling
+            # Convert ALL commas to periods (safe for European format)
             content_cleaned = content.replace(',', '.')
-            
-            # Also sanitize the detector module field
-            # Replace complex detector descriptions with a standard integrated sphere value
-            # Pattern: any line starting with "Detector Module" up to end of line
-            import re as regex_module
-            content_cleaned = regex_module.sub(
-                r'^Detector Module\s*:\s*.+$',
-                'Detector Module: Integrated Sphere',
-                content_cleaned,
-                flags=regex_module.MULTILINE
-            )
             
             # Only write temp file if content actually changed
             if content_cleaned == content:
-                # No changes needed, use original file
                 return original_read_perkin(filename, logger)
             
-            # Changes were made - parse the cleaned version
+            # Parse the cleaned version
             import tempfile
             import os
             
@@ -75,9 +83,7 @@ def _patch_transmission_reader():
             try:
                 result = original_read_perkin(tmp_name, logger)
                 if logger:
-                    logger.info(
-                        f'Successfully parsed {filename} after converting commas and sanitizing detector module'
-                    )
+                    logger.info(f'Parsed {filename} after converting commas to periods')
                 return result
             finally:
                 try:
@@ -86,21 +92,21 @@ def _patch_transmission_reader():
                     pass
         
         fairmat_readers_transmission.read_perkin_elmer_asc = patched_read_perkin
-        patch_log.append('Successfully patched read_perkin_elmer_asc')
+        patch_log.append('Patched read_perkin_elmer_asc for comma conversion')
         
         print(
-            f'[nomad-inl-base] Transmission reader patch applied: {" | ".join(patch_log)}',
+            f'[nomad-inl-base] Transmission patches applied: {" | ".join(patch_log)}',
             file=sys.stderr
         )
         
     except ImportError as e:
         print(
-            f'[nomad-inl-base] Skipping reader patch (fairmat_readers_transmission not available): {e}',
+            f'[nomad-inl-base] Skipping patches (fairmat_readers_transmission not available): {e}',
             file=sys.stderr
         )
     except Exception as e:
         print(
-            f'[nomad-inl-base] ERROR applying reader patch: {e}',
+            f'[nomad-inl-base] ERROR applying patches: {e}',
             file=sys.stderr
         )
 
