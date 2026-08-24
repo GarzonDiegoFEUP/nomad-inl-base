@@ -44,6 +44,9 @@ dependencies = [
 [project.urls]
 Repository = "https://github.com/GarzonDiegoFEUP/nomad-inl-base"
 
+[tool.uv.sources]
+nomad-measurements = { git = "https://github.com/GarzonDiegoFEUP/nomad-measurements.git" }
+
 [project.optional-dependencies]
 dev = [
     "ruff",
