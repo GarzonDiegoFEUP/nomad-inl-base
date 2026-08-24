@@ -232,18 +232,117 @@ def _patch_transmission_schema():
     """
     Patch nomad_measurements transmission schema to support reflectance ('%R').
     
-    Adds support for measuring both transmittance (%T) and reflectance (%R).
-    Both values come in as percentages and are divided by 100 to get decimal values (0-1).
+    Adds:
+    1. reflectance field to UVVisNirTransmissionResult
+    2. Updates the schema section order to include reflectance
+    3. Updates generate_plots to plot reflectance
+    4. Adds reflectance support to _populate_transmission_from_file
+    
+    Now supports measuring: absorbance (A), transmittance (%T), and reflectance (%R).
     """
     try:
-        from nomad_measurements.transmission.schema import UVVisNirTransmission
+        from nomad_measurements.transmission.schema import (
+            UVVisNirTransmission,
+            UVVisNirTransmissionResult,
+        )
+        from nomad.metainfo import Quantity
+        import numpy as np
         
-        # Get the original _populate_transmission_from_file method
+        # Patch 1: Add reflectance field to UVVisNirTransmissionResult
+        if not hasattr(UVVisNirTransmissionResult, '_reflectance_patched'):
+            reflectance_field = Quantity(
+                type=np.float64,
+                description='Measured reflectance ranging from 0 to 1.',
+                shape=['*'],
+                unit='dimensionless',
+                a_plot={'x': 'array_index', 'y': 'reflectance'},
+            )
+            UVVisNirTransmissionResult.m_def.all_quantities['reflectance'] = (
+                reflectance_field
+            )
+            UVVisNirTransmissionResult.reflectance = reflectance_field
+            UVVisNirTransmissionResult._reflectance_patched = True
+        
+        # Patch 2: Update m_eln section order to include reflectance
+        if hasattr(UVVisNirTransmissionResult.m_def, 'a_eln'):
+            if UVVisNirTransmissionResult.m_def.a_eln:
+                if hasattr(
+                    UVVisNirTransmissionResult.m_def.a_eln, 'properties'
+                ) and UVVisNirTransmissionResult.m_def.a_eln.properties:
+                    props = UVVisNirTransmissionResult.m_def.a_eln.properties
+                    if hasattr(props, 'order') and props.order:
+                        if 'reflectance' not in props.order:
+                            # Add reflectance after absorbance in the order
+                            if 'absorbance' in props.order:
+                                idx = props.order.index('absorbance')
+                                props.order.insert(idx + 1, 'reflectance')
+                            else:
+                                props.order.append('reflectance')
+        
+        # Patch 3: Update generate_plots method
+        original_generate_plots = UVVisNirTransmissionResult.generate_plots
+        
+        def patched_generate_plots(self):
+            """
+            Patched version that generates plots for transmittance, absorbance, AND reflectance.
+            """
+            figures = []
+            if self.wavelength is None:
+                return figures
+
+            for key in ['transmittance', 'absorbance', 'reflectance']:
+                if getattr(self, key, None) is None:
+                    continue
+
+                x_label = 'Wavelength'
+                xaxis_title = f'{x_label} (nm)'
+                x = self.wavelength.to('nm').magnitude
+
+                y_label = key.capitalize()
+                yaxis_title = y_label
+                y = getattr(self, key).magnitude
+
+                line_linear = __import__('plotly.express', fromlist=['px']).line(
+                    x=x, y=y
+                )
+
+                line_linear.update_layout(
+                    title=f'{y_label} over {x_label}',
+                    xaxis_title=xaxis_title,
+                    yaxis_title=yaxis_title,
+                    xaxis=dict(
+                        fixedrange=False,
+                    ),
+                    yaxis=dict(
+                        fixedrange=False,
+                    ),
+                    template='plotly_white',
+                )
+
+                from nomad.datamodel.metainfo.plot import PlotlyFigure
+                figures.append(
+                    PlotlyFigure(
+                        label=f'{y_label} linear plot',
+                        figure=line_linear.to_plotly_json(),
+                    ),
+                )
+
+            return figures
+
+        UVVisNirTransmissionResult.generate_plots = patched_generate_plots
+        
+        # Patch 4: Update _populate_transmission_from_file to handle all three types
         original_populate = UVVisNirTransmission._populate_transmission_from_file
         
-        def patched_populate_transmission_from_file(transmission, data_dict, archive, logger):
+        def patched_populate_transmission_from_file(
+            transmission, data_dict, archive, logger
+        ):
             """
-            Patched version that supports both %T (transmittance) and %R (reflectance).
+            Patched version that supports absorbance (A), transmittance (%T), and reflectance (%R).
+            
+            - Absorbance (A): Stored as-is
+            - Transmittance (%T): Divided by 100
+            - Reflectance (%R): Divided by 100
             """
             transmission.user = data_dict['analyst_name']
             if data_dict['start_datetime'] is not None:
@@ -260,7 +359,6 @@ def _patch_transmission_schema():
             elif ordinate_type == '%T':
                 transmission.results[0].transmittance = data_dict['measured_ordinate'] / 100
             elif ordinate_type == '%R':
-                # Support reflectance - divide by 100 same as transmittance
                 transmission.results[0].reflectance = data_dict['measured_ordinate'] / 100
             else:
                 logger.warning(f"Unknown ordinate type '{ordinate_type}'.")
@@ -280,8 +378,7 @@ def _patch_transmission_schema():
                     data_dict['common_beam_mask_percentage']
                 )
             
-            # Continue with rest of original function by calling it
-            # Copy the rest of the settings from the original method
+            # Copy the rest of the settings
             transmission.transmission_settings.is_d2_lamp_used = data_dict[
                 'is_d2_lamp_used'
             ]
@@ -333,7 +430,8 @@ def _patch_transmission_schema():
         )
         
         print(
-            '[nomad-inl-base] Transmission schema patched: Added %R (reflectance) support',
+            '[nomad-inl-base] Transmission schema fully patched: '
+            'Added reflectance field, updated order, and plots',
             file=sys.stderr
         )
         
