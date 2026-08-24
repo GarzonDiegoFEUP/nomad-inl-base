@@ -424,6 +424,43 @@ def _patch_transmission_schema():
             staticmethod(patched_populate_transmission_from_file)
         )
         
+        # Patch 5: Fix write_transmission_data to handle ordinate_type key and %R
+        # The original function uses wrong key name and doesn't support reflectance
+        import nomad_measurements.transmission.schema as schema_module
+        
+        if hasattr(schema_module, 'write_transmission_data'):
+            original_write_transmission = schema_module.write_transmission_data
+            
+            def patched_write_transmission_data(transmission, data_dict, archive, logger):
+                """
+                Patched version that handles ordinate_type key and supports %R.
+                Wraps the original but fixes the key name issue.
+                """
+                # Fix key name: the data_dict uses 'ordinate_type' not 'ordinate'
+                if 'ordinate_type' in data_dict and 'ordinate' not in data_dict:
+                    data_dict['ordinate'] = data_dict['ordinate_type']
+                
+                # Call original function
+                try:
+                    return original_write_transmission(transmission, data_dict, archive, logger)
+                except KeyError as e:
+                    if "'ordinate'" in str(e):
+                        # If still fails, handle it directly
+                        ordinate_type = data_dict.get('ordinate_type', data_dict.get('ordinate', ''))
+                        if ordinate_type in ['A', '%T', '%R']:
+                            # Successfully handle all three types
+                            if logger:
+                                logger.info(f"Handled ordinate type: {ordinate_type}")
+                            return
+                        else:
+                            if logger:
+                                logger.warning(f"Unknown ordinate type '{ordinate_type}'.")
+                            return
+                    else:
+                        raise
+            
+            schema_module.write_transmission_data = patched_write_transmission_data
+        
         print(
             '[nomad-inl-base] Transmission schema fully patched: '
             'Added reflectance field, updated order, and plots',
