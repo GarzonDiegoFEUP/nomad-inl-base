@@ -170,7 +170,7 @@ def _patch_transmission_reader():
                     'detector_change_wavelength': read_detector_change_wavelength,
                     'detector_module': read_detector_module,
                     'polarizer_angle': read_polarizer_angle,
-                    'ordinate': 84,  # FIXED: was 80, use 'ordinate' (not ordinate_type) for schema compatibility
+                    'ordinate_type': 84,  # FIXED: was 80 (line 85 in file: %T, A, or %R)
                     'wavelength_units': 83,  # FIXED: was 79
                     'monochromator_slit_width': read_monochromator_slit_width,
                     'monochromator_change_wavelength': read_monochromator_change_wavelength,
@@ -329,9 +329,39 @@ def _patch_transmission_schema():
         UVVisNirTransmissionResult.generate_plots = patched_generate_plots
         print('[nomad-inl-base] Patch 3: Updated generate_plots method', file=sys.stderr)
         
+        # Patch 4: Fix write_transmission_data to handle %R (reflectance) and key access bug
+        import nomad_measurements.transmission.schema as schema_module
+        
+        if hasattr(schema_module, 'write_transmission_data'):
+            original_write_transmission = schema_module.write_transmission_data
+            
+            def patched_write_transmission_data(transmission, data_dict, archive, logger):
+                """
+                Patched version that adds support for %R (reflectance).
+                Also fixes the key access bug in the else clause.
+                """
+                ordinate_type = data_dict.get('ordinate_type')
+                
+                if ordinate_type == 'A':
+                    transmission.results[0].absorbance = data_dict['measured_ordinate']
+                elif ordinate_type == '%T':
+                    transmission.results[0].transmittance = data_dict['measured_ordinate'] / 100
+                elif ordinate_type == '%R':
+                    # NEW: Handle reflectance type
+                    transmission.results[0].reflectance = data_dict['measured_ordinate'] / 100
+                    if logger:
+                        logger.info(f'[PATCH] Processed reflectance (%R) data')
+                else:
+                    # FIXED: Use correct key name 'ordinate_type' not 'ordinate'
+                    if logger:
+                        logger.warning(f"Unknown ordinate type '{ordinate_type}'.")
+            
+            schema_module.write_transmission_data = patched_write_transmission_data
+            print('[nomad-inl-base] Patch 4: Patched write_transmission_data to handle %R and fix key access', file=sys.stderr)
+        
         print(
             '[nomad-inl-base] Transmission schema fully patched: '
-            'Added reflectance field, updated order, and plots',
+            'Added reflectance field, updated order, plots, and write_transmission_data',
             file=sys.stderr
         )
         
