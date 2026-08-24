@@ -339,25 +339,20 @@ def _patch_transmission_schema():
         UVVisNirTransmissionResult.generate_plots = patched_generate_plots
         print('[nomad-inl-base] Patch 3: Updated generate_plots method', file=sys.stderr)
         
-        # Patch 4: Patch the normalize function directly to intercept write_transmission_data calls
-        # This is necessary because normalize has a pre-bound reference to the original write_transmission_data
-        if hasattr(UVVisNirTransmission, 'normalize'):
-            original_normalize = UVVisNirTransmission.normalize
+        # Patch 4: Patch the MODULE-LEVEL normalize function
+        # The normalize function is registered at the module level, not as a class method
+        import nomad_measurements.transmission.schema as schema_module
+        
+        if hasattr(schema_module, 'normalize'):
+            original_normalize_func = schema_module.normalize
             
-            def patched_normalize(self, archive, logger):
+            def patched_normalize_func(archive, logger):
                 """
-                Patched normalize that intercepts write_transmission_data to handle %R.
+                Patched normalize function that intercepts write_transmission_data.
+                This is the module-level function, not a class method.
                 """
-                # Import locally to get the schema module's write_transmission_data
-                from nomad_measurements.transmission.schema import write_transmission_data
-                import sys
-                from io import StringIO
-                
-                # We need to intercept the call. We'll monkey-patch write_transmission_data
-                # temporarily inside this normalize call
-                
-                # Store the original function
-                original_write = write_transmission_data
+                # Get the write_transmission_data function
+                original_write = schema_module.write_transmission_data
                 
                 # Create our patched version
                 def patched_write_transmission_data(transmission, data_dict, archive, logger):
@@ -393,23 +388,23 @@ def _patch_transmission_schema():
                         if logger:
                             logger.warning(f"[PATCH] Unknown ordinate type '{ordinate_type}'. data_dict keys: {list(data_dict.keys())}")
                 
-                # Temporarily inject our patched version into the module namespace
-                import nomad_measurements.transmission.schema as schema_module
+                # Temporarily replace write_transmission_data in the module
                 schema_module.write_transmission_data = patched_write_transmission_data
                 
                 try:
-                    # Call the original normalize with our patched write_transmission_data in place
-                    return original_normalize(self, archive, logger)
+                    # Call the original normalize function which will use our patched write_transmission_data
+                    return original_normalize_func(archive, logger)
                 finally:
                     # Restore the original
                     schema_module.write_transmission_data = original_write
             
-            UVVisNirTransmission.normalize = patched_normalize
-            print('[nomad-inl-base] Patch 4: Patched normalize() to intercept write_transmission_data', file=sys.stderr)
+            # Replace the module-level normalize function
+            schema_module.normalize = patched_normalize_func
+            print('[nomad-inl-base] Patch 4: Patched module-level normalize() function', file=sys.stderr)
         
         print(
             '[nomad-inl-base] Transmission schema fully patched: '
-            'Added reflectance field, updated order, plots, and normalize intercept',
+            'Added reflectance field, updated order, plots, and patched normalize function',
             file=sys.stderr
         )
         
