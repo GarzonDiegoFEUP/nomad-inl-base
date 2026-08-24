@@ -18,4 +18,4 @@ def plugin_load(plugin_config):
         '[nomad-inl-base] Using forked nomad-measurements with reflectance support',
         file=sys.stderr
     )
-    return None
+
