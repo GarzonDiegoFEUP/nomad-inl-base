@@ -63,10 +63,6 @@ wet_deposition_entry_point = WetDepositionPackageEntryPoint(
 class INLCharacterizationPackageEntryPoint(SchemaPackageEntryPoint):
     def load(self):
         from nomad_inl_base.schema_packages.characterization import m_package
-        
-        # Apply schema patches after schema is loaded
-        from nomad_inl_base import _apply_schema_patches_lazy
-        _apply_schema_patches_lazy()
 
         return m_package
 

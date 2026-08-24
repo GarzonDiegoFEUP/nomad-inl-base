@@ -6,7 +6,7 @@ This module uses the enhanced nomad_measurements fork which includes:
 - European decimal separator handling (commas → periods)
 - Corrected PerkinElmer metadata indices
 
-No patching needed with the forked version\!
+No patching needed with the forked version!
 """
 
 import sys
