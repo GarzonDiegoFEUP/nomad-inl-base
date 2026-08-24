@@ -211,11 +211,6 @@ def _patch_transmission_reader():
         fairmat_readers_transmission.read_perkin_elmer_asc = patched_read_perkin_with_indices
         patch_log.append('Fixed metadata_map indices (79→83, 80→84)')
         
-        print(
-            f'[nomad-inl-base] Transmission patches applied: {" | ".join(patch_log)}',
-            file=sys.stderr
-        )
-        
     except ImportError as e:
         print(
             f'[nomad-inl-base] Skipping patches (fairmat_readers_transmission not available): {e}',
@@ -286,6 +281,8 @@ def _patch_transmission_schema():
             """
             Patched version that generates plots for transmittance, absorbance, AND reflectance.
             """
+            import plotly.express as px
+            
             figures = []
             if self.wavelength is None:
                 return figures
@@ -302,9 +299,7 @@ def _patch_transmission_schema():
                 yaxis_title = y_label
                 y = getattr(self, key).magnitude
 
-                line_linear = __import__('plotly.express', fromlist=['px']).line(
-                    x=x, y=y
-                )
+                line_linear = px.line(x=x, y=y)
 
                 line_linear.update_layout(
                     title=f'{y_label} over {x_label}',
@@ -447,6 +442,36 @@ def _patch_transmission_schema():
         )
 
 
-# Apply patches when the module is imported
-_patch_transmission_reader()
-_patch_transmission_schema()
+# Lazy patch application to avoid circular imports during NOMAD initialization
+_patches_applied = False
+
+
+def _apply_patches_lazy():
+    """Apply patches on first use, avoiding circular import issues."""
+    global _patches_applied
+    if _patches_applied:
+        return
+    
+    _patches_applied = True
+    try:
+        _patch_transmission_reader()
+    except Exception as e:
+        print(
+            f'[nomad-inl-base] Error applying reader patches: {e}',
+            file=sys.stderr
+        )
+    
+    try:
+        _patch_transmission_schema()
+    except Exception as e:
+        print(
+            f'[nomad-inl-base] Error applying schema patches: {e}',
+            file=sys.stderr
+        )
+
+
+# Register patches to apply at NOMAD initialization time
+def plugin_load(plugin_config):
+    """NOMAD plugin hook called after plugin discovery and full initialization."""
+    _apply_patches_lazy()
+    return None
