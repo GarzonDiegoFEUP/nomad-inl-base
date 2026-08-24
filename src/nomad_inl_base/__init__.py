@@ -228,5 +228,127 @@ def _patch_transmission_reader():
         )
 
 
+def _patch_transmission_schema():
+    """
+    Patch nomad_measurements transmission schema to support reflectance ('%R').
+    
+    Adds support for measuring both transmittance (%T) and reflectance (%R).
+    Both values come in as percentages and are divided by 100 to get decimal values (0-1).
+    """
+    try:
+        from nomad_measurements.transmission.schema import UVVisNirTransmission
+        
+        # Get the original _populate_transmission_from_file method
+        original_populate = UVVisNirTransmission._populate_transmission_from_file
+        
+        def patched_populate_transmission_from_file(transmission, data_dict, archive, logger):
+            """
+            Patched version that supports both %T (transmittance) and %R (reflectance).
+            """
+            transmission.user = data_dict['analyst_name']
+            if data_dict['start_datetime'] is not None:
+                transmission.datetime = data_dict['start_datetime']
+
+            # add results
+            transmission.m_setdefault('results/0')
+            transmission.results[0].wavelength = data_dict['measured_wavelength']
+            
+            # Handle different ordinate types
+            ordinate_type = data_dict.get('ordinate_type', '')
+            if ordinate_type == 'A':
+                transmission.results[0].absorbance = data_dict['measured_ordinate']
+            elif ordinate_type == '%T':
+                transmission.results[0].transmittance = data_dict['measured_ordinate'] / 100
+            elif ordinate_type == '%R':
+                # Support reflectance - divide by 100 same as transmittance
+                transmission.results[0].reflectance = data_dict['measured_ordinate'] / 100
+            else:
+                logger.warning(f"Unknown ordinate type '{ordinate_type}'.")
+            
+            transmission.results[0].normalize(archive, logger)
+
+            # add settings
+            transmission.m_setdefault('transmission_settings')
+            transmission.transmission_settings.sample_beam_position = data_dict[
+                'sample_beam_position'
+            ]
+            transmission.transmission_settings.common_beam_depolarizer = data_dict[
+                'is_common_beam_depolarizer_on'
+            ]
+            if data_dict['common_beam_mask_percentage'] is not None:
+                transmission.transmission_settings.common_beam_mask_percentage = (
+                    data_dict['common_beam_mask_percentage']
+                )
+            
+            # Continue with rest of original function by calling it
+            # Copy the rest of the settings from the original method
+            transmission.transmission_settings.is_d2_lamp_used = data_dict[
+                'is_d2_lamp_used'
+            ]
+            transmission.transmission_settings.is_tungsten_lamp_used = data_dict[
+                'is_tungsten_lamp_used'
+            ]
+            transmission.transmission_settings.detector_integration_time = data_dict[
+                'detector_integration_time'
+            ]
+            transmission.transmission_settings.detector_NIR_gain = data_dict[
+                'detector_NIR_gain'
+            ]
+            transmission.transmission_settings.detector_change_wavelength = data_dict[
+                'detector_change_wavelength'
+            ]
+            transmission.transmission_settings.monochromator_slit_width = data_dict[
+                'monochromator_slit_width'
+            ]
+            transmission.transmission_settings.monochromator_change_wavelength = (
+                data_dict['monochromator_change_wavelength']
+            )
+            transmission.transmission_settings.lamp_change_wavelength = data_dict[
+                'lamp_change_wavelength'
+            ]
+            transmission.transmission_settings.polarizer_angle = data_dict[
+                'polarizer_angle'
+            ]
+            transmission.transmission_settings.attenuation_percentage = data_dict[
+                'attenuation_percentage'
+            ]
+            
+            # add detector info
+            transmission.m_setdefault('detector')
+            transmission.detector.detector_type = data_dict['detector_module']
+            
+            # add instrument info
+            transmission.m_setdefault('instrument')
+            transmission.instrument.instrument_name = data_dict['instrument_name']
+            transmission.instrument.instrument_serial_number = (
+                data_dict['instrument_serial_number']
+            )
+            transmission.instrument.instrument_firmware_version = (
+                data_dict['instrument_firmware_version']
+            )
+        
+        # Replace the original method
+        UVVisNirTransmission._populate_transmission_from_file = (
+            staticmethod(patched_populate_transmission_from_file)
+        )
+        
+        print(
+            '[nomad-inl-base] Transmission schema patched: Added %R (reflectance) support',
+            file=sys.stderr
+        )
+        
+    except ImportError as e:
+        print(
+            f'[nomad-inl-base] Skipping schema patch (nomad_measurements not available): {e}',
+            file=sys.stderr
+        )
+    except Exception as e:
+        print(
+            f'[nomad-inl-base] ERROR patching schema: {e}',
+            file=sys.stderr
+        )
+
+
 # Apply patches when the module is imported
 _patch_transmission_reader()
+_patch_transmission_schema()
