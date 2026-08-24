@@ -442,25 +442,28 @@ def _patch_transmission_schema():
         )
 
 
-# Lazy patch application to avoid circular imports during NOMAD initialization
-_patches_applied = False
+# Apply reader patches immediately (no circular imports from fairmat_readers)
+try:
+    _patch_transmission_reader()
+    print('[nomad-inl-base] Reader patches applied successfully', file=sys.stderr)
+except ImportError:
+    # fairmat_readers not available yet - will skip silently
+    pass
+except Exception as e:
+    print(f'[nomad-inl-base] Error applying reader patches: {e}', file=sys.stderr)
 
 
-def _apply_patches_lazy():
-    """Apply patches on first use, avoiding circular import issues."""
-    global _patches_applied
-    if _patches_applied:
+# Lazy schema patch application to avoid circular imports during NOMAD initialization
+_schema_patches_applied = False
+
+
+def _apply_schema_patches_lazy():
+    """Apply schema patches after NOMAD is fully initialized."""
+    global _schema_patches_applied
+    if _schema_patches_applied:
         return
     
-    _patches_applied = True
-    try:
-        _patch_transmission_reader()
-    except Exception as e:
-        print(
-            f'[nomad-inl-base] Error applying reader patches: {e}',
-            file=sys.stderr
-        )
-    
+    _schema_patches_applied = True
     try:
         _patch_transmission_schema()
     except Exception as e:
@@ -470,8 +473,8 @@ def _apply_patches_lazy():
         )
 
 
-# Register patches to apply at NOMAD initialization time
+# Register schema patch to apply at NOMAD initialization time
 def plugin_load(plugin_config):
     """NOMAD plugin hook called after plugin discovery and full initialization."""
-    _apply_patches_lazy()
+    _apply_schema_patches_lazy()
     return None
