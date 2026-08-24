@@ -170,7 +170,7 @@ def _patch_transmission_reader():
                     'detector_change_wavelength': read_detector_change_wavelength,
                     'detector_module': read_detector_module,
                     'polarizer_angle': read_polarizer_angle,
-                    'ordinate_type': 84,  # FIXED: was 80
+                    'ordinate': 84,  # FIXED: was 80, use 'ordinate' (not ordinate_type) for schema compatibility
                     'wavelength_units': 83,  # FIXED: was 79
                     'monochromator_slit_width': read_monochromator_slit_width,
                     'monochromator_change_wavelength': read_monochromator_change_wavelength,
@@ -329,51 +329,9 @@ def _patch_transmission_schema():
         UVVisNirTransmissionResult.generate_plots = patched_generate_plots
         print('[nomad-inl-base] Patch 3: Updated generate_plots method', file=sys.stderr)
         
-        # Patch 4: Patch the normalize function directly to fix ordinate_type key issue BEFORE it calls write_transmission_data
-        # This is more reliable than patching write_transmission_data itself
-        import nomad_measurements.transmission.schema as schema_module
-        
-        if hasattr(schema_module, 'normalize') and hasattr(UVVisNirTransmission, 'normalize'):
-            original_normalize = UVVisNirTransmission.normalize
-            
-            def patched_normalize(self, archive, logger):
-                """
-                Patched normalize that fixes data_dict before it's used.
-                Ensures 'ordinate' key exists for write_transmission_data.
-                """
-                # Intercept and patch the entire normalize process
-                from nomad_measurements.transmission.schema import write_transmission_data
-                
-                # Store original write function
-                _original_write = write_transmission_data
-                
-                def wrapped_write_transmission_data(transmission, data_dict, archive, logger):
-                    """Wrapper that ensures 'ordinate' key exists."""
-                    # Fix the key issue: data_dict has 'ordinate_type' but function expects 'ordinate'
-                    if 'ordinate_type' in data_dict and 'ordinate' not in data_dict:
-                        data_dict['ordinate'] = data_dict['ordinate_type']
-                        if logger:
-                            logger.info(f'[PATCH] Fixed key: mapped ordinate_type="{data_dict["ordinate"]}" to ordinate')
-                    
-                    # Call the original function
-                    return _original_write(transmission, data_dict, archive, logger)
-                
-                # Temporarily replace write_transmission_data in the module
-                schema_module.write_transmission_data = wrapped_write_transmission_data
-                
-                try:
-                    # Call the original normalize with patched write_transmission_data
-                    return original_normalize(self, archive, logger)
-                finally:
-                    # Restore original
-                    schema_module.write_transmission_data = _original_write
-            
-            UVVisNirTransmission.normalize = patched_normalize
-            print('[nomad-inl-base] Patch 4: Patched normalize() method directly', file=sys.stderr)
-        
         print(
             '[nomad-inl-base] Transmission schema fully patched: '
-            'Added reflectance field, updated order, and patched normalize()',
+            'Added reflectance field, updated order, and plots',
             file=sys.stderr
         )
         
