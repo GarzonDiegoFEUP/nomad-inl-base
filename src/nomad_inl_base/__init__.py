@@ -231,7 +231,7 @@ def _patch_transmission_schema():
     1. reflectance field to UVVisNirTransmissionResult
     2. Updates the schema section order to include reflectance
     3. Updates generate_plots to plot reflectance
-    4. Fixes write_transmission_data to handle ordinate_type key and %R
+    4. Patches normalize() directly to fix ordinate_type key issue
     
     Now supports measuring: absorbance (A), transmittance (%T), and reflectance (%R).
     """
@@ -257,6 +257,7 @@ def _patch_transmission_schema():
             )
             UVVisNirTransmissionResult.reflectance = reflectance_field
             UVVisNirTransmissionResult._reflectance_patched = True
+            print('[nomad-inl-base] Patch 1: Added reflectance field', file=sys.stderr)
         
         # Patch 2: Update m_eln section order to include reflectance
         if hasattr(UVVisNirTransmissionResult.m_def, 'a_eln'):
@@ -273,6 +274,7 @@ def _patch_transmission_schema():
                                 props.order.insert(idx + 1, 'reflectance')
                             else:
                                 props.order.append('reflectance')
+            print('[nomad-inl-base] Patch 2: Updated schema order', file=sys.stderr)
         
         # Patch 3: Update generate_plots method
         original_generate_plots = UVVisNirTransmissionResult.generate_plots
@@ -325,47 +327,53 @@ def _patch_transmission_schema():
             return figures
 
         UVVisNirTransmissionResult.generate_plots = patched_generate_plots
+        print('[nomad-inl-base] Patch 3: Updated generate_plots method', file=sys.stderr)
         
-        # Patch 5: Fix write_transmission_data to handle ordinate_type key and %R
-        # The original function uses wrong key name and doesn't support reflectance
+        # Patch 4: Patch the normalize function directly to fix ordinate_type key issue BEFORE it calls write_transmission_data
+        # This is more reliable than patching write_transmission_data itself
         import nomad_measurements.transmission.schema as schema_module
         
-        if hasattr(schema_module, 'write_transmission_data'):
-            original_write_transmission = schema_module.write_transmission_data
+        if hasattr(schema_module, 'normalize') and hasattr(UVVisNirTransmission, 'normalize'):
+            original_normalize = UVVisNirTransmission.normalize
             
-            def patched_write_transmission_data(transmission, data_dict, archive, logger):
+            def patched_normalize(self, archive, logger):
                 """
-                Patched version that handles ordinate_type key and supports %R.
-                Wraps the original but fixes the key name issue.
+                Patched normalize that fixes data_dict before it's used.
+                Ensures 'ordinate' key exists for write_transmission_data.
                 """
-                # Fix key name: the data_dict uses 'ordinate_type' not 'ordinate'
-                if 'ordinate_type' in data_dict and 'ordinate' not in data_dict:
-                    data_dict['ordinate'] = data_dict['ordinate_type']
+                # Intercept and patch the entire normalize process
+                from nomad_measurements.transmission.schema import write_transmission_data
                 
-                # Call original function
+                # Store original write function
+                _original_write = write_transmission_data
+                
+                def wrapped_write_transmission_data(transmission, data_dict, archive, logger):
+                    """Wrapper that ensures 'ordinate' key exists."""
+                    # Fix the key issue: data_dict has 'ordinate_type' but function expects 'ordinate'
+                    if 'ordinate_type' in data_dict and 'ordinate' not in data_dict:
+                        data_dict['ordinate'] = data_dict['ordinate_type']
+                        if logger:
+                            logger.info(f'[PATCH] Fixed key: mapped ordinate_type="{data_dict["ordinate"]}" to ordinate')
+                    
+                    # Call the original function
+                    return _original_write(transmission, data_dict, archive, logger)
+                
+                # Temporarily replace write_transmission_data in the module
+                schema_module.write_transmission_data = wrapped_write_transmission_data
+                
                 try:
-                    return original_write_transmission(transmission, data_dict, archive, logger)
-                except KeyError as e:
-                    if "'ordinate'" in str(e):
-                        # If still fails, handle it directly
-                        ordinate_type = data_dict.get('ordinate_type', data_dict.get('ordinate', ''))
-                        if ordinate_type in ['A', '%T', '%R']:
-                            # Successfully handle all three types
-                            if logger:
-                                logger.info(f"Handled ordinate type: {ordinate_type}")
-                            return
-                        else:
-                            if logger:
-                                logger.warning(f"Unknown ordinate type '{ordinate_type}'.")
-                            return
-                    else:
-                        raise
+                    # Call the original normalize with patched write_transmission_data
+                    return original_normalize(self, archive, logger)
+                finally:
+                    # Restore original
+                    schema_module.write_transmission_data = _original_write
             
-            schema_module.write_transmission_data = patched_write_transmission_data
+            UVVisNirTransmission.normalize = patched_normalize
+            print('[nomad-inl-base] Patch 4: Patched normalize() method directly', file=sys.stderr)
         
         print(
             '[nomad-inl-base] Transmission schema fully patched: '
-            'Added reflectance field, updated order, and plots',
+            'Added reflectance field, updated order, and patched normalize()',
             file=sys.stderr
         )
         
@@ -379,6 +387,7 @@ def _patch_transmission_schema():
             f'[nomad-inl-base] ERROR patching schema: {e}',
             file=sys.stderr
         )
+
 
 
 # Apply reader patches immediately (no circular imports from fairmat_readers)
