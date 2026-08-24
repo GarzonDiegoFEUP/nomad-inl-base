@@ -97,6 +97,9 @@ def _patch_transmission_reader():
             """
             Final wrapper: handles both comma conversion AND index correction.
             """
+            if logger:
+                logger.info(f'[PATCH READER] Starting to parse {filename}')
+            
             from collections import defaultdict
             from inspect import isfunction
             import pandas as pd
@@ -109,6 +112,9 @@ def _patch_transmission_reader():
             with open(filename, 'r', encoding='utf-8') as f:
                 content = f.read()
             content_cleaned = content.replace(',', '.')
+            
+            if logger and content_cleaned != content:
+                logger.info(f'[PATCH READER] Converted commas to periods in {filename}')
             
             if content_cleaned != content:
                 import tempfile
@@ -186,6 +192,9 @@ def _patch_transmission_reader():
                                 output[path] = float(metadata[val]) * ureg.dimensionless
                             except ValueError:
                                 output[path] = metadata[val]
+                                # DEBUG: Log what we got for ordinate_type
+                                if path == 'ordinate_type' and logger:
+                                    logger.info(f'[PATCH READER] ordinate_type at metadata[{val}] = {repr(output[path])}')
                     elif isfunction(val):
                         output[path] = val(metadata, logger)
                     else:
@@ -197,7 +206,8 @@ def _patch_transmission_reader():
                 output['measured_wavelength'] *= ureg(output['wavelength_units'])
                 
                 if logger:
-                    logger.info(f'Parsed {filename} with corrected metadata indices')
+                    logger.info(f'[PATCH READER] Successfully parsed {filename}')
+                    logger.info(f'[PATCH READER] ordinate_type from data_dict: {repr(output.get("ordinate_type"))}')
                 
                 return dict(output)
                 
@@ -342,19 +352,31 @@ def _patch_transmission_schema():
                 """
                 ordinate_type = data_dict.get('ordinate_type')
                 
+                # DEBUG: Print what we got
+                if logger:
+                    logger.info(f'[PATCH write_transmission_data] ordinate_type = {repr(ordinate_type)}')
+                
+                # Strip whitespace just in case
+                if isinstance(ordinate_type, str):
+                    ordinate_type = ordinate_type.strip()
+                
                 if ordinate_type == 'A':
                     transmission.results[0].absorbance = data_dict['measured_ordinate']
+                    if logger:
+                        logger.info(f'[PATCH] Set absorbance')
                 elif ordinate_type == '%T':
                     transmission.results[0].transmittance = data_dict['measured_ordinate'] / 100
+                    if logger:
+                        logger.info(f'[PATCH] Set transmittance')
                 elif ordinate_type == '%R':
                     # NEW: Handle reflectance type
                     transmission.results[0].reflectance = data_dict['measured_ordinate'] / 100
                     if logger:
-                        logger.info(f'[PATCH] Processed reflectance (%R) data')
+                        logger.info(f'[PATCH] Set reflectance - value from 0-100 divided by 100')
                 else:
                     # FIXED: Use correct key name 'ordinate_type' not 'ordinate'
                     if logger:
-                        logger.warning(f"Unknown ordinate type '{ordinate_type}'.")
+                        logger.warning(f"[PATCH] Unknown ordinate type '{ordinate_type}'. data_dict keys: {list(data_dict.keys())}")
             
             schema_module.write_transmission_data = patched_write_transmission_data
             print('[nomad-inl-base] Patch 4: Patched write_transmission_data to handle %R and fix key access', file=sys.stderr)
