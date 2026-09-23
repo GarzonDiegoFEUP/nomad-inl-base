@@ -18,6 +18,8 @@ from nomad_inl_base.schema_packages.characterization import (
     INLPhotoluminescence,
     INLRaman,
     ObjectiveInfo,
+    PLSpectrometerSettings,
+    PLSpectrumData,
     SampleLocation,
     SpectrometerSettings,
     SpectrumData,
@@ -249,10 +251,10 @@ class TestINLPhotoluminescenceSchema:
             duration=42.0,
             system_id='100-1200-682',
             excitation=ExcitationBeam(wavelength=532.032),
-            spectrometer=SpectrometerSettings(
+            spectrometer=PLSpectrometerSettings(
                 grating_type='G1: 600 g/mm BLZ=500nm',
                 center_wavelength=670.185,
-                spectral_center=1.850,  # eV for PL
+                spectral_center=1.850,
             ),
             detector=DetectorSettings(
                 camera_model='DU401_BV',
@@ -264,7 +266,7 @@ class TestINLPhotoluminescenceSchema:
                 magnification=50.0,
             ),
             sample_location=SampleLocation(x=1302.0, y=-1450.1, z=0.0),
-            spectrum=SpectrumData(
+            spectrum=PLSpectrumData(
                 x_values=np.array([2.063, 2.062, 2.061, 2.060]),
                 y_values=np.array([810, 806, 808, 808]),
                 y_unit='CCD cts',
@@ -278,7 +280,7 @@ class TestINLPhotoluminescenceSchema:
     def test_pl_normalize_generates_plot(self):
         """Test that normalize() generates Plotly figure for PL."""
         entry = INLPhotoluminescence(
-            spectrum=SpectrumData(
+            spectrum=PLSpectrumData(
                 x_values=np.array([2.063, 2.062, 2.061, 2.060]),
                 y_values=np.array([810, 806, 808, 808]),
                 y_unit='CCD cts',
@@ -299,7 +301,7 @@ class TestINLPhotoluminescenceSchema:
         y_vals = np.array([800, 850, 900, 850])
         
         entry = INLPhotoluminescence(
-            spectrum=SpectrumData(
+            spectrum=PLSpectrumData(
                 x_values=x_vals,
                 y_values=y_vals,
                 y_unit='CCD cts',
@@ -405,7 +407,7 @@ class TestMeasurementValidation:
         x_vals = np.array([1.5, 2.0, 2.5, 3.0, 3.5])
         y_vals = np.array([100, 200, 500, 200, 100])
         
-        spectrum = SpectrumData(x_values=x_vals, y_values=y_vals)
+        spectrum = PLSpectrumData(x_values=x_vals, y_values=y_vals)
         assert np.all(np.asarray(spectrum.x_values) >= 1.5)
         assert np.all(np.asarray(spectrum.x_values) <= 3.5)
 

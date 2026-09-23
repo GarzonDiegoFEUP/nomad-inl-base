@@ -176,18 +176,12 @@ class INLCharacterization(Measurement, EntryData):
             return
 
         try:
-            # Import here to avoid circular imports
-            from nomad_inl_base.parsers.parser import (
-                _extract_sample_name,
-                _find_matching_thin_film_stacks,
-            )
-
             # Get the mainfile path from archive metadata
-            mainfile = None
-            if hasattr(archive, 'metadata') and hasattr(archive.metadata, 'mainfile'):
-                mainfile = archive.metadata.mainfile
+            metadata = getattr(archive, 'metadata', None)
+            mainfile = getattr(metadata, 'mainfile', None)
 
-            if not mainfile:
+            # Prevent parser calls with None or Mock values.
+            if not isinstance(mainfile, str) or not mainfile:
                 return
 
             # Extract sample name from filename
@@ -216,8 +210,7 @@ class INLCharacterization(Measurement, EntryData):
                 return
 
             confidence, stack = matches[0]
-            reference = INLSampleReference()
-            reference.reference = stack
+            reference = INLSampleReference(reference=stack)
             self.samples.append(reference)
 
             logger.info(
@@ -2400,8 +2393,8 @@ class ExcitationBeam(ArchiveSection):
 
     power = Quantity(
         type=np.float64,
-        unit='watt',
-        description='Laser excitation power (measured/set at sample). Supports milliwatts (mW) or microwatts (µW). Enter as decimal number; unit is selected in ELN. Example: 50 mW or 500 µW.',
+        unit='milliwatt',
+        description='Laser excitation power at the sample.',
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
             defaultDisplayUnit='milliwatt',
@@ -2698,7 +2691,7 @@ class INLRaman(INLCharacterization, PlotSection):
 
     power = Quantity(
         type=np.float64,
-        unit='watt',
+        unit='milliwatt',
         description='Laser excitation power.',
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
@@ -2810,7 +2803,7 @@ class INLPhotoluminescence(INLCharacterization, PlotSection):
 
     power = Quantity(
         type=np.float64,
-        unit='watt',
+        unit='milliwatt',
         description='Laser excitation power.',
         a_eln=ELNAnnotation(
             component=ELNComponentEnum.NumberEditQuantity,
@@ -2860,7 +2853,7 @@ class INLPhotoluminescence(INLCharacterization, PlotSection):
                 mode='lines+markers' if x_values.size == 1 else 'lines',
                 name='PL Spectrum',
                 line=dict(color='#ff7f0e', width=2),
-                hovertemplate='Photon Energy: %{x:.3f} eV<br>Intensity: %{y:.0f} cts<extra></extra>',
+                hovertemplate='Energy: %{x:.4f} eV<br>Intensity: %{y:.0f} cts<extra></extra>',
             )
         )
         fig.update_layout(
@@ -2869,12 +2862,16 @@ class INLPhotoluminescence(INLCharacterization, PlotSection):
             width=716,
             xaxis_title='Photon Energy (eV)',
             yaxis_title='Intensity (CCD cts)',
-            title='Photoluminescence Spectrum',
+            title='PL Spectrum',
             hovermode='x unified',
         )
         self.figures.append(
             PlotlyFigure(label='PL Spectrum', figure=fig.to_plotly_json())
         )
+
+
+if __name__ == '__main__':
+    pass
 
 
 m_package.__init_metainfo__()

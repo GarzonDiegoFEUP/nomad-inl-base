@@ -683,16 +683,16 @@ def _extract_sample_name(filename: str) -> str | None:  # noqa: PLR0911
         basename = basename[: -len('.archive')]
         basename = basename.rsplit('.', 1)[0]
 
-    # PC03/PC04 chamber format.
+    # PC03/PC04 chamber format (requires non-empty sample name).
     match = re.match(
-        r'^PC(?:03|04)_All Signals_(.*?)'
+        r'^PC(?:03|04)_All Signals_(?P<sample>.+?)'
         r'\s+\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}'
-        r'\.(?:csv)?$',
+        r'$',
         basename,
         re.IGNORECASE,
     )
     if match:
-        return match.group(1).strip() or None
+        return match.group('sample').strip() or None
 
     if re.fullmatch(r'PC(?:03|04)_sample\.[^.]+', basename, re.IGNORECASE):
         return None
