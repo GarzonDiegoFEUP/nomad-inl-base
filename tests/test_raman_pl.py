@@ -232,7 +232,8 @@ class TestINLRamanSchema:
         assert len(entry.figures) > 0
         # Verify the plot was created (structure check)
         plot = entry.figures[0]
-        assert 'label' in plot.keys() or hasattr(plot, 'label')
+        assert hasattr(plot, 'label')
+        assert plot.label == 'Raman Spectrum'
 
 
 # ============================================================================
