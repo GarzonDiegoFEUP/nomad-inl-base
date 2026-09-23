@@ -683,16 +683,28 @@ def _extract_sample_name(filename: str) -> str | None:  # noqa: PLR0911
         basename = basename[: -len('.archive')]
         basename = basename.rsplit('.', 1)[0]
 
+    # Remove extension to get the stem for pattern matching
+    stem = re.sub(r'\.[^.]+$', '', basename)
+
     # PC03/PC04 chamber format (requires non-empty sample name).
+    # PC04_All Signals_<sample> YYYY.MM.DD-HH.MM.SS
     match = re.match(
         r'^PC(?:03|04)_All Signals_(?P<sample>.+?)'
-        r'\s+\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}'
-        r'$',
-        basename,
+        r'\s+\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}$',
+        stem,
         re.IGNORECASE,
     )
     if match:
         return match.group('sample').strip() or None
+
+    # Explicitly reject timestamp-only PC03/PC04 names.
+    if re.match(
+        r'^PC(?:03|04)_All Signals_'
+        r'\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}$',
+        stem,
+        re.IGNORECASE,
+    ):
+        return None
 
     if re.fullmatch(r'PC(?:03|04)_sample\.[^.]+', basename, re.IGNORECASE):
         return None
