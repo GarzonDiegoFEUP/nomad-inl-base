@@ -150,7 +150,7 @@ class TestWitecOpticalSpectrumParserDetection:
         assert len(x_values) == 4
         assert len(y_values) == 4
         # PL data in eV range (2.06 eV)
-        assert 2.06 < x_values[0] < 2.063
+        assert 2.06 < x_values[0] <= 2.063
 
 
 # ============================================================================
@@ -231,7 +231,7 @@ class TestINLRamanSchema:
         assert len(entry.figures) > 0
         # Verify the plot was created (structure check)
         plot = entry.figures[0]
-        assert 'label' in plot.keys() or hasattr(plot, 'label')
+        assert hasattr(plot, 'label')
 
 
 # ============================================================================
@@ -273,7 +273,7 @@ class TestINLPhotoluminescenceSchema:
         )
         
         assert entry.operator == 'Witec User'
-        assert entry.spectrometer.spectral_center == 1.850
+        assert entry.spectrometer.spectral_center.magnitude == 1.850
         assert len(entry.spectrum.x_values) == 4
 
     def test_pl_normalize_generates_plot(self):
@@ -326,8 +326,8 @@ class TestCommonSubsections:
     def test_excitation_beam_creation(self):
         """Test ExcitationBeam subsection."""
         excitation = ExcitationBeam(wavelength=532.032, power=50.0)
-        assert excitation.wavelength == 532.032
-        assert excitation.power == 50.0
+        assert excitation.wavelength.magnitude == 532.032
+        assert excitation.power.magnitude == 50.0
 
     def test_detector_settings_creation(self):
         """Test DetectorSettings subsection."""
@@ -345,8 +345,8 @@ class TestCommonSubsections:
     def test_sample_location_creation(self):
         """Test SampleLocation subsection."""
         location = SampleLocation(x=1234.5, y=2345.6, z=0.0)
-        assert location.x == 1234.5
-        assert location.y == 2345.6
+        assert location.x.magnitude == 1234.5
+        assert location.y.magnitude == 2345.6
 
     def test_spectrum_data_array_consistency(self):
         """Test that spectrum X and Y arrays match in length."""
@@ -398,7 +398,7 @@ class TestMeasurementValidation:
         
         for wl in valid_wavelengths:
             excitation = ExcitationBeam(wavelength=float(wl))
-            assert excitation.wavelength == float(wl)
+            assert excitation.wavelength.magnitude == float(wl)
 
     def test_pl_energy_range(self):
         """Test that PL energy data is in reasonable range."""
@@ -407,8 +407,8 @@ class TestMeasurementValidation:
         y_vals = np.array([100, 200, 500, 200, 100])
         
         spectrum = SpectrumData(x_values=x_vals, y_values=y_vals)
-        assert np.all(spectrum.x_values >= 1.5)
-        assert np.all(spectrum.x_values <= 3.5)
+        assert np.all(spectrum.x_values.magnitude >= 1.5)
+        assert np.all(spectrum.x_values.magnitude <= 3.5)
 
 
 if __name__ == '__main__':

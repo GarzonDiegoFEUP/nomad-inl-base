@@ -366,7 +366,9 @@ class TestCharacterizationAutoLinking:
         archive = Mock()
         archive.metadata = Mock()
         archive.metadata.mainfile = mainfile
+        archive.metadata.entry_name = 'characterization.archive.json'
         archive.data = {}
+        archive.results = None
         archive.m_context = None
 
         # Mock logger
@@ -403,7 +405,7 @@ class TestCharacterizationAutoLinking:
         char, archive, logger = self._create_mock_characterization(
             'sample 4pp.xlsx'
         )
-        char.samples = [Mock(spec=INLSampleReference)]  # Already manually linked
+        char.samples = [INLSampleReference(name='Manual Sample')]  # Already manually linked
 
         # Call normalize
         char.normalize(archive, logger)

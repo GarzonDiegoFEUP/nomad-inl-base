@@ -1,3 +1,4 @@
+import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -26,6 +27,30 @@ from plotly.subplots import make_subplots
 from nomad_inl_base.schema_packages.entities import INLSampleReference, INLThinFilmStack
 
 m_package = SchemaPackage()
+
+
+def _extract_sample_name(filename: str) -> 'str | None':
+    from nomad_inl_base.parsers.parser import _extract_sample_name as parser_extract_sample_name
+
+    return parser_extract_sample_name(filename)
+
+
+def _find_matching_thin_film_stacks(
+    sample_name: 'str | None',
+    archive: 'EntryArchive',
+    confidence_threshold: float = 0.85,
+    threshold: 'float | None' = None,
+) -> 'list[tuple]':
+    from nomad_inl_base.parsers.parser import (
+        _find_matching_thin_film_stacks as parser_find_matching_thin_film_stacks,
+    )
+
+    return parser_find_matching_thin_film_stacks(
+        sample_name=sample_name,
+        archive=archive,
+        confidence_threshold=confidence_threshold,
+        threshold=threshold,
+    )
 
 
 def _coerce_string_floats(dct: dict, handle_comma_decimals: bool = True) -> dict:
@@ -113,20 +138,17 @@ class INLCharacterization(Measurement, EntryData):
         This allows automatic sample inference from filename conventions without
         requiring manual linking by the user.
         """
+        entry_name = None
+        if hasattr(archive, 'metadata') and archive.metadata is not None:
+            entry_name = getattr(archive.metadata, 'entry_name', None)
+        if self.name is None and not isinstance(entry_name, str):
+            self.name = self.__class__.__name__
+
         super().normalize(archive, logger)
 
         # Only auto-link if no manual linking was done
         if self.samples or len(self.samples or []) > 0:
             return
-
-        # Import here to avoid circular imports
-        from nomad_inl_base.parsers.parser import (
-            _extract_sample_name,
-            _find_matching_thin_film_stacks,
-        )
-        from nomad_inl_base.schema_packages.entities import (
-            INLSampleReference,
-        )
 
         try:
             # Get the mainfile path from archive metadata
@@ -146,6 +168,16 @@ class INLCharacterization(Measurement, EntryData):
             # Note: We need to search within the current upload context
             # This requires access to sibling entries in the archive
             matches = _find_matching_thin_film_stacks(sample_name, archive)
+            if not matches:
+                fallback_name = sample_name
+                for pattern in [r'\.(?:pl|raman|xrd|uv)\.archive$', r'_\d{3}$']:
+                    candidate = re.sub(pattern, '', fallback_name, flags=re.IGNORECASE).strip()
+                    if candidate and candidate != fallback_name:
+                        fallback_name = candidate
+                        matches = _find_matching_thin_film_stacks(fallback_name, archive)
+                        if matches:
+                            sample_name = fallback_name
+                            break
 
             if not matches:
                 logger.info(

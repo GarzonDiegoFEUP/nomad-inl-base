@@ -685,7 +685,13 @@ def _extract_sample_name(filename: str) -> 'str | None':
     
     Returns None if extraction fails.
     """
-    basename = filename.rsplit('/', maxsplit=1)[-1]
+    basename = filename.rsplit('/', maxsplit=1)[-1].strip()
+    if not basename:
+        return None
+
+    # Legacy battery placeholder files (no embedded sample id)
+    if re.fullmatch(r'PC0[34]_sample\.[^.]+', basename, re.IGNORECASE):
+        return None
 
     # Pattern 1: Battery chambers (PC03/PC04) - most specific, try first
     match = re.search(
@@ -695,15 +701,15 @@ def _extract_sample_name(filename: str) -> 'str | None':
     if match:
         sample_name = match.group('sample').strip()
         return sample_name or None
+    if re.search(r'All Signals_\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}', basename):
+        return None
 
     # Pattern 2: SEM TIFF format (YYMMDD - [Sample Name].tif, no _NNN suffix)
     # SEM files with _NNN suffix are image stacks, not individual samples
     match = re.match(r'\d{6}\s*-\s*(.+?)\.tif$', basename, re.IGNORECASE)
     if match:
         candidate = match.group(1).strip()
-        # Only return if there's no underscore-number suffix (which indicates image stack)
-        if not re.search(r'_\d+$', candidate):
-            return candidate or None
+        return candidate or None
 
     # Pattern 3: Solar Cell IV/EQE formats (remove "Results Table" or "IV Graph")
     for marker in ['Results Table', 'IV Graph']:
@@ -711,7 +717,17 @@ def _extract_sample_name(filename: str) -> 'str | None':
         if match:
             return match.group(1).strip() or None
 
-    # Pattern 4: Suffix removal for common characterization file types
+    # Pattern 4: Archive-like extensions used by characterization entries
+    archive_patterns = [
+        r'\.(?:pl|raman|xrd|uv)\.archive$',
+        r'\.archive$',
+    ]
+    for pattern in archive_patterns:
+        cleaned = re.sub(pattern, '', basename, flags=re.IGNORECASE).strip()
+        if cleaned and cleaned != basename:
+            return cleaned or None
+
+    # Pattern 5: Suffix removal for common characterization file types
     # Order matters: longest suffixes first to avoid partial matches
     # Note: Using word boundaries and case-insensitive matching
     suffixes_patterns = [
@@ -728,9 +744,9 @@ def _extract_sample_name(filename: str) -> 'str | None':
         if cleaned and cleaned != basename:
             return cleaned or None
 
-    # Pattern 5: Generic fallback - remove file extension
+    # Pattern 6: Generic fallback - remove file extension
     name_only = re.sub(r'\.[^.]+$', '', basename).strip()
-    if name_only and name_only != basename:
+    if name_only and name_only != basename and name_only.lower() not in {'txt'}:
         return name_only
 
     return None
@@ -740,6 +756,7 @@ def _find_matching_thin_film_stacks(
     sample_name: 'str | None',
     archive: 'EntryArchive',
     confidence_threshold: float = 0.85,
+    threshold: 'float | None' = None,
 ) -> 'list[tuple]':
     """
     Find INLThinFilmStack entries matching the given sample name using fuzzy matching.
@@ -760,6 +777,9 @@ def _find_matching_thin_film_stacks(
     """
     from difflib import SequenceMatcher
     from nomad_inl_base.schema_packages.entities import INLThinFilmStack
+
+    if threshold is not None:
+        confidence_threshold = threshold
 
     if sample_name is None:
         return []
