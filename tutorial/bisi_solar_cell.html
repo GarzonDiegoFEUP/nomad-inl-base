@@ -1,0 +1,1322 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A plugin to manage the data from LaNaSC">
+      
+      
+        <meta name="author" content="Diego Garzon">
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-8.1.1">
+    
+    
+      
+        <title>BiSI Solar Cell - nomad-inl-base</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.23b6d78a.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+          
+          
+          <meta name="theme-color" content="">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,400i,700%7C&display=fallback">
+        <style>:root{--md-text-font:"Titillium Web";--md-code-font:""}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="#2a4cdf" data-md-color-accent="#008a67">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tutorial-full-bisi-solar-cell-workflow" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-header__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            nomad-inl-base
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              BiSI Solar Cell
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-nav__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    nomad-inl-base
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tutorial.html" class="md-nav__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="material_characterization.html" class="md-nav__link">
+        Material Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cigs_solar_cell.html" class="md-nav__link">
+        CIGSe Solar Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          BiSI Solar Cell
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="bisi_solar_cell.html" class="md-nav__link md-nav__link--active">
+        BiSI Solar Cell
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lab-workflow-overview" class="md-nav__link">
+    Lab workflow overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-substrate" class="md-nav__link">
+    Step 1 – Substrate
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 1 – Substrate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-the-fto-substrate" class="md-nav__link">
+    Create the FTO substrate
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-electron-transport-layer-sno2-spin-coating" class="md-nav__link">
+    Step 2 – Electron transport layer (SnO₂ spin coating)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-absorber-layer-bisi-spin-coating" class="md-nav__link">
+    Step 3 – Absorber layer (BiSI spin coating)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-hole-transport-layer-ptaa-spin-coating" class="md-nav__link">
+    Step 4 – Hole transport layer (PTAA spin coating)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-metal-contact-au-by-meteor-e-beam" class="md-nav__link">
+    Step 5 – Metal contact (Au by METEOR e-beam)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-characterization-optional" class="md-nav__link">
+    Step 6 – Characterization (optional)
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 6 – Characterization (optional)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#xrd-measurement" class="md-nav__link">
+    XRD measurement
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-characterization" class="md-nav__link">
+    Additional characterization
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-inspect-the-provenance-graph" class="md-nav__link">
+    Step 7 – Inspect the provenance graph
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recipe-reuse" class="md-nav__link">
+    Recipe reuse
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-questions" class="md-nav__link">
+    Common questions
+  </a>
+  
+    <nav class="md-nav" aria-label="Common questions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q-can-i-deposit-multiple-pixels-on-the-same-substrate-in-one-meteor-run" class="md-nav__link">
+    Q: Can I deposit multiple pixels on the same substrate in one METEOR run?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-what-if-the-spin-coating-step-fails-and-i-need-to-re-deposit-a-layer" class="md-nav__link">
+    Q: What if the spin-coating step fails and I need to re-deposit a layer?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-should-i-create-separate-substrate-entries-for-each-device-or-reuse-one" class="md-nav__link">
+    Q: Should I create separate substrate entries for each device, or reuse one?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next steps
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="battery_deposition_workflow.html" class="md-nav__link">
+        Battery Deposition
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How-to guides" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/install_this_plugin.html" class="md-nav__link">
+        Install this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/upload_and_organize.html" class="md-nav__link">
+        Upload and organize entries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/use_this_plugin.html" class="md-nav__link">
+        Use this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_this_plugin.html" class="md-nav__link">
+        Contribute to this plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_the_documentation.html" class="md-nav__link">
+        Contribute to the documentation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explanation/explanation.html" class="md-nav__link">
+        Explanation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/references.html" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/entities.html" class="md-nav__link">
+        Entities
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/sputtering.html" class="md-nav__link">
+        STAR Sputtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/meteor.html" class="md-nav__link">
+        METEOR E-Beam
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/testo.html" class="md-nav__link">
+        Testo Environmental Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/batteries.html" class="md-nav__link">
+        Batteries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/wet_deposition.html" class="md-nav__link">
+        Wet Deposition
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/characterization.html" class="md-nav__link">
+        Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/analysis.html" class="md-nav__link">
+        Analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lab-workflow-overview" class="md-nav__link">
+    Lab workflow overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-substrate" class="md-nav__link">
+    Step 1 – Substrate
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 1 – Substrate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-the-fto-substrate" class="md-nav__link">
+    Create the FTO substrate
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-electron-transport-layer-sno2-spin-coating" class="md-nav__link">
+    Step 2 – Electron transport layer (SnO₂ spin coating)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-absorber-layer-bisi-spin-coating" class="md-nav__link">
+    Step 3 – Absorber layer (BiSI spin coating)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-hole-transport-layer-ptaa-spin-coating" class="md-nav__link">
+    Step 4 – Hole transport layer (PTAA spin coating)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-metal-contact-au-by-meteor-e-beam" class="md-nav__link">
+    Step 5 – Metal contact (Au by METEOR e-beam)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-characterization-optional" class="md-nav__link">
+    Step 6 – Characterization (optional)
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 6 – Characterization (optional)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#xrd-measurement" class="md-nav__link">
+    XRD measurement
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-characterization" class="md-nav__link">
+    Additional characterization
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-inspect-the-provenance-graph" class="md-nav__link">
+    Step 7 – Inspect the provenance graph
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recipe-reuse" class="md-nav__link">
+    Recipe reuse
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-questions" class="md-nav__link">
+    Common questions
+  </a>
+  
+    <nav class="md-nav" aria-label="Common questions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q-can-i-deposit-multiple-pixels-on-the-same-substrate-in-one-meteor-run" class="md-nav__link">
+    Q: Can I deposit multiple pixels on the same substrate in one METEOR run?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-what-if-the-spin-coating-step-fails-and-i-need-to-re-deposit-a-layer" class="md-nav__link">
+    Q: What if the spin-coating step fails and I need to re-deposit a layer?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-should-i-create-separate-substrate-entries-for-each-device-or-reuse-one" class="md-nav__link">
+    Q: Should I create separate substrate entries for each device, or reuse one?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next steps
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="tutorial-full-bisi-solar-cell-workflow">Tutorial – Full BiSI Solar Cell Workflow<a class="headerlink" href="#tutorial-full-bisi-solar-cell-workflow" title="Permanent link">&para;</a></h1>
+<p>This tutorial guides you through fabricating a complete <strong>BiSI (Bismuth Iodide) perovskite photovoltaic device</strong>.
+Unlike the CIGSe workflow which combines PVD and chemistry, the BiSI workflow uses <strong>spin coating</strong> for most layers,
+ending with a metal contact deposited by <strong>e-beam evaporation</strong>.</p>
+<p>This example demonstrates how wet-chemistry and PVD techniques can be combined for perovskite and halide devices.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A running NOMAD Oasis with the <code>nomad-inl-base</code> plugin installed</li>
+<li>An upload where you can create and link entries</li>
+<li>Familiarity with the <a href="tutorial.html">onboarding tutorial</a> for basic upload and linking concepts</li>
+<li>(Optional) characterization files for XRD or other post-device measurements</li>
+</ul>
+<hr />
+<h2 id="lab-workflow-overview">Lab workflow overview<a class="headerlink" href="#lab-workflow-overview" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Lab step</th>
+<th>NOMAD entry type</th>
+<th>Created</th>
+<th>Recipe?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Clean FTO substrate</td>
+<td><code>INLSubstrate</code></td>
+<td>Manually</td>
+<td>–</td>
+</tr>
+<tr>
+<td>Deposit SnO₂ (spin coat)</td>
+<td><code>INLSpinCoating</code></td>
+<td>Manually</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Deposit BiSI (spin coat)</td>
+<td><code>INLSpinCoating</code></td>
+<td>Manually</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Deposit PTAA (spin coat)</td>
+<td><code>INLSpinCoating</code></td>
+<td>Manually</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Deposit Au (e-beam)</td>
+<td><code>METEORDeposition</code></td>
+<td>Manually</td>
+<td>–</td>
+</tr>
+<tr>
+<td>(Optional) XRD measurement</td>
+<td><code>INLXRayDiffraction</code></td>
+<td>Parser (<code>.xrdml</code> etc.)</td>
+<td>–</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="step-1-substrate">Step 1 – Substrate<a class="headerlink" href="#step-1-substrate" title="Permanent link">&para;</a></h2>
+<h3 id="create-the-fto-substrate">Create the FTO substrate<a class="headerlink" href="#create-the-fto-substrate" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Create <strong>INL Substrate</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>FTO-BiSI-001</code></li>
+<li><strong>Material</strong> – <code>FTO</code> (Fluorine-doped tin oxide) or leave as a free text field</li>
+<li><strong>Geometry</strong> – leave empty (auto-fills to 25 × 25 × 1 mm)</li>
+<li>Optionally set <strong>Lab ID</strong> for easy cross-referencing in later searches.</li>
+<li>Save.</li>
+</ol>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>If your substrates are pre-cleaned and stored, you can create the substrate
+entry weeks before the deposition run. It is a persistent entity that you
+reference from each deposition and measurement.</p>
+</div>
+<hr />
+<h2 id="step-2-electron-transport-layer-sno2-spin-coating">Step 2 – Electron transport layer (SnO₂ spin coating)<a class="headerlink" href="#step-2-electron-transport-layer-sno2-spin-coating" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Create <strong>INL Spin Coating</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>SnO2-BiSI-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li>
+<p><strong>Substrate</strong> – reference <code>FTO-BiSI-001</code></p>
+</li>
+<li>
+<p><strong>Solution</strong> – add a <code>PrecursorSolution</code> sub-section:</p>
+</li>
+<li><strong>Solvent</strong> – e.g. <code>2-Methoxyethanol</code></li>
+<li><strong>Solute</strong> – e.g. <code>SnCl₄·5H₂O</code> or similar precursor</li>
+<li>
+<p>(Optional) <strong>Concentration</strong> and <strong>Volume</strong> if tracked</p>
+</li>
+<li>
+<p><strong>Steps</strong> – add spin-coating recipe steps:</p>
+</li>
+<li><strong>Spin Coating Step</strong> #1: speed (rpm), duration (s), acceleration (rpm/s)</li>
+<li>(Optional) <strong>Hotplate Annealing Step</strong>: temperature (°C), duration (min)</li>
+<li>
+<p>(Optional) <strong>Hotplate Annealing Step</strong> #2: different temperature if multi-step anneal</p>
+</li>
+<li>
+<p>Tick <strong>Creates new thin film</strong> and save.</p>
+</li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Create a <strong>Spin Coating Recipe</strong> entry with the SnO₂ precursor, solvent,
+and spin/anneal parameters. Then on future BiSI runs, reference the recipe
+and tick <strong>Apply recipe</strong> to auto-fill these fields.</p>
+</div>
+<p>After normalization:
+- <code>SnO2-BiSI-001_thin_film</code> (SnO₂ layer)
+- <code>SnO2-BiSI-001_thin_film_stack</code> (FTO + SnO₂)</p>
+<hr />
+<h2 id="step-3-absorber-layer-bisi-spin-coating">Step 3 – Absorber layer (BiSI spin coating)<a class="headerlink" href="#step-3-absorber-layer-bisi-spin-coating" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Create <strong>INL Spin Coating</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>BiSI-BiSI-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li>
+<p><strong>Substrate</strong> – reference <code>SnO2-BiSI-001_thin_film_stack</code> from Step 2</p>
+</li>
+<li>
+<p><strong>Solution</strong> – add a <code>PrecursorSolution</code> sub-section:</p>
+</li>
+<li><strong>Solvent</strong> – e.g. <code>DMSO</code>, <code>DMF</code>, or mixed solvent</li>
+<li><strong>Solute</strong> – e.g. <code>BiI₃</code> or other BiSI precursor mix</li>
+<li>
+<p>(Optional) <strong>Concentration</strong> and <strong>Volume</strong></p>
+</li>
+<li>
+<p><strong>Steps</strong> – add spin-coating steps with your deposition recipe:</p>
+</li>
+<li><strong>Spin Coating Step</strong>: speed, duration, acceleration</li>
+<li>(Optional) <strong>Antisolvent Quenching Step</strong>: volume (ml), dispensing speed (ml/s)
+     if you use an antisolvent for crystallization</li>
+<li>
+<p><strong>Hotplate Annealing Step</strong>: temperature, duration (typically to crystallize the perovskite)</p>
+</li>
+<li>
+<p>Tick <strong>Creates new thin film</strong> and save.</p>
+</li>
+</ol>
+<p>After normalization:
+- <code>BiSI-BiSI-001_thin_film</code>
+- <code>BiSI-BiSI-001_thin_film_stack</code> (FTO + SnO₂ + BiSI)</p>
+<hr />
+<h2 id="step-4-hole-transport-layer-ptaa-spin-coating">Step 4 – Hole transport layer (PTAA spin coating)<a class="headerlink" href="#step-4-hole-transport-layer-ptaa-spin-coating" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Create <strong>INL Spin Coating</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>PTAA-BiSI-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li>
+<p><strong>Substrate</strong> – reference <code>BiSI-BiSI-001_thin_film_stack</code> from Step 3</p>
+</li>
+<li>
+<p><strong>Solution</strong> – add a <code>PrecursorSolution</code> sub-section:</p>
+</li>
+<li><strong>Solvent</strong> – e.g. <code>Chlorobenzene</code></li>
+<li><strong>Solute</strong> – <code>PTAA</code> (Poly(triaryl amine)) or similar hole transporter</li>
+<li>
+<p>(Optional) <strong>Additives</strong> if tracked as a separate solute</p>
+</li>
+<li>
+<p><strong>Steps</strong> – add spin-coating steps (typically simpler than absorber):</p>
+</li>
+<li><strong>Spin Coating Step</strong>: speed (rpm), duration (s), acceleration (rpm/s)</li>
+<li>
+<p>(Optional) <strong>Hotplate Annealing Step</strong> at moderate temperature if needed</p>
+</li>
+<li>
+<p>Tick <strong>Creates new thin film</strong> and save.</p>
+</li>
+</ol>
+<p>After normalization:
+- <code>PTAA-BiSI-001_thin_film</code>
+- <code>PTAA-BiSI-001_thin_film_stack</code> (FTO + SnO₂ + BiSI + PTAA)</p>
+<hr />
+<h2 id="step-5-metal-contact-au-by-meteor-e-beam">Step 5 – Metal contact (Au by METEOR e-beam)<a class="headerlink" href="#step-5-metal-contact-au-by-meteor-e-beam" title="Permanent link">&para;</a></h2>
+<p>The final step is a metal contact, typically gold, deposited by <strong>e-beam evaporation</strong>.</p>
+<ol>
+<li>Create <strong>METEOR E-Beam Evaporation</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>Au-BiSI-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Substrate</strong> – reference <code>PTAA-BiSI-001_thin_film_stack</code> from Step 4</li>
+<li>
+<p><strong>Mask</strong> – describe your contact mask (e.g., "4 pixels of 0.5 × 0.5 cm each")</p>
+</li>
+<li>
+<p><strong>Pockets</strong> – set the <strong>Material</strong> field to <code>Gold</code> (or <code>Au</code>) on the active pocket</p>
+</li>
+<li>
+<p><strong>QCM</strong> – The <code>.nbl</code> parser will auto-fill <strong>Thickness</strong> from the log file.
+   Optionally set <strong>Thickness override</strong> if you have an independent measurement.</p>
+</li>
+<li>
+<p>Tick <strong>Creates new thin film</strong> and save.</p>
+</li>
+</ol>
+<p>After normalization:
+- <code>Au-BiSI-001_thin_film</code>
+- <code>Au-BiSI-001_thin_film_stack</code> (final complete device: FTO + SnO₂ + BiSI + PTAA + Au)</p>
+<hr />
+<h2 id="step-6-characterization-optional">Step 6 – Characterization (optional)<a class="headerlink" href="#step-6-characterization-optional" title="Permanent link">&para;</a></h2>
+<p>If you perform structural or optical characterization on the final device:</p>
+<h3 id="xrd-measurement">XRD measurement<a class="headerlink" href="#xrd-measurement" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Upload your XRD diffractogram (<code>.xrdml</code>, <code>.rasx</code>, <code>.brml</code>, or <code>.raw</code>).</li>
+<li>NOMAD creates an <code>INLXRayDiffraction</code> entry automatically.</li>
+<li>Open the entry and set:</li>
+<li><strong>Operator</strong></li>
+<li><strong>Samples</strong> → reference <code>Au-BiSI-001_thin_film_stack</code> (the final device)</li>
+<li>Save. The XRD pattern is stored and linked to the device.</li>
+</ol>
+<h3 id="additional-characterization">Additional characterization<a class="headerlink" href="#additional-characterization" title="Permanent link">&para;</a></h3>
+<p>If you perform UV-Vis, SEM, or other measurements on intermediate or final samples,
+follow the same pattern: upload the file, NOMAD creates an entry, then link it to
+the appropriate thin-film stack.</p>
+<hr />
+<h2 id="step-7-inspect-the-provenance-graph">Step 7 – Inspect the provenance graph<a class="headerlink" href="#step-7-inspect-the-provenance-graph" title="Permanent link">&para;</a></h2>
+<p>Use NOMAD's <strong>Graph</strong> view to verify the complete chain:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>FTO Substrate
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    ↓
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>SnO₂ (electron transport)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    ↓
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>BiSI (absorber)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    ↓
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>PTAA (hole transport)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    ↓
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>Au (metal contact)
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    ↓
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>(Optional) XRD and other characterization
+</code></pre></div>
+<p>Verify that:
+- Each spin-coating layer references the previous stack
+- The gold contact references the complete device stack
+- Any characterization entries link to the final stack
+- Operators and timestamps are filled</p>
+<hr />
+<h2 id="recipe-reuse">Recipe reuse<a class="headerlink" href="#recipe-reuse" title="Permanent link">&para;</a></h2>
+<p>Spin-coating workflows are ideal for recipes because the same solvent + precursor
+combinations often repeat across many samples.</p>
+<ol>
+<li>Create a <strong>Spin Coating Recipe</strong> for SnO₂:</li>
+<li>Solvent, precursor, spin parameters, anneal profile</li>
+<li>Create a <strong>Spin Coating Recipe</strong> for BiSI:</li>
+<li>Solvent, precursor mix, spin, quench (if used), anneal profile</li>
+<li>Create a <strong>Spin Coating Recipe</strong> for PTAA:</li>
+<li>Solvent, polymer, spin, optional anneal</li>
+</ol>
+<p>On the next device run, reference each recipe and tick <strong>Apply recipe</strong>. This
+ensures consistency across batches and reduces data-entry time.</p>
+<hr />
+<h2 id="common-questions">Common questions<a class="headerlink" href="#common-questions" title="Permanent link">&para;</a></h2>
+<h3 id="q-can-i-deposit-multiple-pixels-on-the-same-substrate-in-one-meteor-run">Q: Can I deposit multiple pixels on the same substrate in one METEOR run?<a class="headerlink" href="#q-can-i-deposit-multiple-pixels-on-the-same-substrate-in-one-meteor-run" title="Permanent link">&para;</a></h3>
+<p><strong>A:</strong> Yes. The METEOR deposition applies to the entire substrate. If your mask
+defines multiple contact pixels, the gold evaporates across all pixels in one run.
+The <strong>Mask</strong> field describes the contact geometry. If you later want to measure
+individual pixels separately, you can create multiple <strong>INLSEMSession</strong> or
+characterization entries that each reference a region of the substrate.</p>
+<h3 id="q-what-if-the-spin-coating-step-fails-and-i-need-to-re-deposit-a-layer">Q: What if the spin-coating step fails and I need to re-deposit a layer?<a class="headerlink" href="#q-what-if-the-spin-coating-step-fails-and-i-need-to-re-deposit-a-layer" title="Permanent link">&para;</a></h3>
+<p><strong>A:</strong> Create a new <strong>INL Spin Coating</strong> entry with the same name (or a variant
+like <code>BiSI-BiSI-001-retry</code>). Reference the previous stack (e.g., <code>SnO2-BiSI-001_thin_film_stack</code>).
+NOMAD will track this as a new deposition event in the provenance graph, and the
+previous failed attempt remains in the upload history for reference.</p>
+<h3 id="q-should-i-create-separate-substrate-entries-for-each-device-or-reuse-one">Q: Should I create separate substrate entries for each device, or reuse one?<a class="headerlink" href="#q-should-i-create-separate-substrate-entries-for-each-device-or-reuse-one" title="Permanent link">&para;</a></h3>
+<p><strong>A:</strong> That depends on your lab's conventions:
+- <strong>Reuse one substrate entry</strong> if you deposit multiple BiSI devices on the same
+  FTO piece and want to track them together.
+- <strong>Create separate substrate entries</strong> if each FTO piece is distinct or if you
+  want to isolate experiments by physical sample.</p>
+<p>Choose the approach that best reflects your lab's workflow.</p>
+<hr />
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../how_to/use_this_plugin.html#using-recipes">How to use recipes</a></li>
+<li><a href="../reference/wet_deposition.html">Reference – Wet Deposition</a> for all spin-coating options</li>
+<li><a href="../reference/meteor.html">Reference – METEOR E-Beam</a> for e-beam evaporation specifics</li>
+<li><a href="../reference/characterization.html">Reference – Characterization</a> for measurement file formats</li>
+</ul>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="cigs_solar_cell.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: CIGSe Solar Cell" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              CIGSe Solar Cell
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="battery_deposition_workflow.html" class="md-footer__link md-footer__link--next" aria-label="Next: Battery Deposition" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Battery Deposition
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant"], "search": "../assets/javascripts/workers/search.c7dec7e7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.da79ceb7.min.js"></script>
+      
+        <script src="../javascript.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

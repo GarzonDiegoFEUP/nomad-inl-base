@@ -1,0 +1,1403 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A plugin to manage the data from LaNaSC">
+      
+      
+        <meta name="author" content="Diego Garzon">
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-8.1.1">
+    
+    
+      
+        <title>Upload and organize entries - nomad-inl-base</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.23b6d78a.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+          
+          
+          <meta name="theme-color" content="">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,400i,700%7C&display=fallback">
+        <style>:root{--md-text-font:"Titillium Web";--md-code-font:""}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="#2a4cdf" data-md-color-accent="#008a67">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#how-to-upload-data-and-organize-entries" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-header__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            nomad-inl-base
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Upload and organize entries
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-nav__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    nomad-inl-base
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/tutorial.html" class="md-nav__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/material_characterization.html" class="md-nav__link">
+        Material Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/cigs_solar_cell.html" class="md-nav__link">
+        CIGSe Solar Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/bisi_solar_cell.html" class="md-nav__link">
+        BiSI Solar Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/battery_deposition_workflow.html" class="md-nav__link">
+        Battery Deposition
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How-to guides" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="install_this_plugin.html" class="md-nav__link">
+        Install this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Upload and organize entries
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="upload_and_organize.html" class="md-nav__link md-nav__link--active">
+        Upload and organize entries
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-an-upload" class="md-nav__link">
+    What is an "upload"?
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uploading-strategy" class="md-nav__link">
+    Uploading strategy
+  </a>
+  
+    <nav class="md-nav" aria-label="Uploading strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-one-upload-per-experiment-device" class="md-nav__link">
+    Option A – One upload per experiment / device
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-one-upload-per-month-project" class="md-nav__link">
+    Option B – One upload per month / project
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-entries-manually-vs-automatic-parser-creation" class="md-nav__link">
+    Creating entries manually vs. automatic parser creation
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating entries manually vs. automatic parser creation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manual-entry-types" class="md-nav__link">
+    Manual entry types
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automatic-parser-created-entries" class="md-nav__link">
+    Automatic parser-created entries
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto-created-thin-film-entries" class="md-nav__link">
+    Auto-created thin-film entries
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organizing-files-in-an-upload" class="md-nav__link">
+    Organizing files in an upload
+  </a>
+  
+    <nav class="md-nav" aria-label="Organizing files in an upload">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upload-file-structure-best-practice" class="md-nav__link">
+    Upload file structure (best practice)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upload-via-web-interface" class="md-nav__link">
+    Upload via web interface
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upload-via-python-client" class="md-nav__link">
+    Upload via Python client
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linking-measurements-to-samples" class="md-nav__link">
+    Linking measurements to samples
+  </a>
+  
+    <nav class="md-nav" aria-label="Linking measurements to samples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#after-upload-the-linking-workflow" class="md-nav__link">
+    After upload: the linking workflow
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-the-right-sample-to-reference" class="md-nav__link">
+    Finding the right sample to reference
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#if-you-uploaded-the-measurement-but-the-sample-entry-does-not-exist-yet" class="md-nav__link">
+    If you uploaded the measurement but the sample entry does not exist yet
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parser-did-not-create-an-entry" class="md-nav__link">
+    Parser did not create an entry
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-want-to-re-name-an-entry" class="md-nav__link">
+    I want to re-name an entry
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-need-to-move-an-entry-from-one-upload-to-another" class="md-nav__link">
+    I need to move an entry from one upload to another
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-linked-the-wrong-sample-to-a-measurement" class="md-nav__link">
+    I linked the wrong sample to a measurement
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-thin-film-stack-was-not-auto-created" class="md-nav__link">
+    A thin-film stack was not auto-created
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    Best practices
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next steps
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="use_this_plugin.html" class="md-nav__link">
+        Use this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="contribute_to_this_plugin.html" class="md-nav__link">
+        Contribute to this plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="contribute_to_the_documentation.html" class="md-nav__link">
+        Contribute to the documentation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explanation/explanation.html" class="md-nav__link">
+        Explanation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/references.html" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/entities.html" class="md-nav__link">
+        Entities
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/sputtering.html" class="md-nav__link">
+        STAR Sputtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/meteor.html" class="md-nav__link">
+        METEOR E-Beam
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/testo.html" class="md-nav__link">
+        Testo Environmental Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/batteries.html" class="md-nav__link">
+        Batteries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/wet_deposition.html" class="md-nav__link">
+        Wet Deposition
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/characterization.html" class="md-nav__link">
+        Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/analysis.html" class="md-nav__link">
+        Analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-an-upload" class="md-nav__link">
+    What is an "upload"?
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uploading-strategy" class="md-nav__link">
+    Uploading strategy
+  </a>
+  
+    <nav class="md-nav" aria-label="Uploading strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-one-upload-per-experiment-device" class="md-nav__link">
+    Option A – One upload per experiment / device
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-one-upload-per-month-project" class="md-nav__link">
+    Option B – One upload per month / project
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-entries-manually-vs-automatic-parser-creation" class="md-nav__link">
+    Creating entries manually vs. automatic parser creation
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating entries manually vs. automatic parser creation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manual-entry-types" class="md-nav__link">
+    Manual entry types
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automatic-parser-created-entries" class="md-nav__link">
+    Automatic parser-created entries
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto-created-thin-film-entries" class="md-nav__link">
+    Auto-created thin-film entries
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organizing-files-in-an-upload" class="md-nav__link">
+    Organizing files in an upload
+  </a>
+  
+    <nav class="md-nav" aria-label="Organizing files in an upload">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upload-file-structure-best-practice" class="md-nav__link">
+    Upload file structure (best practice)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upload-via-web-interface" class="md-nav__link">
+    Upload via web interface
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upload-via-python-client" class="md-nav__link">
+    Upload via Python client
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linking-measurements-to-samples" class="md-nav__link">
+    Linking measurements to samples
+  </a>
+  
+    <nav class="md-nav" aria-label="Linking measurements to samples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#after-upload-the-linking-workflow" class="md-nav__link">
+    After upload: the linking workflow
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-the-right-sample-to-reference" class="md-nav__link">
+    Finding the right sample to reference
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#if-you-uploaded-the-measurement-but-the-sample-entry-does-not-exist-yet" class="md-nav__link">
+    If you uploaded the measurement but the sample entry does not exist yet
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parser-did-not-create-an-entry" class="md-nav__link">
+    Parser did not create an entry
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-want-to-re-name-an-entry" class="md-nav__link">
+    I want to re-name an entry
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-need-to-move-an-entry-from-one-upload-to-another" class="md-nav__link">
+    I need to move an entry from one upload to another
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-linked-the-wrong-sample-to-a-measurement" class="md-nav__link">
+    I linked the wrong sample to a measurement
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-thin-film-stack-was-not-auto-created" class="md-nav__link">
+    A thin-film stack was not auto-created
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    Best practices
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next steps
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="how-to-upload-data-and-organize-entries">How-to – Upload data and organize entries<a class="headerlink" href="#how-to-upload-data-and-organize-entries" title="Permanent link">&para;</a></h1>
+<p>This guide covers the most common questions when uploading experimental data and creating entry structures in NOMAD:
+what to upload first, which entries NOMAD creates automatically, how to organize files in an upload, and how to fix
+common linking issues.</p>
+<hr />
+<h2 id="what-is-an-upload">What is an "upload"?<a class="headerlink" href="#what-is-an-upload" title="Permanent link">&para;</a></h2>
+<p>An <strong>upload</strong> is a container in NOMAD that holds one or more entries (experiments, measurements, entities).
+You can think of it as a logical "batch" of related work:</p>
+<ul>
+<li><strong>One experiment</strong> – e.g., all steps of a CIGSe device fabrication (substrate, Mo, In, CuGa+Se, CdS, contacts)</li>
+<li><strong>One measurement session</strong> – e.g., all XRD patterns measured on a single day</li>
+<li><strong>One project</strong> – e.g., all data from a 3-month study of a new deposition recipe</li>
+</ul>
+<p>Each upload has a unique ID in NOMAD. Entries within the same upload can reference each other directly.</p>
+<hr />
+<h2 id="uploading-strategy">Uploading strategy<a class="headerlink" href="#uploading-strategy" title="Permanent link">&para;</a></h2>
+<h3 id="option-a-one-upload-per-experiment-device">Option A – One upload per experiment / device<a class="headerlink" href="#option-a-one-upload-per-experiment-device" title="Permanent link">&para;</a></h3>
+<p><strong>Best for:</strong> small lab groups, focused projects, or a single device run</p>
+<ol>
+<li>Create one upload in NOMAD</li>
+<li>Add all entries for that device: substrate, deposition(s), characterization</li>
+<li>Link measurements to samples using references</li>
+<li>Publish or close the upload when complete</li>
+</ol>
+<p><strong>Pros:</strong>
+- Clear separation of experiments
+- Easy to find all data for one device together
+- Minimal cross-upload linking needed</p>
+<p><strong>Cons:</strong>
+- Many uploads if you run many small experiments</p>
+<hr />
+<h3 id="option-b-one-upload-per-month-project">Option B – One upload per month / project<a class="headerlink" href="#option-b-one-upload-per-month-project" title="Permanent link">&para;</a></h3>
+<p><strong>Best for:</strong> high-throughput labs, shared data repositories</p>
+<ol>
+<li>Create one upload per month (or project)</li>
+<li>Add all entries for that period: all substrates, depositions, measurements</li>
+<li>Use references freely within the upload</li>
+<li>Periodically publish and archive</li>
+</ol>
+<p><strong>Pros:</strong>
+- Fewer, larger uploads
+- Good for shared lab data organization</p>
+<p><strong>Cons:</strong>
+- May need to manually organize entries by sample within the upload
+- Cross-upload references (if needed) are more complex</p>
+<hr />
+<h2 id="creating-entries-manually-vs-automatic-parser-creation">Creating entries manually vs. automatic parser creation<a class="headerlink" href="#creating-entries-manually-vs-automatic-parser-creation" title="Permanent link">&para;</a></h2>
+<h3 id="manual-entry-types">Manual entry types<a class="headerlink" href="#manual-entry-types" title="Permanent link">&para;</a></h3>
+<p>These entry types you <strong>always create manually</strong> by clicking <strong>Create new entry</strong> in NOMAD:</p>
+<ul>
+<li><code>INLSubstrate</code> – shared entity, created once per physical substrate</li>
+<li><code>INLSpinCoating</code>, <code>StarRFSputtering</code>, <code>METEORDeposition</code>, etc. – deposition processes</li>
+<li><code>INLChemicalBathDeposition</code>, <code>INLWetDepositionRecipe</code>, <code>StarSputteringRecipe</code> – recipes and processes</li>
+<li><code>SputteringTarget</code>, <code>SeleniumCell</code> – equipment entities</li>
+<li>Manual measurement entries (if you do not upload an instrument file)</li>
+</ul>
+<hr />
+<h3 id="automatic-parser-created-entries">Automatic parser-created entries<a class="headerlink" href="#automatic-parser-created-entries" title="Permanent link">&para;</a></h3>
+<p>Upload an instrument file and NOMAD <strong>auto-creates</strong> these entries if you have the parser installed:</p>
+<table>
+<thead>
+<tr>
+<th>Upload this</th>
+<th>NOMAD creates</th>
+<th>You then fill</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.asc</code> file</td>
+<td><code>INLUVVisTransmission</code></td>
+<td>Operator, Samples reference</td>
+</tr>
+<tr>
+<td><code>.xrdml</code>, <code>.rasx</code>, <code>.brml</code>, <code>.raw</code></td>
+<td><code>INLXRayDiffraction</code></td>
+<td>Operator, Samples reference</td>
+</tr>
+<tr>
+<td><code>*mVs.xlsx</code> (CV data)</td>
+<td><code>PotentiostatMeasurement</code></td>
+<td>Operator, Samples reference, Area electrode</td>
+</tr>
+<tr>
+<td><code>*ED.xlsx</code> (CA data)</td>
+<td><code>ChronoamperometryMeasurement</code></td>
+<td>Operator, Samples reference, Area electrode</td>
+</tr>
+<tr>
+<td><code>*.txt</code> (EQE)</td>
+<td><code>INLEQE</code></td>
+<td>Operator, Samples reference</td>
+</tr>
+<tr>
+<td><code>*Results Table*.txt</code> (IV)</td>
+<td><code>INLSolarCellIV</code></td>
+<td>Operator, Samples reference</td>
+</tr>
+<tr>
+<td><code>*.tif</code> (SEM images)</td>
+<td><code>INLSEMSession</code></td>
+<td>Operator, Labels, Samples reference</td>
+</tr>
+<tr>
+<td><code>.xls</code> / <code>.xlsx</code> (4-point probe)</td>
+<td><code>INLFourPointProbe</code></td>
+<td>Operator, Samples reference</td>
+</tr>
+<tr>
+<td><code>.nbl</code> (METEOR log)</td>
+<td><code>METEORDeposition</code></td>
+<td>Operator, Mask, Pockets (materials), Samples reference</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="auto-created-thin-film-entries">Auto-created thin-film entries<a class="headerlink" href="#auto-created-thin-film-entries" title="Permanent link">&para;</a></h3>
+<p>When you tick <strong>Creates new thin film</strong> on a deposition entry and save:</p>
+<ul>
+<li><code>&lt;deposition_name&gt;_thin_film</code> – the deposited layer (auto-created)</li>
+<li><code>&lt;deposition_name&gt;_thin_film_stack</code> – the substrate + layer(s) stack (auto-created)</li>
+</ul>
+<p>These appear in your upload's entry list after normalization completes.</p>
+<hr />
+<h2 id="organizing-files-in-an-upload">Organizing files in an upload<a class="headerlink" href="#organizing-files-in-an-upload" title="Permanent link">&para;</a></h2>
+<h3 id="upload-file-structure-best-practice">Upload file structure (best practice)<a class="headerlink" href="#upload-file-structure-best-practice" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>my_experiment_upload/
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── substrate_info.txt          (optional documentation)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>├── deposition_log.csv          (if you want to attach notes)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├── sample_name.xrdml           (XRD file)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── sample_name.asc             (UV-Vis file)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>├── YYMMDD - sample.tif         (SEM images)
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│   YYMMDD - sample_001.tif
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│   YYMMDD - sample_002.tif
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>└── (other instrument files)
+</code></pre></div>
+<h3 id="upload-via-web-interface">Upload via web interface<a class="headerlink" href="#upload-via-web-interface" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Click <strong>Upload</strong> in NOMAD</li>
+<li>Drag and drop all files, or browse to select them</li>
+<li>Click <strong>Upload</strong> to create a new upload</li>
+<li>NOMAD processes files and creates entries automatically</li>
+</ol>
+<h3 id="upload-via-python-client">Upload via Python client<a class="headerlink" href="#upload-via-python-client" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span> <span class="nn">nomad.client</span> <span class="kn">import</span> <span class="n">upload_file</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Simple single-file upload</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">archive</span> <span class="o">=</span> <span class="n">upload_file</span><span class="p">(</span><span class="s1">&#39;sample.xrdml&#39;</span><span class="p">)</span>  <span class="c1"># Creates INLXRayDiffraction entry</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Multiple files in one batch</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;*.xrdml&#39;</span><span class="p">):</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">upload_file</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">file</span><span class="p">))</span>
+</code></pre></div>
+<hr />
+<h2 id="linking-measurements-to-samples">Linking measurements to samples<a class="headerlink" href="#linking-measurements-to-samples" title="Permanent link">&para;</a></h2>
+<h3 id="after-upload-the-linking-workflow">After upload: the linking workflow<a class="headerlink" href="#after-upload-the-linking-workflow" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Upload instrument files</strong> (<code>.asc</code>, <code>.xrdml</code>, etc.)</li>
+<li><strong>NOMAD creates measurement entries</strong> (e.g., <code>INLUVVisTransmission</code>, <code>INLXRayDiffraction</code>)</li>
+<li><strong>You manually add references</strong> by opening each measurement entry and setting:</li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Samples</strong> – click the reference field and select your thin-film stack</li>
+<li><strong>Save</strong> – the measurement is now linked to the sample graph</li>
+</ol>
+<h3 id="finding-the-right-sample-to-reference">Finding the right sample to reference<a class="headerlink" href="#finding-the-right-sample-to-reference" title="Permanent link">&para;</a></h3>
+<p>When you open a measurement entry and click the <strong>Samples</strong> field, you see a list of available entries.
+To find your sample:</p>
+<ol>
+<li>Look for entries named <code>&lt;deposition_name&gt;_thin_film_stack</code> (these are stacks, the right choice)</li>
+<li>Or search by substrate name, material, or operator</li>
+<li>Select the entry and click <strong>Save</strong></li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If you have many samples, use the search box in the reference picker to filter by name, material, or date.</p>
+</div>
+<h3 id="if-you-uploaded-the-measurement-but-the-sample-entry-does-not-exist-yet">If you uploaded the measurement but the sample entry does not exist yet<a class="headerlink" href="#if-you-uploaded-the-measurement-but-the-sample-entry-does-not-exist-yet" title="Permanent link">&para;</a></h3>
+<p><strong>Scenario:</strong> You uploaded an XRD file, and now you need to link it to a sample, but the sample entry is not yet created.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Create the sample entry first (click <strong>Create new entry</strong> → <code>INLSubstrate</code>, then the deposition)</li>
+<li>Tick <strong>Creates new thin film</strong> on the deposition and save</li>
+<li>Once the stack entry is created, go back to the measurement entry</li>
+<li>Set the <strong>Samples</strong> reference to the newly created stack</li>
+<li>Save</li>
+</ol>
+<hr />
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="parser-did-not-create-an-entry">Parser did not create an entry<a class="headerlink" href="#parser-did-not-create-an-entry" title="Permanent link">&para;</a></h3>
+<p><strong>Issue:</strong> I uploaded a <code>.xrdml</code> file but no <code>INLXRayDiffraction</code> entry was created.</p>
+<p><strong>Possible causes:</strong>
+- The parser is not installed or enabled in your NOMAD instance
+- The file format is not standard (e.g., corrupted file, different file extension, vendor-specific variant)
+- The file is a non-XRD measurement (check the file contents)</p>
+<p><strong>Solution:</strong>
+1. Check the upload's <strong>Errors</strong> or <strong>Parser Issues</strong> tab for diagnostic messages
+2. Verify the file format by opening it in a text editor (if text) or with your instrument's software
+3. Try uploading a sample file from a known working measurement to test
+4. Contact your NOMAD administrators if the parser registration is missing</p>
+<hr />
+<h3 id="i-want-to-re-name-an-entry">I want to re-name an entry<a class="headerlink" href="#i-want-to-re-name-an-entry" title="Permanent link">&para;</a></h3>
+<p><strong>Issue:</strong> The parser created an entry with a bad name (e.g., <code>export_001</code>), and I want to rename it to <code>sample_XRD</code>.</p>
+<p><strong>Solution:</strong>
+1. Open the entry in the ELN
+2. Edit the <strong>Name</strong> field and click <strong>Save</strong>
+3. The graph and all references update automatically</p>
+<hr />
+<h3 id="i-need-to-move-an-entry-from-one-upload-to-another">I need to move an entry from one upload to another<a class="headerlink" href="#i-need-to-move-an-entry-from-one-upload-to-another" title="Permanent link">&para;</a></h3>
+<p><strong>Issue:</strong> I accidentally created an entry in the wrong upload.</p>
+<p><strong>Current limitation:</strong> NOMAD does not yet support moving entries between uploads. </p>
+<p><strong>Workaround:</strong>
+1. Export or note the entry data
+2. Create a new entry in the correct upload and re-fill the data
+3. Update any references to point to the new location
+4. Archive or delete the old entry if it is in the wrong upload</p>
+<p>(This is a known workflow gap; future NOMAD versions may improve this.)</p>
+<hr />
+<h3 id="i-linked-the-wrong-sample-to-a-measurement">I linked the wrong sample to a measurement<a class="headerlink" href="#i-linked-the-wrong-sample-to-a-measurement" title="Permanent link">&para;</a></h3>
+<p><strong>Issue:</strong> I set the <strong>Samples</strong> reference on an XRD entry to the wrong thin-film stack.</p>
+<p><strong>Solution:</strong>
+1. Open the measurement entry
+2. Click the <strong>Samples</strong> field
+3. Remove the old reference (click the <strong>X</strong> button)
+4. Add the correct sample reference
+5. Click <strong>Save</strong></p>
+<p>The graph and all analysis entries update automatically.</p>
+<hr />
+<h3 id="a-thin-film-stack-was-not-auto-created">A thin-film stack was not auto-created<a class="headerlink" href="#a-thin-film-stack-was-not-auto-created" title="Permanent link">&para;</a></h3>
+<p><strong>Issue:</strong> I ticked <strong>Creates new thin film</strong> on a deposition, but the stack entry never appeared.</p>
+<p><strong>Possible causes:</strong>
+- The deposition entry has neither a <strong>Substrate</strong> reference nor a <strong>Sample</strong> reference
+- Normalization did not complete (check the entry status)
+- The toggle reset to <code>False</code> after the first application (expected behavior)</p>
+<p><strong>Solution:</strong>
+1. Verify the deposition entry has a <strong>Substrate</strong> reference (or existing <strong>Sample</strong> reference)
+2. Save the entry and wait for normalization to complete (usually &lt;1 min)
+3. Refresh your browser and check the upload's <strong>Entries</strong> list for entries named <code>&lt;deposition_name&gt;_thin_film</code> and <code>&lt;deposition_name&gt;_thin_film_stack</code>
+4. If still missing, check the entry's <strong>Normalization</strong> tab for error messages</p>
+<hr />
+<h2 id="best-practices">Best practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Create shared entities first</strong> – substrate, targets, cells – before depositions</li>
+<li><strong>Use <code>Creates new thin film</code> on every deposition</strong> – this ensures each layer is tracked</li>
+<li><strong>Upload characterization files in one batch</strong> – NOMAD processes and groups related measurements automatically</li>
+<li><strong>Name entries clearly</strong> – include date, sample ID, and process type (e.g., <code>SLG-UV-001</code>, <code>STAR-Mo-2026-08-21</code>)</li>
+<li><strong>Link measurements immediately after upload</strong> – do not wait; this keeps your graph accurate as you work</li>
+<li><strong>Use recipes for repeated processes</strong> – save time and ensure consistency</li>
+<li><strong>Search by operator, material, or date</strong> – keep your upload organized and searchable</li>
+</ol>
+<hr />
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="use_this_plugin.html#using-recipes">How to use recipes</a></li>
+<li><a href="../reference/wet_deposition.html">Reference – Wet Deposition</a></li>
+<li><a href="../reference/characterization.html">Reference – Characterization</a> – full list of supported file formats</li>
+</ul>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="install_this_plugin.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Install this Plugin" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Install this Plugin
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="use_this_plugin.html" class="md-footer__link md-footer__link--next" aria-label="Next: Use this Plugin" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Use this Plugin
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant"], "search": "../assets/javascripts/workers/search.c7dec7e7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.da79ceb7.min.js"></script>
+      
+        <script src="../javascript.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

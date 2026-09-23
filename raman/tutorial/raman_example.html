@@ -1,0 +1,1240 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A plugin to manage the data from LaNaSC">
+      
+      
+        <meta name="author" content="Diego Garzon">
+      
+      
+      <link rel="icon" href="../../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-8.1.1">
+    
+    
+      
+        <title>Tutorial: Raman Measurement Example Walkthrough - nomad-inl-base</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.23b6d78a.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
+        
+          
+          
+          <meta name="theme-color" content="">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,400i,700%7C&display=fallback">
+        <style>:root{--md-text-font:"Titillium Web";--md-code-font:""}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="#2a4cdf" data-md-color-accent="#008a67">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tutorial-raman-measurement-example-walkthrough" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-header__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            nomad-inl-base
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tutorial: Raman Measurement Example Walkthrough
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-nav__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    nomad-inl-base
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.html" class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/tutorial.html" class="md-nav__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/material_characterization.html" class="md-nav__link">
+        Material Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/cigs_solar_cell.html" class="md-nav__link">
+        CIGSe Solar Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/bisi_solar_cell.html" class="md-nav__link">
+        BiSI Solar Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/battery_deposition_workflow.html" class="md-nav__link">
+        Battery Deposition
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How-to guides" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/install_this_plugin.html" class="md-nav__link">
+        Install this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/upload_and_organize.html" class="md-nav__link">
+        Upload and organize entries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/use_this_plugin.html" class="md-nav__link">
+        Use this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/contribute_to_this_plugin.html" class="md-nav__link">
+        Contribute to this plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/contribute_to_the_documentation.html" class="md-nav__link">
+        Contribute to the documentation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/explanation.html" class="md-nav__link">
+        Explanation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/references.html" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/entities.html" class="md-nav__link">
+        Entities
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/sputtering.html" class="md-nav__link">
+        STAR Sputtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/meteor.html" class="md-nav__link">
+        METEOR E-Beam
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/testo.html" class="md-nav__link">
+        Testo Environmental Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/batteries.html" class="md-nav__link">
+        Batteries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/wet_deposition.html" class="md-nav__link">
+        Wet Deposition
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/characterization.html" class="md-nav__link">
+        Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/analysis.html" class="md-nav__link">
+        Analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example-data" class="md-nav__link">
+    Example Data
+  </a>
+  
+    <nav class="md-nav" aria-label="Example Data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#files" class="md-nav__link">
+    Files
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-understanding-the-export-files" class="md-nav__link">
+    Step 1: Understanding the Export Files
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 1: Understanding the Export Files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inspect-spectrum-file-specdatatxt" class="md-nav__link">
+    Inspect Spectrum File (.Spec.Data.txt)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inspect-information-file-informationtxt" class="md-nav__link">
+    Inspect Information File (Information.txt)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-upload-to-nomad" class="md-nav__link">
+    Step 2: Upload to NOMAD
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 2: Upload to NOMAD">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#via-web-upload" class="md-nav__link">
+    Via Web Upload
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expected-processing" class="md-nav__link">
+    Expected Processing
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-review-measurement-entry" class="md-nav__link">
+    Step 3: Review Measurement Entry
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3: Review Measurement Entry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metadata-section" class="md-nav__link">
+    Metadata Section
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-manual-parameters" class="md-nav__link">
+    Add Manual Parameters
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-view-raman-spectrum-plot" class="md-nav__link">
+    Step 4: View Raman Spectrum Plot
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 4: View Raman Spectrum Plot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#raman-spectrum-plot" class="md-nav__link">
+    Raman Spectrum Plot
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpretation" class="md-nav__link">
+    Interpretation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quality-assessment" class="md-nav__link">
+    Quality Assessment
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-link-to-sample-entry" class="md-nav__link">
+    Step 5: Link to Sample Entry
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-search-and-export" class="md-nav__link">
+    Step 6: Search and Export
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 6: Search and Export">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#search-for-similar-measurements" class="md-nav__link">
+    Search for Similar Measurements
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export-data" class="md-nav__link">
+    Export Data
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-analysis-and-interpretation" class="md-nav__link">
+    Step 7: Analysis and Interpretation
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 7: Analysis and Interpretation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#peak-identification" class="md-nav__link">
+    Peak Identification
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-sample-comparison" class="md-nav__link">
+    Multi-Sample Comparison
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-issues-and-solutions" class="md-nav__link">
+    Common Issues and Solutions
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Issues and Solutions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#issue-spectrum-looks-noisy" class="md-nav__link">
+    Issue: Spectrum looks noisy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-peaks-are-very-broad-or-shifted" class="md-nav__link">
+    Issue: Peaks are very broad or shifted
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-file-pair-not-found-error" class="md-nav__link">
+    Issue: "File pair not found" error
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next Steps
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-resources" class="md-nav__link">
+    Additional Resources
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="tutorial-raman-measurement-example-walkthrough">Tutorial: Raman Measurement Example Walkthrough<a class="headerlink" href="#tutorial-raman-measurement-example-walkthrough" title="Permanent link">&para;</a></h1>
+<p>This tutorial uses real example data to demonstrate the complete Raman spectroscopy workflow in nomad-inl-base.</p>
+<h2 id="example-data">Example Data<a class="headerlink" href="#example-data" title="Permanent link">&para;</a></h2>
+<p>We'll use a measurement of a carbon-based sample (boron carbide) acquired on a Witec Alpha300 system:</p>
+<ul>
+<li><strong>Sample</strong>: BCS_001 (Boron Carbide Sample)</li>
+<li><strong>Laser</strong>: 532.032 nm (green)</li>
+<li><strong>Operator</strong>: Jane Doe</li>
+<li><strong>Date</strong>: 2026-07-21</li>
+</ul>
+<h3 id="files">Files<a class="headerlink" href="#files" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>260721D11 BCS_001_Spec.Data 1.txt      (spectrum + position)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>260721D11 BCS_001 Information.txt       (instrument config)
+</code></pre></div>
+<h2 id="step-1-understanding-the-export-files">Step 1: Understanding the Export Files<a class="headerlink" href="#step-1-understanding-the-export-files" title="Permanent link">&para;</a></h2>
+<h3 id="inspect-spectrum-file-specdatatxt">Inspect Spectrum File (<em>.Spec.Data</em>.txt)<a class="headerlink" href="#inspect-spectrum-file-specdatatxt" title="Permanent link">&para;</a></h3>
+<p>Open the <code>_Spec.Data</code> file with a text editor. You'll see:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>[Header]
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>FileName = 260721D11 BCS_001_Spec.Data 1
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>GraphName = Spectrum
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>PositionX = 1234.5
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>PositionY = 2345.6
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>PositionZ = 0.0
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>XAxisUnit = rel. 1/cm
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>DataUnit = CCD cts
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>[Data]
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>0.0, 1050
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>10.2, 1102
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>20.4, 998
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>30.6, 1010
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>...
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>3200.0, 890
+</code></pre></div>
+<p><strong>What this contains</strong>:
+- <strong>Header section</strong>: Spatial coordinates (stage position) and units
+- <strong>Data section</strong>: Comma-separated Raman shift and intensity values
+- <strong>X-axis</strong>: Raman shift from ~0 to 3200 cm⁻¹
+- <strong>Y-axis</strong>: CCD detector counts (1000–1100 range indicates good signal)</p>
+<h3 id="inspect-information-file-informationtxt">Inspect Information File (Information.txt)<a class="headerlink" href="#inspect-information-file-informationtxt" title="Permanent link">&para;</a></h3>
+<p>Open the <code>Information</code> file. You'll find sections like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>General
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Excitation Wavelength [nm] = 532.032
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>Duration = 0h 0m 43s
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>User Name = Jane Doe
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>Configuration = Raman CCD1_532
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>UHTS300
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>Grating = G2: 1800 g/mm BLZ=500nm
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>Center Wavelength [nm] = 532.0
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>Spectral Center [rel. 1/cm] = 1000.0
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>DU401_BV
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>Width [Pixels] = 1024
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>Height [Pixels] = 127
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>Temperature [°C] = -60.0
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>Cycle Time [s] = 0.5125
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>Integration Time [s] = 0.5
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>Accumulations = 3
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>AD Converter = AD1 (16Bit)
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>Vertical Shift Speed = 0.3 µs
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>Horizontal Shift Speed = 5.0 MHz
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>Preamplifier Gain = 4
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>ReadMode = Full Vertical Binning
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>Objective
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>Name = Plan Apochromat 50x
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>Magnification = 50.0
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>Numerical Aperture = 0.8
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>Sample Location
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>PositionX [µm] = 1234.5
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>PositionY [µm] = 2345.6
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>PositionZ [µm] = 0.0
+</code></pre></div>
+<p><strong>Key observations</strong>:
+- Green laser (532 nm) typically used for carbon materials (resonance enhancement)
+- High-resolution grating (1800 g/mm) for detailed spectral features
+- Detector cooled to -60°C for low noise
+- 3 accumulations: 0.5 s × 3 = 1.5 s total per spectrum
+- Total duration: 43 seconds (includes motor movement, overhead)
+- 50× objective with NA 0.8 (typical confocal setup)</p>
+<h2 id="step-2-upload-to-nomad">Step 2: Upload to NOMAD<a class="headerlink" href="#step-2-upload-to-nomad" title="Permanent link">&para;</a></h2>
+<h3 id="via-web-upload">Via Web Upload<a class="headerlink" href="#via-web-upload" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Log in to NOMAD instance</li>
+<li>Click <strong>Upload</strong></li>
+<li>Create new upload or select existing entry</li>
+<li>Drag both files into the upload area:</li>
+<li><code>260721D11 BCS_001_Spec.Data 1.txt</code></li>
+<li><code>260721D11 BCS_001 Information.txt</code></li>
+<li>Click <strong>Upload</strong></li>
+</ol>
+<p>NOMAD's <code>RamanWitecParser</code> automatically:
+- Detects the file pair by matching base name ("260721D11 BCS_001")
+- Parses spectrum data (Raman shift array, intensity array)
+- Extracts metadata from both files
+- Creates <code>INLRaman</code> entry with all subsections populated</p>
+<h3 id="expected-processing">Expected Processing<a class="headerlink" href="#expected-processing" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Parsing: 260721D11 BCS_001_Spec.Data 1.txt
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  └─ [Header] PositionX: 1234.5 µm
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  └─ [Data] 3200 spectral points
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>Parsing: 260721D11 BCS_001 Information.txt
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  └─ Excitation: 532.032 nm
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  └─ Detector: DU401_BV, -60°C, 3 acc
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>  └─ Objective: 50x NA0.8
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>Creating INLRaman entry:
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>  ✓ excitation → ExcitationBeam
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>  ✓ spectrometer → SpectrometerSettings
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>  ✓ detector → DetectorSettings
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>  ✓ objective → ObjectiveInfo
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>  ✓ sample_location → SampleLocation
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>  ✓ spectrum → SpectrumData
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>  ✓ normalize() → Plotly figure
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>Status: SUCCESS
+</code></pre></div>
+<h2 id="step-3-review-measurement-entry">Step 3: Review Measurement Entry<a class="headerlink" href="#step-3-review-measurement-entry" title="Permanent link">&para;</a></h2>
+<p>After upload, navigate to the Raman measurement in NOMAD:</p>
+<h3 id="metadata-section">Metadata Section<a class="headerlink" href="#metadata-section" title="Permanent link">&para;</a></h3>
+<p>You'll see structured information:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>operator: Jane Doe
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>configuration: Raman CCD1_532
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>duration: 43.0 s
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>system_id: WITec-Alpha300
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>Excitation Beam
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>├─ wavelength: 532.032 nm
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>└─ power: [manual entry - e.g., 50 mW]
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>Spectrometer Settings
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>├─ grating_type: G2: 1800 g/mm BLZ=500nm
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>├─ center_wavelength: 532.0 nm
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>└─ spectral_center: 1000.0 cm⁻¹
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>Detector Settings
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>├─ camera_model: DU401_BV
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>├─ pixels_width: 1024
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>├─ pixels_height: 127
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>├─ temperature: -60.0°C
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>├─ integration_time: 0.5 s
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>└─ accumulations: 3
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>Objective
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>├─ name: Plan Apochromat 50x
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>├─ magnification: 50.0
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>└─ numerical_aperture: 0.8
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>Sample Location
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>├─ x: 1234.5 µm
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>├─ y: 2345.6 µm
+<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>└─ z: 0.0 µm
+</code></pre></div>
+<h3 id="add-manual-parameters">Add Manual Parameters<a class="headerlink" href="#add-manual-parameters" title="Permanent link">&para;</a></h3>
+<p><strong>Important</strong>: Laser power was not in the export files. You must add it manually:</p>
+<ol>
+<li>Edit the entry (click Edit or Pencil icon)</li>
+<li>Navigate to <strong>Excitation Beam</strong> section</li>
+<li>Enter <strong>Power</strong>: Type "50" and select unit "mW" from dropdown</li>
+<li>Save</li>
+</ol>
+<p>This is critical for reproducibility and future analysis.</p>
+<h2 id="step-4-view-raman-spectrum-plot">Step 4: View Raman Spectrum Plot<a class="headerlink" href="#step-4-view-raman-spectrum-plot" title="Permanent link">&para;</a></h2>
+<p>Scroll to <strong>Plots/Figures</strong> section. You'll see:</p>
+<h3 id="raman-spectrum-plot">Raman Spectrum Plot<a class="headerlink" href="#raman-spectrum-plot" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Intensity (CCD cts)
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>       |
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a> 1150  |      ╱╲
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>       |     ╱  ╲      ╱╲
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a> 1100  |    ╱    ╲____╱  ╲___╱
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>       |   ╱                    ╲
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a> 1050  |  ╱                      ╲
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>       | ╱
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a> 1000  |╱
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>       |_________________________
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    0     500    1000   1500   2000   2500   3000
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>           Raman Shift (cm⁻¹)
+</code></pre></div>
+<p><strong>Interactive features</strong>:
+- <strong>Hover</strong>: Shows exact Raman shift and intensity values
+- <strong>Zoom</strong>: Click and drag to zoom into region of interest
+- <strong>Pan</strong>: Hold shift and drag to move around
+- <strong>Reset</strong>: Double-click to reset to original view
+- <strong>Download</strong>: Camera icon saves as PNG</p>
+<h3 id="interpretation">Interpretation<a class="headerlink" href="#interpretation" title="Permanent link">&para;</a></h3>
+<p><strong>Features visible in this spectrum</strong>:</p>
+<ol>
+<li><strong>~500 cm⁻¹</strong>: First-order diamond peak (boron carbide)</li>
+<li><strong>~1200–1600 cm⁻¹</strong>: D and G bands (disorder/graphite-like carbon)</li>
+<li><strong>~2500–3000 cm⁻¹</strong>: Overtone region (2D peak for graphene-like layers)</li>
+</ol>
+<h3 id="quality-assessment">Quality Assessment<a class="headerlink" href="#quality-assessment" title="Permanent link">&para;</a></h3>
+<p>From this plot, we can verify:
+- ✓ <strong>Good SNR</strong>: ~100 counts above noise floor
+- ✓ <strong>No saturation</strong>: Max ~1150 counts (well below 3000)
+- ✓ <strong>Clear peaks</strong>: Well-resolved vibrational features
+- ✓ <strong>Smooth baseline</strong>: No cosmic ray spikes or edge artifacts</p>
+<h2 id="step-5-link-to-sample-entry">Step 5: Link to Sample Entry<a class="headerlink" href="#step-5-link-to-sample-entry" title="Permanent link">&para;</a></h2>
+<p>To track provenance, link this measurement to a sample:</p>
+<ol>
+<li>Scroll to <strong>Samples</strong> section</li>
+<li>Click <strong>Add Sample Reference</strong></li>
+<li>Search for "BCS_001" or the sample ID</li>
+<li>Select from results</li>
+<li>Save entry</li>
+</ol>
+<p>This creates bidirectional reference: Measurement ↔ Sample</p>
+<h2 id="step-6-search-and-export">Step 6: Search and Export<a class="headerlink" href="#step-6-search-and-export" title="Permanent link">&para;</a></h2>
+<h3 id="search-for-similar-measurements">Search for Similar Measurements<a class="headerlink" href="#search-for-similar-measurements" title="Permanent link">&para;</a></h3>
+<p>In NOMAD search:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Query: def_name:INLRaman AND excitation.wavelength:532
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>Result: Find all Raman spectra measured with 532 nm laser
+</code></pre></div>
+<p>Other useful filters:
+- <code>detector.temperature:[-60 TO -50]</code> — measurements at similar T
+- <code>excitation.power:[40 TO 60]</code> — specific power range
+- <code>samples.name:BCS*</code> — measurements on this sample family</p>
+<h3 id="export-data">Export Data<a class="headerlink" href="#export-data" title="Permanent link">&para;</a></h3>
+<p>Multiple export options:</p>
+<ol>
+<li><strong>Download raw data</strong>:</li>
+<li>Raman shift array (X-axis, cm⁻¹)</li>
+<li>Intensity array (Y-axis, CCD counts)</li>
+<li>
+<p>Full metadata as JSON or YAML</p>
+</li>
+<li>
+<p><strong>Export plot</strong>:</p>
+</li>
+<li>PNG image (high resolution)</li>
+<li>SVG vector format (editable)</li>
+<li>
+<p>Plotly JSON (interactive)</p>
+</li>
+<li>
+<p><strong>API access</strong>:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Python example</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span> <span class="nn">nomad.client</span> <span class="kn">import</span> <span class="n">ArchiveClient</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">client</span> <span class="o">=</span> <span class="n">ArchiveClient</span><span class="p">()</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">raman</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_archive</span><span class="p">(</span><span class="n">upload_id</span><span class="o">=</span><span class="s1">&#39;xxx&#39;</span><span class="p">,</span> <span class="n">entry_id</span><span class="o">=</span><span class="s1">&#39;yyy&#39;</span><span class="p">)</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Access spectrum data</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">x</span> <span class="o">=</span> <span class="n">raman</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">spectrum</span><span class="o">.</span><span class="n">x_values</span>  <span class="c1"># Raman shift</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">y</span> <span class="o">=</span> <span class="n">raman</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">spectrum</span><span class="o">.</span><span class="n">y_values</span>  <span class="c1"># Intensity</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="c1"># Access metadata</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="n">power</span> <span class="o">=</span> <span class="n">raman</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">excitation</span><span class="o">.</span><span class="n">power</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="n">temp</span> <span class="o">=</span> <span class="n">raman</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">detector</span><span class="o">.</span><span class="n">temperature</span>
+</code></pre></div></p>
+</li>
+</ol>
+<h2 id="step-7-analysis-and-interpretation">Step 7: Analysis and Interpretation<a class="headerlink" href="#step-7-analysis-and-interpretation" title="Permanent link">&para;</a></h2>
+<h3 id="peak-identification">Peak Identification<a class="headerlink" href="#peak-identification" title="Permanent link">&para;</a></h3>
+<p>Use the Raman spectrum to identify phases and structure:</p>
+<ol>
+<li><strong>Consult literature</strong> or Raman spectral databases</li>
+<li><strong>Peak position</strong>: Determines molecular identity</li>
+<li><strong>Peak intensity</strong>: Related to concentration</li>
+<li><strong>Peak width</strong>: Indicates disorder/strain</li>
+<li><strong>Area under peak</strong>: Useful for quantitative analysis</li>
+</ol>
+<h3 id="multi-sample-comparison">Multi-Sample Comparison<a class="headerlink" href="#multi-sample-comparison" title="Permanent link">&para;</a></h3>
+<p>Plot multiple measurements on same sample:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Sample BCS_001 - Temperature Series
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>|
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>├─ T=300K: Power 50 mW → [Plot shows peaks at X cm⁻¹]
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>├─ T=400K: Power 50 mW → [Plot shows shifted peaks]
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>└─ T=500K: Power 50 mW → [Plot shows broadened peaks]
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>Observation: Peak position shifts with temperature
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>→ Thermal coefficient: Δν/ΔT = -0.02 cm⁻¹/K (typical for C-C)
+</code></pre></div>
+<h2 id="common-issues-and-solutions">Common Issues and Solutions<a class="headerlink" href="#common-issues-and-solutions" title="Permanent link">&para;</a></h2>
+<h3 id="issue-spectrum-looks-noisy">Issue: Spectrum looks noisy<a class="headerlink" href="#issue-spectrum-looks-noisy" title="Permanent link">&para;</a></h3>
+<p><strong>Possible causes</strong>:
+- Integration time too short
+- Accumulations too low
+- Laser power too weak
+- Detector not cooled</p>
+<p><strong>Solution</strong>:
+- Repeat measurement with increased integration time or accumulations
+- Check detector temperature is &lt; -50°C
+- Verify laser power with power meter</p>
+<h3 id="issue-peaks-are-very-broad-or-shifted">Issue: Peaks are very broad or shifted<a class="headerlink" href="#issue-peaks-are-very-broad-or-shifted" title="Permanent link">&para;</a></h3>
+<p><strong>Possible causes</strong>:
+- Wavelength calibration drift
+- Grating slightly misaligned
+- Sample under thermal/mechanical stress
+- High disorder in sample</p>
+<p><strong>Solution</strong>:
+- Acquire calibration reference (e.g., silicon peak at 520.7 cm⁻¹)
+- Check system calibration in Witec software</p>
+<h3 id="issue-file-pair-not-found-error">Issue: "File pair not found" error<a class="headerlink" href="#issue-file-pair-not-found-error" title="Permanent link">&para;</a></h3>
+<p><strong>Possible causes</strong>:
+- Base names don't match exactly (e.g., extra space)
+- Only one file was uploaded
+- Files in different upload batches</p>
+<p><strong>Solution</strong>:
+- Verify filenames match: <code>260721D11 BCS_001_Spec.Data 1.txt</code> + <code>260721D11 BCS_001 Information.txt</code>
+- Upload both files together in same batch</p>
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Analyze</strong>: Use export tools to plot in origin, fit peaks, extract parameters</li>
+<li><strong>Compare</strong>: Acquire multiple measurements across sample or conditions</li>
+<li><strong>Archive</strong>: Store in NOMAD for long-term data management</li>
+<li><strong>Share</strong>: Use NOMAD's publishing features for open science</li>
+</ol>
+<h2 id="additional-resources">Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../reference/raman_schema.html">Reference Guide</a> - All schema fields</li>
+<li><a href="../explanation/raman_setup.html">Background</a> - Instrument details</li>
+<li><a href="../how_to/using_raman.html">How To</a> - Workflow guide</li>
+<li>NOMAD Documentation: https://nomad-lab.eu/docs</li>
+</ul>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant"], "search": "../../assets/javascripts/workers/search.c7dec7e7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.da79ceb7.min.js"></script>
+      
+        <script src="../../javascript.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

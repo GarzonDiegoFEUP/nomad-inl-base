@@ -1,0 +1,1465 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A plugin to manage the data from LaNaSC">
+      
+      
+        <meta name="author" content="Diego Garzon">
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-8.1.1">
+    
+    
+      
+        <title>CIGSe Solar Cell - nomad-inl-base</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.23b6d78a.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+          
+          
+          <meta name="theme-color" content="">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,400i,700%7C&display=fallback">
+        <style>:root{--md-text-font:"Titillium Web";--md-code-font:""}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="#2a4cdf" data-md-color-accent="#008a67">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tutorial-full-cigse-solar-cell-workflow" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-header__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            nomad-inl-base
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CIGSe Solar Cell
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-nav__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    nomad-inl-base
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../index.html" class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tutorial.html" class="md-nav__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="material_characterization.html" class="md-nav__link">
+        Material Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          CIGSe Solar Cell
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="cigs_solar_cell.html" class="md-nav__link md-nav__link--active">
+        CIGSe Solar Cell
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lab-workflow-overview" class="md-nav__link">
+    Lab workflow overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-substrate-and-first-metal-contact-mo" class="md-nav__link">
+    Step 1 – Substrate and first metal contact (Mo)
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 1 – Substrate and first metal contact (Mo)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-the-slg-substrate" class="md-nav__link">
+    Create the SLG substrate
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deposit-mo-cathode" class="md-nav__link">
+    Deposit Mo cathode
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-in-layer-meteor-e-beam" class="md-nav__link">
+    Step 2 – In layer (METEOR e-beam)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-cuga-co-deposition-star-reactive-dc-with-selenium" class="md-nav__link">
+    Step 3 – CuGa co-deposition (STAR reactive DC with selenium)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-selenization-annealing-star-or-tube-furnace" class="md-nav__link">
+    Step 4 – Selenization annealing (STAR or tube furnace)
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 4 – Selenization annealing (STAR or tube furnace)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-star-selenization-annealing-in-situ-with-selenium-cell" class="md-nav__link">
+    Option A: STAR Selenization Annealing (in-situ with selenium cell)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-tube-furnace-annealing-separate-selenization-step" class="md-nav__link">
+    Option B: Tube Furnace Annealing (separate selenization step)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-cds-window-layer-cbd" class="md-nav__link">
+    Step 5 – CdS window layer (CBD)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-front-contacts-izno-znoal-star-rf-sputtering" class="md-nav__link">
+    Step 6 – Front contacts (iZnO + ZnO:Al, STAR RF sputtering)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-final-characterization" class="md-nav__link">
+    Step 7 – Final characterization
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 7 – Final characterization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eqe-external-quantum-efficiency" class="md-nav__link">
+    EQE (External Quantum Efficiency)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solar-cell-iv-curve" class="md-nav__link">
+    Solar cell IV curve
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xrd-measurement" class="md-nav__link">
+    XRD measurement
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-final-check" class="md-nav__link">
+    Step 8 – Final check
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recipe-reuse" class="md-nav__link">
+    Recipe reuse
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-questions" class="md-nav__link">
+    Common questions
+  </a>
+  
+    <nav class="md-nav" aria-label="Common questions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q-should-i-create-a-new-thin-film-stack-after-each-step" class="md-nav__link">
+    Q: Should I create a new thin-film stack after each step?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-what-if-i-need-to-re-deposit-a-layer" class="md-nav__link">
+    Q: What if I need to re-deposit a layer?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-can-i-upload-all-my-characterization-files-in-one-go" class="md-nav__link">
+    Q: Can I upload all my characterization files in one go?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next steps
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="bisi_solar_cell.html" class="md-nav__link">
+        BiSI Solar Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="battery_deposition_workflow.html" class="md-nav__link">
+        Battery Deposition
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How-to guides" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/install_this_plugin.html" class="md-nav__link">
+        Install this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/upload_and_organize.html" class="md-nav__link">
+        Upload and organize entries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/use_this_plugin.html" class="md-nav__link">
+        Use this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_this_plugin.html" class="md-nav__link">
+        Contribute to this plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how_to/contribute_to_the_documentation.html" class="md-nav__link">
+        Contribute to the documentation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explanation/explanation.html" class="md-nav__link">
+        Explanation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/references.html" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/entities.html" class="md-nav__link">
+        Entities
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/sputtering.html" class="md-nav__link">
+        STAR Sputtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/meteor.html" class="md-nav__link">
+        METEOR E-Beam
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/testo.html" class="md-nav__link">
+        Testo Environmental Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/batteries.html" class="md-nav__link">
+        Batteries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/wet_deposition.html" class="md-nav__link">
+        Wet Deposition
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/characterization.html" class="md-nav__link">
+        Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/analysis.html" class="md-nav__link">
+        Analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lab-workflow-overview" class="md-nav__link">
+    Lab workflow overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-substrate-and-first-metal-contact-mo" class="md-nav__link">
+    Step 1 – Substrate and first metal contact (Mo)
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 1 – Substrate and first metal contact (Mo)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-the-slg-substrate" class="md-nav__link">
+    Create the SLG substrate
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deposit-mo-cathode" class="md-nav__link">
+    Deposit Mo cathode
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-in-layer-meteor-e-beam" class="md-nav__link">
+    Step 2 – In layer (METEOR e-beam)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-cuga-co-deposition-star-reactive-dc-with-selenium" class="md-nav__link">
+    Step 3 – CuGa co-deposition (STAR reactive DC with selenium)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-selenization-annealing-star-or-tube-furnace" class="md-nav__link">
+    Step 4 – Selenization annealing (STAR or tube furnace)
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 4 – Selenization annealing (STAR or tube furnace)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-star-selenization-annealing-in-situ-with-selenium-cell" class="md-nav__link">
+    Option A: STAR Selenization Annealing (in-situ with selenium cell)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-tube-furnace-annealing-separate-selenization-step" class="md-nav__link">
+    Option B: Tube Furnace Annealing (separate selenization step)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-cds-window-layer-cbd" class="md-nav__link">
+    Step 5 – CdS window layer (CBD)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-front-contacts-izno-znoal-star-rf-sputtering" class="md-nav__link">
+    Step 6 – Front contacts (iZnO + ZnO:Al, STAR RF sputtering)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-final-characterization" class="md-nav__link">
+    Step 7 – Final characterization
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 7 – Final characterization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eqe-external-quantum-efficiency" class="md-nav__link">
+    EQE (External Quantum Efficiency)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solar-cell-iv-curve" class="md-nav__link">
+    Solar cell IV curve
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#xrd-measurement" class="md-nav__link">
+    XRD measurement
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-final-check" class="md-nav__link">
+    Step 8 – Final check
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recipe-reuse" class="md-nav__link">
+    Recipe reuse
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-questions" class="md-nav__link">
+    Common questions
+  </a>
+  
+    <nav class="md-nav" aria-label="Common questions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q-should-i-create-a-new-thin-film-stack-after-each-step" class="md-nav__link">
+    Q: Should I create a new thin-film stack after each step?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-what-if-i-need-to-re-deposit-a-layer" class="md-nav__link">
+    Q: What if I need to re-deposit a layer?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q-can-i-upload-all-my-characterization-files-in-one-go" class="md-nav__link">
+    Q: Can I upload all my characterization files in one go?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next steps
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="tutorial-full-cigse-solar-cell-workflow">Tutorial – Full CIGSe Solar Cell Workflow<a class="headerlink" href="#tutorial-full-cigse-solar-cell-workflow" title="Permanent link">&para;</a></h1>
+<p>This tutorial guides you through fabricating a complete <strong>CIGSe (Copper Indium Gallium Selenide) photovoltaic device</strong>.
+The workflow combines multiple PVD and wet-chemistry techniques to build up the absorber and contacts, then characterizes
+the final device with standard solar-cell measurements.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A running NOMAD Oasis with the <code>nomad-inl-base</code> plugin installed</li>
+<li>An upload where you can create and link entries</li>
+<li>Sample files from characterization instruments (<code>.txt</code> for EQE and IV results,
+  <code>.xrdml</code>/<code>.rasx</code>/<code>.brml</code>/<code>.raw</code> for XRD)</li>
+<li>Familiarity with the <a href="tutorial.html">onboarding tutorial</a> for basic upload and linking concepts</li>
+</ul>
+<hr />
+<h2 id="lab-workflow-overview">Lab workflow overview<a class="headerlink" href="#lab-workflow-overview" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Lab step</th>
+<th>NOMAD entry type</th>
+<th>Created</th>
+<th>Recipe?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Clean SLG substrate</td>
+<td><code>INLSubstrate</code></td>
+<td>Manually</td>
+<td>–</td>
+</tr>
+<tr>
+<td>Deposit Mo (cathode)</td>
+<td><code>StarDCSputtering</code></td>
+<td>Manually</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Deposit In (METEOR)</td>
+<td><code>METEORDeposition</code></td>
+<td>Manually</td>
+<td>–</td>
+</tr>
+<tr>
+<td>Deposit CuGa (STAR)</td>
+<td><code>STARDCReactiveSputtering</code></td>
+<td>Manually</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Selenize (STAR or tube furnace)</td>
+<td><code>STARSelenizationAnnealing</code> or <code>INLTubeFurnaceAnnealing</code></td>
+<td>Manually</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Deposit CdS (CBD)</td>
+<td><code>INLChemicalBathDeposition</code></td>
+<td>Manually</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Deposit iZnO + ZnO:Al (STAR RF)</td>
+<td><code>StarRFSputtering</code></td>
+<td>Manually</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>EQE measurement</td>
+<td><code>INLEQE</code></td>
+<td>Parser (<code>.txt</code>)</td>
+<td>–</td>
+</tr>
+<tr>
+<td>Solar cell IV</td>
+<td><code>INLSolarCellIV</code></td>
+<td>Parser (<code>.txt</code>)</td>
+<td>–</td>
+</tr>
+<tr>
+<td>XRD measurement</td>
+<td><code>INLXRayDiffraction</code></td>
+<td>Parser (<code>.xrdml</code> etc.)</td>
+<td>–</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="step-1-substrate-and-first-metal-contact-mo">Step 1 – Substrate and first metal contact (Mo)<a class="headerlink" href="#step-1-substrate-and-first-metal-contact-mo" title="Permanent link">&para;</a></h2>
+<h3 id="create-the-slg-substrate">Create the SLG substrate<a class="headerlink" href="#create-the-slg-substrate" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Create <strong>INL Substrate</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>SLG-CIGS-001</code></li>
+<li><strong>Material</strong> – <code>SLG</code></li>
+<li><strong>Geometry</strong> – leave empty (auto-fills to 25 × 25 × 1 mm)</li>
+</ol>
+<h3 id="deposit-mo-cathode">Deposit Mo cathode<a class="headerlink" href="#deposit-mo-cathode" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Create <strong>STAR DC Sputtering</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>Mo-CIGS-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Samples</strong> – reference <code>SLG-CIGS-001</code></li>
+<li><strong>Base pressure</strong> – chamber base pressure</li>
+<li><strong>Steps</strong> – add DC sputtering step(s) with:</li>
+<li>Duration, voltage, current, argon flow</li>
+<li>Substrate set temperature (if heating)</li>
+<li><strong>Sources</strong> – add one source referencing a <strong>Sputtering Target</strong> entry (Mo).
+   If you haven't created the target yet, create it first:</li>
+<li>Create <strong>Sputtering Target</strong> entry with name, delivery date, components (pure Mo)</li>
+<li>Reference it in the Mo deposition entry</li>
+<li>Tick <strong>Creates new thin film</strong> and save.</li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>After normalization, you will have:
+- <code>Mo-CIGS-001_thin_film</code> (Mo layer)
+- <code>Mo-CIGS-001_thin_film_stack</code> (SLG + Mo)</p>
+<p>Use the stack entry in all subsequent depositions.</p>
+</div>
+<hr />
+<h2 id="step-2-in-layer-meteor-e-beam">Step 2 – In layer (METEOR e-beam)<a class="headerlink" href="#step-2-in-layer-meteor-e-beam" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Create <strong>METEOR E-Beam Evaporation</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>In-CIGS-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Substrate</strong> – select <code>Mo-CIGS-001_thin_film_stack</code> from Step 1</li>
+<li><strong>Mask</strong> – describe any shadow mask</li>
+<li><strong>Pockets</strong> – set <strong>Material</strong> to <code>Indium</code> on the active pocket</li>
+<li><strong>QCM</strong> – The parser will fill <strong>Thickness</strong> from the <code>.nbl</code> log file</li>
+<li>Tick <strong>Creates new thin film</strong> and save.</li>
+</ol>
+<p>After normalization:
+- <code>In-CIGS-001_thin_film</code> (In layer appended to the stack)
+- <code>In-CIGS-001_thin_film_stack</code> (SLG + Mo + In)</p>
+<hr />
+<h2 id="step-3-cuga-co-deposition-star-reactive-dc-with-selenium">Step 3 – CuGa co-deposition (STAR reactive DC with selenium)<a class="headerlink" href="#step-3-cuga-co-deposition-star-reactive-dc-with-selenium" title="Permanent link">&para;</a></h2>
+<p>This is the most complex step: simultaneous metal sputtering and pulsed selenium.</p>
+<ol>
+<li>Create <strong>STAR DC Reactive Sputtering</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>CuGa-Se-CIGS-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Samples</strong> – reference <code>In-CIGS-001_thin_film_stack</code></li>
+<li><strong>Base pressure</strong></li>
+<li><strong>Sources</strong> – add two sources (Cu and Ga targets)</li>
+<li><strong>Steps</strong> – add one or more sputtering steps, each with:</li>
+<li>Duration, voltage, current, argon/gas flow</li>
+<li><strong>Substrate set temperature</strong> (typically 400–550 °C)</li>
+<li><strong>Substrate rotation</strong> enabled if applicable</li>
+<li><strong>Selenium Pulse Parameters</strong> sub-section:<ul>
+<li><strong>Selenium cell</strong> – reference a <strong>Selenium Cell</strong> entity (create one first if needed)</li>
+<li><strong>Valve opening</strong> (mm)</li>
+<li><strong>Time on / Time off</strong> (s) – pulse duty cycle</li>
+<li><strong>Cell temperature</strong> (°C)</li>
+<li><strong>Cracker current</strong> (A) and <strong>Cracker voltage</strong> (V)</li>
+<li><strong>Process time</strong> (min) – total duration of Se pulsing</li>
+<li><strong>Cracker power</strong> and <strong>Total Se on time</strong> auto-compute on normalization</li>
+</ul>
+</li>
+<li>Tick <strong>Creates new thin film</strong> and save.</li>
+</ol>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>If this is a recurring process, consider creating a <strong>STAR Sputtering Recipe</strong>
+entry with the step(s) and reusing it in future CuGa runs by ticking <strong>Apply recipe</strong>.</p>
+</div>
+<p>After normalization:
+- <code>CuGa-Se-CIGS-001_thin_film</code> (CuGa layer)
+- <code>CuGa-Se-CIGS-001_thin_film_stack</code> (SLG + Mo + In + CuGa)</p>
+<hr />
+<h2 id="step-4-selenization-annealing-star-or-tube-furnace">Step 4 – Selenization annealing (STAR or tube furnace)<a class="headerlink" href="#step-4-selenization-annealing-star-or-tube-furnace" title="Permanent link">&para;</a></h2>
+<p>Post-deposition annealing in a selenium atmosphere to improve absorber quality. Selenization can be done in two ways:</p>
+<h3 id="option-a-star-selenization-annealing-in-situ-with-selenium-cell">Option A: STAR Selenization Annealing (in-situ with selenium cell)<a class="headerlink" href="#option-a-star-selenization-annealing-in-situ-with-selenium-cell" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Create <strong>STAR Selenization Annealing</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>Selenize-CIGS-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Samples</strong> – reference <code>CuGa-Se-CIGS-001_thin_film_stack</code></li>
+<li><strong>Base pressure</strong></li>
+<li>Add one or more <strong>Se Annealing Step</strong> sub-sections, each with:</li>
+<li><strong>Duration</strong> (min)</li>
+<li><strong>Substrate set temperature</strong> (°C)</li>
+<li><strong>Selenium Pulse Parameters</strong> (same fields as reactive DC sputtering)</li>
+<li>Tick <strong>Creates new thin film</strong> if the selenization is considered a distinct layer
+   (typically not), or leave it off if you want to treat it as in-situ processing.</li>
+<li>Save.</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Unlike deposition, selenization annealing may not create a new film entry
+if it is considered part of the absorber processing rather than a distinct layer.
+Consult your lab's conventions.</p>
+</div>
+<h3 id="option-b-tube-furnace-annealing-separate-selenization-step">Option B: Tube Furnace Annealing (separate selenization step)<a class="headerlink" href="#option-b-tube-furnace-annealing-separate-selenization-step" title="Permanent link">&para;</a></h3>
+<p>If your lab uses a tube furnace for selenization with external selenium source or Se powder:</p>
+<ol>
+<li>Create <strong>INL Tube Furnace Annealing</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>TubeFurnace-Selenize-CIGS-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Samples</strong> – reference <code>CuGa-Se-CIGS-001_thin_film_stack</code></li>
+<li>Add one or more <strong>Annealing Step</strong> sub-sections, each with:</li>
+<li><strong>Start time</strong> and <strong>Duration</strong> (min)</li>
+<li><strong>Temperature</strong> profile (ramp rate and peak temperature, typically 400–550 °C)</li>
+<li><strong>Atmosphere</strong> – e.g. "Selenium vapor" or "Ar + Se"</li>
+<li><strong>Notes</strong> – document the selenium source (e.g. "Se powder in graphite boat", "Se evaporation setup")</li>
+<li>Save.</li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p><strong>Choosing between STAR and tube furnace:</strong>
+- Use <strong>STAR</strong> if you have pulsed selenium injection in the chamber
+- Use <strong>Tube Furnace</strong> if you perform selenization in a separate vacuum or controlled-atmosphere anneal step
+- Both approaches produce high-quality CIGS absorbers; the choice depends on your equipment and recipes</p>
+</div>
+<hr />
+<h2 id="step-5-cds-window-layer-cbd">Step 5 – CdS window layer (CBD)<a class="headerlink" href="#step-5-cds-window-layer-cbd" title="Permanent link">&para;</a></h2>
+<p>Chemical bath deposition of the CdS buffer layer.</p>
+<ol>
+<li>Create <strong>INL Chemical Bath Deposition</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>CdS-CIGS-001</code></li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Samples</strong> – reference the absorber stack from Step 4</li>
+<li><strong>Bath temperature</strong> (°C), <strong>pH</strong>, <strong>Duration</strong> (min), <strong>Stirring speed</strong> (rpm)</li>
+<li><strong>Bath composition</strong> – add <code>INLCBDComponentMixture</code> entries for each bath component:</li>
+<li><strong>CdCl₂</strong> solution</li>
+<li><strong>Thiourea</strong> solution</li>
+<li><strong>Ammonia</strong> solution</li>
+</ol>
+<p>Each component can reference a pre-made <strong>Solution</strong> entry or use an inline
+   <code>solution_template</code> for auto-creation. Set <strong>Order</strong> to specify addition sequence.
+3. Optionally set <strong>Color change time</strong> if a reaction was observed.
+4. Tick <strong>Creates new thin film</strong> and save.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>CdS is typically a thin, uniform window layer. Consider using a <strong>CBD Recipe</strong>
+if your standard CdS bath conditions are reused across samples.</p>
+</div>
+<p>After normalization:
+- <code>CdS-CIGS-001_thin_film</code>
+- <code>CdS-CIGS-001_thin_film_stack</code> (absorber + CdS)</p>
+<hr />
+<h2 id="step-6-front-contacts-izno-znoal-star-rf-sputtering">Step 6 – Front contacts (iZnO + ZnO:Al, STAR RF sputtering)<a class="headerlink" href="#step-6-front-contacts-izno-znoal-star-rf-sputtering" title="Permanent link">&para;</a></h2>
+<p>Two RF sputtering layers for the transparent conductive oxide window.</p>
+<ol>
+<li>Create <strong>STAR RF Sputtering</strong> entry:</li>
+<li><strong>Name</strong> – e.g. <code>TCO-CIGS-001</code> (TCO = transparent conductive oxide)</li>
+<li><strong>Operator</strong> – your name</li>
+<li><strong>Samples</strong> – reference the CdS stack from Step 5</li>
+<li><strong>Base pressure</strong></li>
+<li><strong>Sources</strong> – add one or two sources depending on your setup:</li>
+<li>One for <strong>iZnO</strong> (intrinsic ZnO)</li>
+<li>One for <strong>ZnO:Al</strong> (aluminum-doped ZnO)</li>
+<li><strong>Steps</strong> – add RF sputtering steps (typically two: iZnO, then ZnO:Al):</li>
+<li><strong>iZnO step</strong>: duration, power, gas flow, substrate temperature</li>
+<li><strong>ZnO:Al step</strong>: duration, power, gas flow, substrate temperature</li>
+<li>Both may include substrate rotation</li>
+<li>Tick <strong>Creates new thin film</strong> and save.</li>
+</ol>
+<p>After normalization:
+- <code>TCO-CIGS-001_thin_film_stack</code> (full absorber + buffer + TCO)</p>
+<hr />
+<h2 id="step-7-final-characterization">Step 7 – Final characterization<a class="headerlink" href="#step-7-final-characterization" title="Permanent link">&para;</a></h2>
+<h3 id="eqe-external-quantum-efficiency">EQE (External Quantum Efficiency)<a class="headerlink" href="#eqe-external-quantum-efficiency" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Upload your EQE data file (<code>*.eqe*.txt</code>).</li>
+<li>NOMAD creates an <code>INLEQE</code> entry automatically.</li>
+<li>Open the entry and set:</li>
+<li><strong>Operator</strong></li>
+<li><strong>Samples</strong> → reference the final stack from Step 6</li>
+<li>Save. The EQE spectrum is plotted automatically.</li>
+</ol>
+<h3 id="solar-cell-iv-curve">Solar cell IV curve<a class="headerlink" href="#solar-cell-iv-curve" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Upload your IV results file (e.g. <code>*Results Table*.txt</code>).</li>
+<li>NOMAD creates an <code>INLSolarCellIV</code> entry automatically.</li>
+<li>Open the entry and set:</li>
+<li><strong>Operator</strong></li>
+<li><strong>Samples</strong> → reference the final stack</li>
+<li>Save. The best-efficiency cell's JV curve and performance boxplot are plotted.</li>
+</ol>
+<h3 id="xrd-measurement">XRD measurement<a class="headerlink" href="#xrd-measurement" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Upload your XRD diffractogram (<code>.xrdml</code>, <code>.rasx</code>, <code>.brml</code>, or <code>.raw</code>).</li>
+<li>NOMAD creates an <code>INLXRayDiffraction</code> entry automatically.</li>
+<li>Open the entry and set:</li>
+<li><strong>Operator</strong></li>
+<li><strong>Samples</strong> → reference the final stack</li>
+<li>Save.</li>
+</ol>
+<hr />
+<h2 id="step-8-final-check">Step 8 – Final check<a class="headerlink" href="#step-8-final-check" title="Permanent link">&para;</a></h2>
+<p>Use NOMAD's <strong>Graph</strong> view to verify the complete chain:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>SLG Substrate
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    ↓
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Mo (cathode)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    ↓
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>In (seed layer)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    ↓
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>CuGa+Se (absorber)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    ↓
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>Selenization: STAR or Tube Furnace (annealing)
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    ↓
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>CdS (buffer)
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    ↓
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>iZnO + ZnO:Al (front contacts)
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    ↓
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>EQE, IV, XRD measurements
+</code></pre></div>
+<p>Check:
+- Each deposition references the previous stack
+- All characterization entries link to the final stack
+- Operators and timestamps are filled in
+- Recipes (if used) are applied consistently</p>
+<hr />
+<h2 id="recipe-reuse">Recipe reuse<a class="headerlink" href="#recipe-reuse" title="Permanent link">&para;</a></h2>
+<p>If you fabricate CIGSe devices regularly, create recipes for the repetitive steps:</p>
+<ol>
+<li><strong>Mo sputtering recipe</strong> – Save the DC parameters, argon flow, and heating profile</li>
+<li><strong>CuGa+Se recipe</strong> – Save the reactive DC step(s) with Se pulse parameters</li>
+<li><strong>Selenization recipe</strong> – Save the annealing profile</li>
+<li><strong>CdS bath recipe</strong> – Save the bath composition and temperature</li>
+<li><strong>TCO recipe</strong> – Save the iZnO and ZnO:Al RF parameters</li>
+</ol>
+<p>Then on the next run, reference each recipe and tick <strong>Apply recipe</strong> to auto-fill
+those fields. Recipes use non-destructive merging, so you can override fields per run
+if needed.</p>
+<hr />
+<h2 id="common-questions">Common questions<a class="headerlink" href="#common-questions" title="Permanent link">&para;</a></h2>
+<h3 id="q-should-i-create-a-new-thin-film-stack-after-each-step">Q: Should I create a new thin-film stack after each step?<a class="headerlink" href="#q-should-i-create-a-new-thin-film-stack-after-each-step" title="Permanent link">&para;</a></h3>
+<p><strong>A:</strong> Yes. Tick <strong>Creates new thin film</strong> on every deposition so NOMAD tracks each layer
+in the stack. This enables traceability and makes characterization linking unambiguous.</p>
+<h3 id="q-what-if-i-need-to-re-deposit-a-layer">Q: What if I need to re-deposit a layer?<a class="headerlink" href="#q-what-if-i-need-to-re-deposit-a-layer" title="Permanent link">&para;</a></h3>
+<p><strong>A:</strong> Create a new deposition entry and reference the existing stack. Set the layer count
+appropriately. NOMAD will track the replacement as a new measurement point in the provenance graph.</p>
+<h3 id="q-can-i-upload-all-my-characterization-files-in-one-go">Q: Can I upload all my characterization files in one go?<a class="headerlink" href="#q-can-i-upload-all-my-characterization-files-in-one-go" title="Permanent link">&para;</a></h3>
+<p><strong>A:</strong> Yes. Upload all <code>.txt</code>, <code>.xrdml</code>, and other files in a single batch. NOMAD will
+auto-create separate entries for EQE, IV, and XRD. Then open each measurement entry
+and link them all to the final stack.</p>
+<hr />
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../how_to/use_this_plugin.html#using-recipes">How to use recipes</a></li>
+<li><a href="../reference/sputtering.html">Reference – STAR Sputtering</a></li>
+<li><a href="../reference/meteor.html">Reference – METEOR E-Beam</a></li>
+<li><a href="../reference/wet_deposition.html">Reference – Wet Deposition</a> (for CBD specifics)</li>
+<li><a href="../reference/characterization.html">Reference – Characterization</a> (for EQE/IV/XRD formats)</li>
+</ul>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="material_characterization.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Material Characterization" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Material Characterization
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="bisi_solar_cell.html" class="md-footer__link md-footer__link--next" aria-label="Next: BiSI Solar Cell" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              BiSI Solar Cell
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant"], "search": "../assets/javascripts/workers/search.c7dec7e7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.da79ceb7.min.js"></script>
+      
+        <script src="../javascript.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

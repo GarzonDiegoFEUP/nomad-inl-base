@@ -1,0 +1,1200 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A plugin to manage the data from LaNaSC">
+      
+      
+        <meta name="author" content="Diego Garzon">
+      
+      
+      <link rel="icon" href="../../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-8.1.1">
+    
+    
+      
+        <title>Photoluminescence: Detailed Guide - nomad-inl-base</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.23b6d78a.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
+        
+          
+          
+          <meta name="theme-color" content="">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,400i,700%7C&display=fallback">
+        <style>:root{--md-text-font:"Titillium Web";--md-code-font:""}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="#2a4cdf" data-md-color-accent="#008a67">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#photoluminescence-detailed-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-header__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            nomad-inl-base
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Photoluminescence: Detailed Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://nomad-lab.eu" title="nomad-inl-base" class="md-nav__button md-logo" aria-label="nomad-inl-base" data-md-component="logo">
+      
+  <img src="../../assets/nomad-plugin-logo.png" alt="logo">
+
+    </a>
+    nomad-inl-base
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/GarzonDiegoFEUP/nomad-inl-base" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.html" class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/tutorial.html" class="md-nav__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/material_characterization.html" class="md-nav__link">
+        Material Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/cigs_solar_cell.html" class="md-nav__link">
+        CIGSe Solar Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/bisi_solar_cell.html" class="md-nav__link">
+        BiSI Solar Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/battery_deposition_workflow.html" class="md-nav__link">
+        Battery Deposition
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          How-to guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="How-to guides" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          How-to guides
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/install_this_plugin.html" class="md-nav__link">
+        Install this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/upload_and_organize.html" class="md-nav__link">
+        Upload and organize entries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/use_this_plugin.html" class="md-nav__link">
+        Use this Plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/contribute_to_this_plugin.html" class="md-nav__link">
+        Contribute to this plugin
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how_to/contribute_to_the_documentation.html" class="md-nav__link">
+        Contribute to the documentation
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/explanation.html" class="md-nav__link">
+        Explanation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/references.html" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/entities.html" class="md-nav__link">
+        Entities
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/sputtering.html" class="md-nav__link">
+        STAR Sputtering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/meteor.html" class="md-nav__link">
+        METEOR E-Beam
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/testo.html" class="md-nav__link">
+        Testo Environmental Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/batteries.html" class="md-nav__link">
+        Batteries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/wet_deposition.html" class="md-nav__link">
+        Wet Deposition
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/characterization.html" class="md-nav__link">
+        Characterization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/analysis.html" class="md-nav__link">
+        Analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-photoluminescence" class="md-nav__link">
+    What is Photoluminescence?
+  </a>
+  
+    <nav class="md-nav" aria-label="What is Photoluminescence?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#energy-diagram" class="md-nav__link">
+    Energy Diagram
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measurement-basics" class="md-nav__link">
+    Measurement Basics
+  </a>
+  
+    <nav class="md-nav" aria-label="Measurement Basics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#typical-setup" class="md-nav__link">
+    Typical Setup
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-532-nm-excitation" class="md-nav__link">
+    Why 532 nm Excitation?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#typical-energy-range" class="md-nav__link">
+    Typical Energy Range
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-format-details" class="md-nav__link">
+    File Format Details
+  </a>
+  
+    <nav class="md-nav" aria-label="File Format Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-_specdata-pl" class="md-nav__link">
+    Example _Spec.Data* (PL)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-information-pl" class="md-nav__link">
+    Example Information* (PL)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-interpretation" class="md-nav__link">
+    Data Interpretation
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Interpretation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#peak-position-bandgap" class="md-nav__link">
+    Peak Position → Bandgap
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#peak-broadness-defect-density" class="md-nav__link">
+    Peak Broadness → Defect Density
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiple-peaks-different-defects" class="md-nav__link">
+    Multiple Peaks → Different Defects
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#intensity-luminescence-efficiency" class="md-nav__link">
+    Intensity → Luminescence Efficiency
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-analysis" class="md-nav__link">
+    Advanced Analysis
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#temperature-dependence" class="md-nav__link">
+    Temperature Dependence
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#excitation-power-dependence" class="md-nav__link">
+    Excitation Power Dependence
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time-resolved-pl" class="md-nav__link">
+    Time-Resolved PL
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-samples-expected-spectra" class="md-nav__link">
+    Common Samples &amp; Expected Spectra
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Samples &amp; Expected Spectra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#silicon-si" class="md-nav__link">
+    Silicon (Si)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gallium-nitride-gan" class="md-nav__link">
+    Gallium Nitride (GaN)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boron-carbide-b4c" class="md-nav__link">
+    Boron Carbide (B₄C)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diamond" class="md-nav__link">
+    Diamond
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting-pl-issues" class="md-nav__link">
+    Troubleshooting PL Issues
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting PL Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#issue-no-signal-flat-spectrum" class="md-nav__link">
+    Issue: No signal (flat spectrum)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-noisy-spectrum-random-peaks" class="md-nav__link">
+    Issue: Noisy spectrum (random peaks)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-broadshifted-peak" class="md-nav__link">
+    Issue: Broad/shifted peak
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-weird-multi-peak-structure" class="md-nav__link">
+    Issue: Weird multi-peak structure
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-pl-vs-raman-on-same-sample" class="md-nav__link">
+    Comparison: PL vs. Raman on Same Sample
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#export-and-analysis" class="md-nav__link">
+    Export and Analysis
+  </a>
+  
+    <nav class="md-nav" aria-label="Export and Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#from-nomad" class="md-nav__link">
+    From NOMAD
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analysis-tools" class="md-nav__link">
+    Analysis Tools
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calculate-key-values" class="md-nav__link">
+    Calculate Key Values
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    References
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    See Also
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+<h1 id="photoluminescence-detailed-guide">Photoluminescence: Detailed Guide<a class="headerlink" href="#photoluminescence-detailed-guide" title="Permanent link">&para;</a></h1>
+<h2 id="what-is-photoluminescence">What is Photoluminescence?<a class="headerlink" href="#what-is-photoluminescence" title="Permanent link">&para;</a></h2>
+<p>Photoluminescence (PL) is the spontaneous emission of light from a material after optical excitation. When a photon with energy ≥ bandgap excites an electron-hole pair, radiative recombination produces a photon.</p>
+<h3 id="energy-diagram">Energy Diagram<a class="headerlink" href="#energy-diagram" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Excitation (532 nm, 2.33 eV)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    ↓
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    e⁻ ────────────── Conduction Band
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    :           ↙ (relaxation)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    :        Emitted Photon (PL)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    :           ↙ (bandgap, Eg)
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    h⁺ ────────────── Valence Band
+</code></pre></div>
+<h2 id="measurement-basics">Measurement Basics<a class="headerlink" href="#measurement-basics" title="Permanent link">&para;</a></h2>
+<h3 id="typical-setup">Typical Setup<a class="headerlink" href="#typical-setup" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Laser</strong>: 532 nm (2.33 eV) green photon</li>
+<li><strong>Detector</strong>: CCD at -60°C (low dark current)</li>
+<li><strong>Grating</strong>: 600 g/mm (wide spectral range)</li>
+<li><strong>Sample</strong>: Any semiconductor or luminescent material</li>
+</ul>
+<h3 id="why-532-nm-excitation">Why 532 nm Excitation?<a class="headerlink" href="#why-532-nm-excitation" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>High energy</strong>: Can excite across visible bandgaps (1.5–3.5 eV)</li>
+<li><strong>Safe</strong>: Below UV, doesn't damage most materials</li>
+<li><strong>Efficient</strong>: Strong absorption in many semiconductors</li>
+<li><strong>Common</strong>: Available in many Raman/PL systems</li>
+</ul>
+<h3 id="typical-energy-range">Typical Energy Range<a class="headerlink" href="#typical-energy-range" title="Permanent link">&para;</a></h3>
+<p>PL measurements typically span:
+- <strong>IR</strong>: 1.5–2.0 eV (low bandgap, narrow gap semiconductors)
+- <strong>Visible</strong>: 2.0–3.0 eV (Si ~1.12 eV, GaN ~3.4 eV)
+- <strong>Theoretical max with 532 nm excitation</strong>: 2.33 eV</p>
+<h2 id="file-format-details">File Format Details<a class="headerlink" href="#file-format-details" title="Permanent link">&para;</a></h2>
+<h3 id="example-_specdata-pl">Example _Spec.Data* (PL)<a class="headerlink" href="#example-_specdata-pl" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>[Header]
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>FileName = 260901B1 BCS_001_Spec.Data 1
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>PositionX = 1302.0 µm
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>PositionY = -1450.1 µm
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>PositionZ = 0.0 µm
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>XAxisUnit = eV              ← Distinguishes PL from Raman
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>DataUnit = CCD cts
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>[Data]
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>X-Axis, Label
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>eV, CCD cts
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>2.0630E+00, 8.1005E+02     ← Energies in eV
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>2.0626E+00, 8.0650E+02
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>2.0621E+00, 8.0805E+02
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>...
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>1.8000E+00, 5.2000E+02     ← Lower energy tail
+</code></pre></div>
+<h3 id="example-information-pl">Example Information* (PL)<a class="headerlink" href="#example-information-pl" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>General:
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Duration: 0h 0m 42s
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>User Name: Witec User
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Configuration: Raman CCD1_532    (same label, different mode)
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>UHTS300:
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>Excitation Wavelength [nm]: 532.032
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>Grating: G1: 600 g/mm BLZ=500nm   (lower res, wider range)
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>Center Wavelength [nm]: 670.185
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>Spectral Center [eV]: 1.850        ← In eV, not cm⁻¹
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>DU401_BV,35:
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>Integration Time [s]: 2.00000      (often longer for PL)
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>Accumulations: 20
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>Temperature [°C]: -59
+</code></pre></div>
+<h2 id="data-interpretation">Data Interpretation<a class="headerlink" href="#data-interpretation" title="Permanent link">&para;</a></h2>
+<h3 id="peak-position-bandgap">Peak Position → Bandgap<a class="headerlink" href="#peak-position-bandgap" title="Permanent link">&para;</a></h3>
+<p>The main peak in a PL spectrum typically corresponds to the bandgap:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Estimate bandgap energy</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">E_g</span> <span class="err">≈</span> <span class="n">E_peak</span>  <span class="p">(</span><span class="k">for</span> <span class="n">direct</span> <span class="n">bandgap</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Example: Si at 300K</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># Peak at 1.12 eV ≈ bandgap at room temperature</span>
+</code></pre></div>
+<h3 id="peak-broadness-defect-density">Peak Broadness → Defect Density<a class="headerlink" href="#peak-broadness-defect-density" title="Permanent link">&para;</a></h3>
+<p>Broader peaks indicate:
+- <strong>Higher disorder</strong> in the material
+- <strong>More defect states</strong> acting as recombination centers
+- <strong>Lower quality</strong> of the material</p>
+<p>FWHM (Full Width at Half Max) &lt; 50 meV → Good quality
+FWHM &gt; 100 meV → High defect density</p>
+<h3 id="multiple-peaks-different-defects">Multiple Peaks → Different Defects<a class="headerlink" href="#multiple-peaks-different-defects" title="Permanent link">&para;</a></h3>
+<p>Multiple peaks suggest:
+- Main peak: Band-to-band transition
+- Lower energy peaks: Defect-related transitions
+- Indicates presence of specific defects/impurities</p>
+<h3 id="intensity-luminescence-efficiency">Intensity → Luminescence Efficiency<a class="headerlink" href="#intensity-luminescence-efficiency" title="Permanent link">&para;</a></h3>
+<p>Higher intensity → Better carrier collection (fewer non-radiative paths)</p>
+<p>Relative intensity between samples indicates quantum efficiency.</p>
+<h2 id="advanced-analysis">Advanced Analysis<a class="headerlink" href="#advanced-analysis" title="Permanent link">&para;</a></h2>
+<h3 id="temperature-dependence">Temperature Dependence<a class="headerlink" href="#temperature-dependence" title="Permanent link">&para;</a></h3>
+<p>PL changes with temperature due to:
+1. <strong>Bandgap shift</strong> (moves to higher E at lower T)
+2. <strong>Peak broadening</strong> (increases at higher T)
+3. <strong>Intensity change</strong> (decreases at higher T)</p>
+<p>Typical coefficient: dE_g/dT ≈ -2 to -3 meV/K</p>
+<h3 id="excitation-power-dependence">Excitation Power Dependence<a class="headerlink" href="#excitation-power-dependence" title="Permanent link">&para;</a></h3>
+<p>Plot PL intensity vs. laser power:
+- Linear response → Equilibrium recombination
+- Sublinear (slope &lt; 1) → Saturation of defect states
+- Superlinear (slope &gt; 1) → Bimolecular recombination</p>
+<h3 id="time-resolved-pl">Time-Resolved PL<a class="headerlink" href="#time-resolved-pl" title="Permanent link">&para;</a></h3>
+<p>Lifetime (not measured here, but related):
+- Short lifetime (&lt;10 ns) → Defect-rich
+- Long lifetime (&gt;1 µs) → High quality</p>
+<h2 id="common-samples-expected-spectra">Common Samples &amp; Expected Spectra<a class="headerlink" href="#common-samples-expected-spectra" title="Permanent link">&para;</a></h2>
+<h3 id="silicon-si">Silicon (Si)<a class="headerlink" href="#silicon-si" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Bandgap: 1.12 eV @ 300K</li>
+<li>Peak: Sharp, centered at 1.12 eV</li>
+<li>FWHM: 20–50 meV (depends on quality)</li>
+<li>Note: Indirect bandgap → weaker PL intensity</li>
+</ul>
+<h3 id="gallium-nitride-gan">Gallium Nitride (GaN)<a class="headerlink" href="#gallium-nitride-gan" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Bandgap: 3.4 eV @ 300K</li>
+<li>Peak: Sharp, high intensity (direct bandgap)</li>
+<li>FWHM: 50–100 meV</li>
+<li>Often includes yellow luminescence (defect peak at 2.3 eV)</li>
+</ul>
+<h3 id="boron-carbide-b4c">Boron Carbide (B₄C)<a class="headerlink" href="#boron-carbide-b4c" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Bandgap: ~2.0 eV</li>
+<li>Peak: Can be broad (high defect concentration)</li>
+<li>PL used to assess quality of synthesis</li>
+</ul>
+<h3 id="diamond">Diamond<a class="headerlink" href="#diamond" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Bandgap: 5.5 eV</li>
+<li>Problem: 532 nm (2.33 eV) can't excite directly</li>
+<li>Two-photon excitation possible (requires high power)</li>
+<li>Usually no PL seen with single-photon 532 nm</li>
+</ul>
+<h2 id="troubleshooting-pl-issues">Troubleshooting PL Issues<a class="headerlink" href="#troubleshooting-pl-issues" title="Permanent link">&para;</a></h2>
+<h3 id="issue-no-signal-flat-spectrum">Issue: No signal (flat spectrum)<a class="headerlink" href="#issue-no-signal-flat-spectrum" title="Permanent link">&para;</a></h3>
+<p><strong>Causes</strong>:
+- Laser misaligned (check alignment laser)
+- Material not luminescent (try reference sample)
+- Sample saturated/photobleached
+- Detector not working</p>
+<p><strong>Solutions</strong>:
+- Check laser power at sample position
+- Verify sample is placed on stage
+- Reduce laser power, let sample recover
+- Test with calibration sample</p>
+<h3 id="issue-noisy-spectrum-random-peaks">Issue: Noisy spectrum (random peaks)<a class="headerlink" href="#issue-noisy-spectrum-random-peaks" title="Permanent link">&para;</a></h3>
+<p><strong>Causes</strong>:
+- Detector dark current high (not cooled)
+- Integration time too short
+- Cosmic rays hitting detector
+- Laser noise</p>
+<p><strong>Solutions</strong>:
+- Verify detector temperature is &lt; -55°C
+- Increase integration time/accumulations
+- Use longer exposures (averaging reduces cosmic rays)
+- Check laser power stability</p>
+<h3 id="issue-broadshifted-peak">Issue: Broad/shifted peak<a class="headerlink" href="#issue-broadshifted-peak" title="Permanent link">&para;</a></h3>
+<p><strong>Causes</strong>:
+- Material has defects (intentional or not)
+- Thermal effects (sample heating under laser)
+- Stray light contamination
+- Misalignment shifting wavelength</p>
+<p><strong>Solutions</strong>:
+- Characterize with Raman (complement PL info)
+- Reduce laser power to minimize heating
+- Check dark background (shutter closed)
+- Re-center on sample</p>
+<h3 id="issue-weird-multi-peak-structure">Issue: Weird multi-peak structure<a class="headerlink" href="#issue-weird-multi-peak-structure" title="Permanent link">&para;</a></h3>
+<p><strong>Likely causes</strong>:
+- Multiple defect levels (expected for defective material)
+- Substrate contribution (use different substrate)
+- Surface vs. bulk transitions
+- Laser line contamination</p>
+<p><strong>Analysis</strong>:
+- Document peak positions and relative intensities
+- Compare to literature values
+- Link defect levels to material processing</p>
+<h2 id="comparison-pl-vs-raman-on-same-sample">Comparison: PL vs. Raman on Same Sample<a class="headerlink" href="#comparison-pl-vs-raman-on-same-sample" title="Permanent link">&para;</a></h2>
+<p><strong>Complementary information</strong>:
+- <strong>Raman</strong>: Structure of material (vibrational modes)
+- <strong>PL</strong>: Electronic properties (bandgap, defects)</p>
+<p><strong>Example: Defective Carbon</strong></p>
+<p>Raman spectrum shows:
+- D band (defects), G band (graphitic C)
+- Indicates sp² disorder</p>
+<p>PL spectrum shows:
+- Weak or broad signal (defects reduce luminescence)
+- Tells you how defects affect electronic properties</p>
+<p><strong>Both together</strong> = Complete picture of material quality.</p>
+<h2 id="export-and-analysis">Export and Analysis<a class="headerlink" href="#export-and-analysis" title="Permanent link">&para;</a></h2>
+<h3 id="from-nomad">From NOMAD<a class="headerlink" href="#from-nomad" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Click <strong>Download</strong> on spectrum plot</li>
+<li>Save as PNG (image) or export raw data (CSV/JSON)</li>
+</ol>
+<h3 id="analysis-tools">Analysis Tools<a class="headerlink" href="#analysis-tools" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Python</strong>: scipy.optimize.curve_fit for peak fitting</li>
+<li><strong>Origin/GraphPad</strong>: Built-in peak fitting</li>
+<li><strong>MATLAB</strong>: Optimization toolbox</li>
+</ul>
+<h3 id="calculate-key-values">Calculate Key Values<a class="headerlink" href="#calculate-key-values" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Fit Gaussian to PL peak</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">curve_fit</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">E0</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="k">return</span> <span class="n">A</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">E0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">popt</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">gaussian</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">intensity</span><span class="p">)</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">E_peak</span> <span class="o">=</span> <span class="n">popt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>        <span class="c1"># Peak energy (bandgap)</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">FWHM</span> <span class="o">=</span> <span class="mf">2.355</span> <span class="o">*</span> <span class="n">popt</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># Full Width Half Max</span>
+</code></pre></div>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><em>Luminescence of Semiconductors and Their Nanostructures</em>, Wang et al., ed. (2005)</li>
+<li>Witec Alpha300 manual (instrument-specific)</li>
+<li>PL database: http://semiconductor.materials.center/ (example resource)</li>
+</ul>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="./index.md">Index: Raman vs PL Overview</a></li>
+<li><a href="./tutorial/raman_example.md">Raman Tutorial</a> (complementary technique)</li>
+<li><a href="./reference/raman_schema.md">Schema Reference</a> (INLPhotoluminescence fields)</li>
+</ul>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant"], "search": "../../assets/javascripts/workers/search.c7dec7e7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.da79ceb7.min.js"></script>
+      
+        <script src="../../javascript.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
