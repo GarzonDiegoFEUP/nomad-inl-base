@@ -9,8 +9,7 @@ Tests cover:
 """
 
 import pytest
-from difflib import SequenceMatcher
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 
 from nomad_inl_base.parsers.parser import (
     _extract_sample_name,
@@ -220,6 +219,20 @@ class TestExtractSampleName:
         result = _extract_sample_name(filename)
         assert result == expected
 
+    # --- Archive Extensions (.pl.archive, .raman.archive, etc.) ---
+    @pytest.mark.parametrize(
+        'filename, expected',
+        [
+            pytest.param('260901B1_BCS_001.pl.archive', '260901B1_BCS_001', id='pl_archive'),
+            pytest.param('MyNano_002.raman.archive', 'MyNano_002', id='raman_archive'),
+            pytest.param('Sample_003.xrd.archive', 'Sample_003', id='xrd_archive'),
+            pytest.param('UV_004.uv.archive', 'UV_004', id='uv_archive'),
+        ],
+    )
+    def test_archive_extension_format(self, filename, expected):
+        """Test extraction from archive-type files (.pl.archive, .raman.archive, etc.)."""
+        assert _extract_sample_name(filename) == expected
+
     # --- Nested Path ---
     def test_nested_path(self):
         """Test extraction from nested file paths."""
@@ -348,17 +361,17 @@ class TestCharacterizationAutoLinking:
     def _create_mock_characterization(self, mainfile):
         """Helper to create a mock characterization entry."""
         char = INLCharacterization()
-        
+
         # Mock archive with metadata
         archive = Mock()
         archive.metadata = Mock()
         archive.metadata.mainfile = mainfile
         archive.data = {}
         archive.m_context = None
-        
+
         # Mock logger
         logger = Mock()
-        
+
         return char, archive, logger
 
     @patch('nomad_inl_base.schema_packages.characterization._extract_sample_name')
@@ -499,6 +512,66 @@ class TestCharacterizationAutoLinking:
         call_args = logger.info.call_args[0][0]
         assert '95' in call_args  # Should mention the confidence percentage
 
+    @patch('nomad_inl_base.schema_packages.characterization._extract_sample_name')
+    @patch('nomad_inl_base.schema_packages.characterization._find_matching_thin_film_stacks')
+    def test_auto_link_with_fallback_archive_extension(self, mock_find, mock_extract):
+        """Test auto-linking with fallback cleanup of archive extensions."""
+        # Setup: Extract returns name with .pl.archive suffix
+        mock_extract.return_value = '260901B1_BCS_001.pl.archive'
+        mock_stack = Mock(spec=INLThinFilmStack)
+        mock_stack.name = '260901B1_BCS'
+
+        # Mock find to be called twice: first with full name (no match), then with cleaned name (match)
+        mock_find.side_effect = [
+            [],  # First call with '260901B1_BCS_001.pl.archive' - no match
+            [(0.95, mock_stack)]  # Second call with '260901B1_BCS_001' - match found
+        ]
+
+        char, archive, logger = self._create_mock_characterization(
+            'some_file.pl.archive'
+        )
+
+        # Call normalize
+        char.normalize(archive, logger)
+
+        # Verify auto-linking succeeded with the cleaned name
+        assert len(char.samples) == 1
+        assert char.samples[0].reference == mock_stack
+        # Verify log mentions the matched name
+        logger.info.assert_called()
+        call_args = logger.info.call_args[0][0]
+        assert '260901B1_BCS' in call_args  # Should mention the matched name after cleanup
+
+    @patch('nomad_inl_base.schema_packages.characterization._extract_sample_name')
+    @patch('nomad_inl_base.schema_packages.characterization._find_matching_thin_film_stacks')
+    def test_auto_link_with_fallback_sequential_number(self, mock_find, mock_extract):
+        """Test auto-linking with fallback cleanup of trailing sequential numbers."""
+        # Setup: Extract returns name with trailing sequential number
+        mock_extract.return_value = 'Sample_A_002'
+        mock_stack = Mock(spec=INLThinFilmStack)
+        mock_stack.name = 'Sample_A'
+
+        # Mock find to be called twice: first with full name (no match), then with cleaned name (match)
+        mock_find.side_effect = [
+            [],  # First call with 'Sample_A_002' - no match
+            [(0.95, mock_stack)]  # Second call with 'Sample_A' - match found
+        ]
+
+        char, archive, logger = self._create_mock_characterization(
+            'some_file.txt'
+        )
+
+        # Call normalize
+        char.normalize(archive, logger)
+
+        # Verify auto-linking succeeded with the cleaned name
+        assert len(char.samples) == 1
+        assert char.samples[0].reference == mock_stack
+        # Verify log mentions the matched name
+        logger.info.assert_called()
+        call_args = logger.info.call_args[0][0]
+        assert 'Sample_A' in call_args  # Should mention the matched name after cleanup
+
 
 # ============================================================================
 # Integration Tests
@@ -512,10 +585,10 @@ class TestIntegration:
         """Test complete flow: battery chamber file → stack link."""
         # Given: A characterization file with battery chamber naming
         filename = 'PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv'
-        
+
         # When: We extract the sample name
         sample_name = _extract_sample_name(filename)
-        
+
         # Then: We get the correct sample name
         assert sample_name == 'LNbO_004'
 
@@ -523,26 +596,26 @@ class TestIntegration:
         """Test complete flow: 4pp file → stack link."""
         # Given: A characterization file with 4pp naming
         filename = 'my_sample 4pp.xlsx'
-        
+
         # When: We extract the sample name
         sample_name = _extract_sample_name(filename)
-        
+
         # Then: We get the correct sample name
         assert sample_name == 'my_sample'
 
     def test_various_filenames_consistency(self):
         """Test that different file types with same sample name extract identically."""
         sample_base = 'LNbO_004'
-        
+
         filenames_variants = [
             f'{sample_base} 4pp.xlsx',
             f'{sample_base} mVs.xlsx',
             f'{sample_base} ED.xlsx',
             f'{sample_base} profile.pdf',
         ]
-        
+
         extracted_names = [_extract_sample_name(f) for f in filenames_variants]
-        
+
         # All should extract to the same name
         assert all(name == sample_base for name in extracted_names)
 

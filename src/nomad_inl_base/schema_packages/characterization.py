@@ -4,8 +4,6 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
-import re
-
 import numpy as np
 import plotly.express as px
 from nomad.datamodel.data import ArchiveSection, EntryData, EntryDataCategory
@@ -112,10 +110,6 @@ class INLCharacterization(Measurement, EntryData):
         3. Uses fuzzy matching with a 0.85 confidence threshold
         4. Links to the best match if found (or most recent if multiple matches)
         
-        Fallback strategies if initial name doesn't match:
-        - Remove archive type suffix (e.g., .pl.archive, .raman.archive)
-        - Remove trailing sequential numbers (e.g., _001, _002)
-        
         This allows automatic sample inference from filename conventions without
         requiring manual linking by the user.
         """
@@ -148,50 +142,15 @@ class INLCharacterization(Measurement, EntryData):
             if not sample_name:
                 return
 
-            # Generate fallback sample names by progressively cleaning
-            sample_name_candidates = [sample_name]
-            
-            # Fallback 1: Remove archive type extensions (.pl.archive, .raman.archive, etc.)
-            # Pattern: .{type}.archive (where type is any word)
-            cleaned_no_archive = re.sub(r'\.\w+\.archive$', '', sample_name, flags=re.IGNORECASE)
-            if cleaned_no_archive != sample_name and cleaned_no_archive:
-                sample_name_candidates.append(cleaned_no_archive)
-            
-            # Fallback 2: Remove trailing sequential numbers (_001, _002, etc.) from original
-            # Pattern: _\d{1,3}$ (one to three digits after underscore at end)
-            cleaned_no_seq = re.sub(r'_\d{1,3}$', '', sample_name, flags=re.IGNORECASE)
-            if cleaned_no_seq != sample_name and cleaned_no_seq:
-                sample_name_candidates.append(cleaned_no_seq)
-            
-            # Fallback 3: Remove seq numbers from the archive-cleaned version
-            # This removes _001 from names like "260901B1_BCS_001" (after archive already removed)
-            if cleaned_no_archive != sample_name:  # Only if Fallback 1 actually removed something
-                cleaned_seq_from_archive = re.sub(r'_\d{1,3}$', '', cleaned_no_archive, flags=re.IGNORECASE)
-                if cleaned_seq_from_archive != cleaned_no_archive and cleaned_seq_from_archive:
-                    sample_name_candidates.append(cleaned_seq_from_archive)
-            
-            # Fallback 4: Replace underscores with spaces (NOMAD interprets spaces as underscores)
-            # Try all progressively cleaned versions with spaces instead of underscores
-            for candidate in list(sample_name_candidates):  # Use list() to avoid modifying while iterating
-                spaced_candidate = candidate.replace('_', ' ')
-                if spaced_candidate != candidate and spaced_candidate:
-                    sample_name_candidates.append(spaced_candidate)
-
-            # Try to find matches with each candidate in order
-            matches = None
-            matched_sample_name = None
-            for candidate in sample_name_candidates:
-                matches = _find_matching_thin_film_stacks(candidate, archive)
-                if matches:
-                    matched_sample_name = candidate
-                    break
+            # Search for matching thin film stacks in the archive
+            # Note: We need to search within the current upload context
+            # This requires access to sibling entries in the archive
+            matches = _find_matching_thin_film_stacks(sample_name, archive)
 
             if not matches:
-                # Format candidate list for logging
-                candidates_str = ' → '.join(f'"{c}"' for c in sample_name_candidates)
                 logger.info(
-                    f'Auto-linking: No matching INL Thin Film Stack found in this upload. '
-                    f'Tried sample name candidates: {candidates_str}. '
+                    f'Auto-linking: Sample name "{sample_name}" was inferred from filename '
+                    f'but no matching INL Thin Film Stack was found in this upload. '
                     f'Manual linking may be needed.'
                 )
                 return
@@ -209,15 +168,9 @@ class INLCharacterization(Measurement, EntryData):
 
             self.samples.append(sample_ref)
 
-            # Format candidate list for logging (show all tried, highlight which one matched)
-            candidates_info = ' → '.join(
-                f'"{c}" {"✓ MATCHED" if c == matched_sample_name else ""}' 
-                for c in sample_name_candidates[:sample_name_candidates.index(matched_sample_name) + 1]
-            )
             logger.info(
                 f'Auto-linked characterization to sample: {best_stack.name} '
-                f'(confidence: {best_confidence:.2%}). '
-                f'Tried candidates: {candidates_info}'
+                f'(confidence: {best_confidence:.2%})'
             )
         except Exception as exc:
             logger.warning(
