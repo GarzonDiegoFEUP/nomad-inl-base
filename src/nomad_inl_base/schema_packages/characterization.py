@@ -168,7 +168,7 @@ class INLCharacterization(Measurement, EntryData):
             # Note: We need to search within the current upload context
             # This requires access to sibling entries in the archive
             matches = _find_matching_thin_film_stacks(sample_name, archive)
-            if not matches:
+            if not matches and isinstance(sample_name, str):
                 fallback_name = sample_name
                 for pattern in [r'\.(?:pl|raman|xrd|uv)\.archive$', r'_\d{3}$']:
                     candidate = re.sub(pattern, '', fallback_name, flags=re.IGNORECASE).strip()
