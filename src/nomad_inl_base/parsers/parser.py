@@ -704,8 +704,8 @@ def _extract_sample_name(filename: str) -> 'str | None':
     if re.search(r'All Signals_\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}', basename):
         return None
 
-    # Pattern 2: SEM TIFF format (YYMMDD - [Sample Name].tif, no _NNN suffix)
-    # SEM files with _NNN suffix are image stacks, not individual samples
+    # Pattern 2: SEM TIFF format (YYMMDD - [Sample Name].tif)
+    # Keep the full sample token, including IDs that can end with "_NNN".
     match = re.match(r'\d{6}\s*-\s*(.+?)\.tif$', basename, re.IGNORECASE)
     if match:
         candidate = match.group(1).strip()
