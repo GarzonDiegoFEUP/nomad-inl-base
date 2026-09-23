@@ -83,28 +83,6 @@ def _candidate_sample_names(sample_name: str) -> list[str]:
     return candidates
 
 
-def _ensure_mainfile(archive):
-    """Ensure archive.metadata.mainfile is safe for NOMAD's base normalizer.
-    
-    NOMAD's base normalization accesses archive.metadata.mainfile directly
-    and calls .split() on it. This helper prevents AttributeError when
-    the archive is a test fixture with no mainfile.
-    
-    Args:
-        archive: An EntryArchive or mock archive object
-    """
-    if archive is None:
-        return
-
-    from nomad.datamodel.datamodel import EntryMetadata
-
-    if archive.metadata is None:
-        archive.metadata = EntryMetadata()
-
-    if archive.metadata.mainfile is None:
-        archive.metadata.mainfile = ''
-
-
 def _coerce_string_floats(dct: dict, handle_comma_decimals: bool = True) -> dict:
     """Return a copy of *dct* with numeric-string values converted to Python floats.
 
@@ -179,44 +157,36 @@ class INLCharacterization(Measurement, EntryData):
         return super().m_update_from_dict(_coerce_string_floats(dct), **kwargs)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        """Auto-link characterization to matching INL Thin Film Stacks.
-        
-        If the samples field is empty (no manual linking), this method:
-        1. Extracts sample name from the characterization filename
-        2. Generates fallback candidates by progressively cleaning the name
-        3. Searches for matching INLThinFilmStack entries in the archive
-        4. Uses fuzzy matching with a 0.85 confidence threshold
-        5. Links to the best match if found
-        
-        This allows automatic sample inference from filename conventions without
-        requiring manual linking by the user.
-        """
+        """Normalize the characterization and auto-link matching samples."""
+
         from nomad.datamodel.datamodel import EntryArchive
 
-        # Unit tests use lightweight mock archives. NOMAD's base normalizer
-        # expects a real EntryArchive and accesses archive internals directly.
+        # NOMAD's base normalizer expects archive.metadata.mainfile to be
+        # a string and calls .split() on it. Lightweight test archives and
+        # manually-created EntryArchive instances may not have a mainfile.
         if isinstance(archive, EntryArchive):
-            super().normalize(archive, logger)
+            metadata = getattr(archive, 'metadata', None)
+            mainfile = getattr(metadata, 'mainfile', None)
 
-        # Only auto-link if no manual linking was done
+            if isinstance(mainfile, str) and mainfile:
+                super().normalize(archive, logger)
+
+        # Only auto-link if no manual linking was done.
         if self.samples:
             return
 
         try:
-            # Get the mainfile path from archive metadata
             metadata = getattr(archive, 'metadata', None)
             mainfile = getattr(metadata, 'mainfile', None)
 
-            # Prevent parser calls with None or Mock values.
+            # Auto-linking requires a real mainfile path.
             if not isinstance(mainfile, str) or not mainfile:
                 return
 
-            # Extract sample name from filename
             sample_name = _extract_sample_name(mainfile)
             if not sample_name:
                 return
 
-            # Try to find matches with each candidate in order
             matches = []
             matched_name = sample_name
 
@@ -243,6 +213,7 @@ class INLCharacterization(Measurement, EntryData):
                 f'Auto-linked characterization to sample: {stack.name} '
                 f'(inferred from "{matched_name}", confidence: {confidence:.2%})'
             )
+
         except Exception as exc:
             logger.warning(
                 'INLCharacterization: auto-linking to sample failed.',
@@ -2728,7 +2699,6 @@ class INLRaman(INLCharacterization, PlotSection):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         import plotly.graph_objects as go
 
-        _ensure_mainfile(archive)
         super().normalize(archive, logger)
 
         # Populate excitation power from manual entry
@@ -2837,7 +2807,6 @@ class INLPhotoluminescence(INLCharacterization, PlotSection):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         import plotly.graph_objects as go
 
-        _ensure_mainfile(archive)
         super().normalize(archive, logger)
 
         # Populate excitation power from manual entry
