@@ -750,7 +750,7 @@ def _extract_sample_name(filename: str) -> 'str | None':
 
     # Pattern 6: Generic fallback - remove file extension
     name_only = re.sub(r'\.[^.]+$', '', basename).strip()
-    if name_only and name_only != basename and name_only.lower() not in {'txt'}:
+    if name_only and name_only != basename:
         return name_only
 
     return None
