@@ -709,6 +709,10 @@ def _extract_sample_name(filename: str) -> 'str | None':
     match = re.match(r'\d{6}\s*-\s*(.+?)\.tif$', basename, re.IGNORECASE)
     if match:
         candidate = match.group(1).strip()
+        # Keep explicit sample IDs like `LNbO_004` (mixed-case token),
+        # but skip generic stack-like lowercase suffixes such as `image_001`.
+        if re.search(r'_\d{3}$', candidate) and candidate == candidate.lower():
+            return None
         return candidate or None
 
     # Pattern 3: Solar Cell IV/EQE formats (remove "Results Table" or "IV Graph")
