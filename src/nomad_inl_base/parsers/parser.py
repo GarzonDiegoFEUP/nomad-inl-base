@@ -38,15 +38,23 @@ from nomad_inl_base.schema_packages.batteries import (
 from nomad_inl_base.schema_packages.characterization import (
     ChronoamperometryMeasurement,
     CurrentTimeSeries,
+    DetectorSettings,
     EISMeasurement,
+    ExcitationBeam,
     INLAFMChannel,
     INLAFMSession,
     INLFourPointProbe,
     INLFourPointProbeResults,
     INLKLATencorProfiler,
     INLKLATencorProfilerResults,
+    INLPhotoluminescence,
+    INLRaman,
+    ObjectiveInfo,
     PotentiostatMeasurement,
+    SampleLocation,
     ScanTimeSeries,
+    SpectrometerSettings,
+    SpectrumData,
     VoltageTimeSeries,
 )
 from nomad_inl_base.utils import (
@@ -655,29 +663,176 @@ class FourPointProbeParser(MatchingParser):
 
 def _extract_sample_name(filename: str) -> 'str | None':
     """
-    Extract the sample name embedded in a battery chamber log filename.
+    Extract the sample name from a characterization filename by removing instrument-specific identifiers.
 
-    Expected convention::
-
+    Supports multiple naming conventions from INL characterization instruments:
+    
+    **Battery chambers (PC03/PC04):**
         PC03_All Signals_[Sample Name] Date.csv
         PC04_All Signals_[Sample Name] Date.csv
-
-    e.g. ``PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv`` → ``LNbO_004``.
-
-    Requires the literal ``All Signals_`` marker followed by the sample name,
-    a space, and a ``YYYY.MM.DD-HH.MM.SS`` timestamp. Returns ``None`` (never
-    raises) if the filename doesn't follow this convention, e.g. the older
-    ``PC03_sample.CSV`` fixtures without an embedded sample name.
+        e.g. PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv → LNbO_004
+    
+    **Generic format (suffix removal):**
+        [Sample Name].[suffix]  where suffix identifies characterization type
+        e.g. sample_name 4pp.xlsx → sample_name
+             sample_name mVs.xlsx → sample_name
+             sample_name ED.xlsx → sample_name
+    
+    **Special formats:**
+        SEM TIFF: YYMMDD - [Sample Name].tif → [Sample Name]
+        Solar Cell: [Sample Name] Results Table.txt → [Sample Name]
+        Solar Cell: [Sample Name] IV Graph.txt → [Sample Name]
+    
+    Returns None if extraction fails.
     """
     basename = filename.rsplit('/', maxsplit=1)[-1]
+
+    # Pattern 1: Battery chambers (PC03/PC04) - most specific, try first
     match = re.search(
         r'All Signals_(?P<sample>.+?)\s+\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}',
         basename,
     )
-    if not match:
-        return None
-    sample_name = match.group('sample').strip()
-    return sample_name or None
+    if match:
+        sample_name = match.group('sample').strip()
+        return sample_name or None
+
+    # Pattern 2: SEM TIFF format (YYMMDD - [Sample Name].tif, no _NNN suffix)
+    # SEM files with _NNN suffix are image stacks, not individual samples
+    match = re.match(r'\d{6}\s*-\s*(.+?)\.tif$', basename, re.IGNORECASE)
+    if match:
+        candidate = match.group(1).strip()
+        # Only return if there's no underscore-number suffix (which indicates image stack)
+        if not re.search(r'_\d+$', candidate):
+            return candidate or None
+
+    # Pattern 3: Solar Cell IV/EQE formats (remove "Results Table" or "IV Graph")
+    for marker in ['Results Table', 'IV Graph']:
+        match = re.search(rf'(.+?)\s+{marker}', basename, re.IGNORECASE)
+        if match:
+            return match.group(1).strip() or None
+
+    # Pattern 4: Suffix removal for common characterization file types
+    # Order matters: longest suffixes first to avoid partial matches
+    # Note: Using word boundaries and case-insensitive matching
+    suffixes_patterns = [
+        r'\s+(?:mVs|ED|4pp|gdoes|eqe|EIS|CV|Chrono)(?:\.xlsx?|\.txt|\.xls)?$',  # Unified pattern with optional extension
+        r'\.mpr$',  # Eclab (MPR)
+        r'\.emsa$', r'\.ems$', r'\.msa$',  # EDX/EDS
+        r'\.001$', r'\.002$',  # Bruker AFM (numbered)
+        r'_Spec\.Data$',  # Witec spectroscopy
+        r'profile\.pdf$',  # KLA-Tencor profiler
+    ]
+
+    for pattern in suffixes_patterns:
+        cleaned = re.sub(pattern, '', basename, flags=re.IGNORECASE).strip()
+        if cleaned and cleaned != basename:
+            return cleaned or None
+
+    # Pattern 5: Generic fallback - remove file extension
+    name_only = re.sub(r'\.[^.]+$', '', basename).strip()
+    if name_only and name_only != basename:
+        return name_only
+
+    return None
+
+
+def _find_matching_thin_film_stacks(
+    sample_name: 'str | None',
+    archive: 'EntryArchive',
+    confidence_threshold: float = 0.85,
+) -> 'list[tuple]':
+    """
+    Find INLThinFilmStack entries matching the given sample name using fuzzy matching.
+
+    Uses Python's difflib.SequenceMatcher for case-insensitive string similarity.
+    Returns a list of (confidence_score, INLThinFilmStack_entry) tuples sorted by:
+    1. Confidence score (highest first)
+    2. Archive creation/modification date (most recent first)
+
+    Args:
+        sample_name: Extracted sample name from characterization filename
+        archive: NOMAD EntryArchive context to query for stacks
+        confidence_threshold: Minimum similarity score (0.0-1.0) to include match
+
+    Returns:
+        List of (confidence, entry) tuples for all matching stacks above threshold,
+        or empty list if sample_name is None or no matches found.
+    """
+    from difflib import SequenceMatcher
+    from nomad_inl_base.schema_packages.entities import INLThinFilmStack
+
+    if sample_name is None:
+        return []
+
+    matches = []
+    sample_name_lower = sample_name.lower()
+
+    # Collect all entries from the archive
+    entries = []
+
+    try:
+        # Strategy 1: Access through archive.data (direct archive access)
+        if hasattr(archive, 'data') and archive.data is not None:
+            if isinstance(archive.data, dict):
+                # archive.data is a dictionary of entries
+                entries.extend(archive.data.values())
+            elif hasattr(archive.data, '__iter__'):
+                # archive.data is iterable
+                try:
+                    entries.extend(list(archive.data))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    # Strategy 2: Access through m_context for cross-entry queries
+    # This is used during normalization to find sibling entries
+    try:
+        if hasattr(archive, 'm_context') and archive.m_context is not None:
+            # Try to get the root directory which contains all entries in upload
+            if hasattr(archive.m_context, 'root_dir'):
+                root = archive.m_context.root_dir
+                # The root has an archive that contains all entries
+                if hasattr(root, 'data') and root.data is not None:
+                    if isinstance(root.data, dict):
+                        entries.extend(root.data.values())
+                    elif hasattr(root.data, '__iter__'):
+                        try:
+                            entries.extend(list(root.data))
+                        except Exception:
+                            pass
+    except Exception:
+        pass
+
+    # Filter and match against INLThinFilmStack entries
+    for entry in entries:
+        if isinstance(entry, INLThinFilmStack):
+            stack_name = getattr(entry, 'name', None) or getattr(entry, 'lab_id', None)
+            if stack_name:
+                stack_name_lower = str(stack_name).lower()
+                # Calculate similarity using SequenceMatcher (case-insensitive)
+                ratio = SequenceMatcher(None, sample_name_lower, stack_name_lower).ratio()
+
+                if ratio >= confidence_threshold:
+                    matches.append((ratio, entry))
+
+    # Sort by confidence (descending), then by archive metadata date (most recent first)
+    def sort_key(item):
+        confidence, entry = item
+        # Try to extract archive metadata date for secondary sort
+        entry_date = 0.0
+        try:
+            if hasattr(entry, 'm_context') and hasattr(entry.m_context, 'root_dir'):
+                root = entry.m_context.root_dir
+                if hasattr(root, 'metadata') and hasattr(root.metadata, 'creation_time'):
+                    entry_date = float(root.metadata.creation_time.timestamp())
+        except Exception:
+            pass
+        # Return tuple: (-confidence for desc order, -date for desc order)
+        return (-confidence, -entry_date)
+
+    matches.sort(key=sort_key)
+    return matches
 
 
 class _BaseSputteringChamberParser(MatchingParser):
@@ -2810,3 +2965,450 @@ class TestoVI2Parser(MatchingParser):
             logger=logger,
         )
         archive.metadata.entry_name = data_file
+
+
+# ---------------------------------------------------------------------------
+# Raman Spectroscopy (Witec)
+# ---------------------------------------------------------------------------
+
+
+class WitecOpticalSpectrumParser(MatchingParser):
+    """
+    Unified parser for Witec optical spectrum measurements (Raman or Photoluminescence).
+    
+    Detects measurement type based on x-axis unit:
+    - "rel. 1/cm" → Raman spectroscopy (INLRaman)
+    - "eV" → Photoluminescence (INLPhotoluminescence)
+    
+    Handles two-file pairs:
+    - *_Spec.Data*.txt: Contains [Header] with metadata and [Data] with spectrum
+    - *Information*.txt: Contains detailed instrument configuration
+    
+    Parser auto-pairs files by matching base name and creates appropriate entry type.
+    """
+
+    def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
+        import os
+        import glob
+
+        filetype = 'yaml'
+        base_name = mainfile.rsplit('/', maxsplit=1)[-1]
+
+        # Detect if this is a Spec.Data or Information file
+        is_spec_data = '_Spec.Data' in base_name
+        is_information = 'Information' in base_name
+
+        if not (is_spec_data or is_information):
+            logger.warning(
+                f'WitecOpticalSpectrumParser: unrecognized filename {base_name}. '
+                'Expected *_Spec.Data*.txt or *Information*.txt'
+            )
+            return
+
+        # Extract base name for file pairing (e.g., "260721D11 BCS_001")
+        if is_spec_data:
+            base = base_name.split('_Spec.Data')[0]
+        else:
+            base = base_name.split(' Information')[0]
+
+        # Find paired files using glob
+        mainfile_dir = mainfile.rsplit('/', maxsplit=1)[0]
+        pattern = os.path.join(mainfile_dir, base + '*')
+
+        spec_file_full = None
+        info_file_full = None
+
+        for filepath in glob.glob(pattern):
+            fname = filepath.rsplit('/', maxsplit=1)[-1]
+            if '_Spec.Data' in fname:
+                spec_file_full = filepath
+            elif 'Information' in fname:
+                info_file_full = filepath
+
+        if not spec_file_full or not info_file_full:
+            logger.warning(
+                f'WitecOpticalSpectrumParser: could not find paired files for {base_name}. '
+                'Expected both *_Spec.Data*.txt and *Information*.txt with matching base name.'
+            )
+            return
+
+        # Convert full paths to relative paths for archive.m_context.raw_file()
+        raw_root = archive.m_context.raw_path()
+        spec_file_rel = os.path.relpath(spec_file_full, raw_root)
+        info_file_rel = os.path.relpath(info_file_full, raw_root)
+
+        # Parse both files
+        try:
+            spec_data = self._parse_spec_data(spec_file_rel, archive, logger)
+            info_data = self._parse_information(info_file_rel, archive, logger)
+        except Exception as e:
+            logger.error(f'WitecOpticalSpectrumParser: error parsing files: {e}')
+            return
+
+        # Detect measurement type from x-axis unit
+        x_axis_unit = spec_data.get('x_axis_unit', '').strip().lower()
+        is_raman = '1/cm' in x_axis_unit or 'rel.' in x_axis_unit
+        is_pl = 'ev' in x_axis_unit
+
+        if not is_raman and not is_pl:
+            logger.warning(
+                f'WitecOpticalSpectrumParser: unknown x-axis unit "{x_axis_unit}". '
+                'Expected "rel. 1/cm" (Raman) or "eV" (Photoluminescence).'
+            )
+            return
+
+        # Create appropriate entry type
+        if is_raman:
+            entry = INLRaman()
+            measurement_type = 'raman'
+        else:
+            entry = INLPhotoluminescence()
+            measurement_type = 'pl'
+
+        # Merge metadata (same for both types)
+        entry.system_id = info_data.get('system_id')
+        entry.configuration = info_data.get('configuration')
+        entry.operator = info_data.get('user_name')
+
+        # Parse duration (format: "0h 0m 43s")
+        duration_str = info_data.get('duration')
+        if duration_str:
+            entry.duration = self._parse_duration(duration_str)
+
+        # Excitation
+        if info_data.get('excitation_wavelength'):
+            entry.excitation = ExcitationBeam()
+            entry.excitation.wavelength = float(info_data['excitation_wavelength'])
+
+        # Spectrometer
+        if any(k in info_data for k in ['grating', 'center_wavelength', 'spectral_center']):
+            entry.spectrometer = SpectrometerSettings()
+            if info_data.get('grating'):
+                entry.spectrometer.grating_type = info_data['grating']
+            if info_data.get('center_wavelength'):
+                entry.spectrometer.center_wavelength = float(info_data['center_wavelength'])
+            if info_data.get('spectral_center'):
+                entry.spectrometer.spectral_center = float(info_data['spectral_center'])
+
+        # Detector
+        if any(k in info_data for k in ['camera_model', 'pixels_width', 'pixels_height']):
+            entry.detector = DetectorSettings()
+            if info_data.get('camera_model'):
+                entry.detector.camera_model = info_data['camera_model']
+            if info_data.get('pixels_width'):
+                entry.detector.pixels_width = int(info_data['pixels_width'])
+            if info_data.get('pixels_height'):
+                entry.detector.pixels_height = int(info_data['pixels_height'])
+            if info_data.get('temperature'):
+                entry.detector.temperature = float(info_data['temperature'])
+            if info_data.get('cycle_time'):
+                entry.detector.cycle_time = float(info_data['cycle_time'])
+            if info_data.get('integration_time'):
+                entry.detector.integration_time = float(info_data['integration_time'])
+            if info_data.get('accumulations'):
+                entry.detector.accumulations = int(info_data['accumulations'])
+            if info_data.get('ad_converter'):
+                entry.detector.ad_converter = info_data['ad_converter']
+            if info_data.get('vertical_shift_speed'):
+                entry.detector.vertical_shift_speed = float(info_data['vertical_shift_speed'])
+            if info_data.get('horizontal_shift_speed'):
+                entry.detector.horizontal_shift_speed = float(info_data['horizontal_shift_speed'])
+            if info_data.get('preamplifier_gain'):
+                entry.detector.preamplifier_gain = int(info_data['preamplifier_gain'])
+            if info_data.get('readout_mode'):
+                entry.detector.readout_mode = info_data['readout_mode']
+
+        # Objective
+        if info_data.get('objective_name') or info_data.get('objective_magnification'):
+            entry.objective = ObjectiveInfo()
+            objective_name = info_data.get('objective_name')
+            if objective_name:
+                entry.objective.name = objective_name
+
+                # Parse objective name to extract magnification and NA
+                mag, na = self._parse_objective_name(objective_name)
+                if mag is not None:
+                    entry.objective.magnification = mag
+                if na is not None:
+                    entry.objective.numerical_aperture = na
+
+            # Override with explicit magnification if provided
+            if info_data.get('objective_magnification'):
+                try:
+                    entry.objective.magnification = float(info_data['objective_magnification'])
+                except (ValueError, TypeError):
+                    pass
+
+        # Sample Location
+        if any(k in spec_data for k in ['position_x', 'position_y', 'position_z']):
+            entry.sample_location = SampleLocation()
+            if spec_data.get('position_x') is not None:
+                entry.sample_location.x = spec_data['position_x']
+            if spec_data.get('position_y') is not None:
+                entry.sample_location.y = spec_data['position_y']
+            if spec_data.get('position_z') is not None:
+                entry.sample_location.z = spec_data['position_z']
+
+        # Spectrum Data
+        if spec_data.get('x_values') is not None and spec_data.get('y_values') is not None:
+            entry.spectrum = SpectrumData()
+            entry.spectrum.x_values = np.array(spec_data['x_values'], dtype=np.float64)
+            entry.spectrum.y_values = np.array(spec_data['y_values'], dtype=np.float64)
+            entry.spectrum.y_unit = 'CCD cts'
+
+        # Create child entry
+        data_file = base.replace(' ', '_')
+        create_child_entry(
+            entry, archive,
+            child_filename=f'{data_file}.{measurement_type}.archive.{filetype}',
+            filetype=filetype,
+            raw_name=data_file + '_raw',
+            raw_ref=get_hash_ref(archive.m_context.upload_id, data_file),
+            logger=logger,
+        )
+        archive.metadata.entry_name = data_file
+
+    @staticmethod
+    def _parse_duration(duration_str: str) -> float:
+        """Parse duration string like '0h 0m 43s' to seconds."""
+        import re
+        total = 0.0
+        for unit, factor in [('h', 3600), ('m', 60), ('s', 1)]:
+            m = re.search(rf'(\d+){unit}', duration_str)
+            if m:
+                total += int(m.group(1)) * factor
+        return total
+
+    @staticmethod
+    def _parse_objective_name(objective_name: str) -> tuple:
+        """
+        Extract magnification and NA from objective name string.
+        Expected format: "Zeiss EC Epiplan 50x / 0.75"
+        Returns: (magnification: float or None, numerical_aperture: float or None)
+        """
+        import re
+        magnification = None
+        numerical_aperture = None
+
+        if not objective_name:
+            return magnification, numerical_aperture
+
+        # Extract magnification: look for pattern like "50x" or "50X"
+        mag_match = re.search(r'(\d+(?:\.\d+)?)\s*x', objective_name, re.IGNORECASE)
+        if mag_match:
+            try:
+                magnification = float(mag_match.group(1))
+            except ValueError:
+                pass
+
+        # Extract NA: look for pattern after "/" like "/ 0.75" or "0.75"
+        na_match = re.search(r'/\s*(0\.\d+)', objective_name)
+        if na_match:
+            try:
+                numerical_aperture = float(na_match.group(1))
+            except ValueError:
+                pass
+
+        return magnification, numerical_aperture
+
+    @staticmethod
+    def _parse_spec_data(filepath: str, archive: EntryArchive, logger) -> dict:
+        """Parse _Spec.Data file and extract header + spectrum data."""
+        result = {}
+        try:
+            with archive.m_context.raw_file(filepath) as f:
+                content = f.read()
+                # Decode bytes to string if necessary
+                if isinstance(content, bytes):
+                    content = content.decode('utf-8', errors='replace')
+        except Exception as e:
+            logger.error(f'Could not read {filepath}: {e}')
+            return result
+
+        lines = content.split('\n')
+        in_header = False
+        in_data = False
+        x_values = []
+        y_values = []
+
+        for line in lines:
+            line = line.strip()
+            if line == '[Header]':
+                in_header = True
+                in_data = False
+                continue
+            elif line == '[Data]':
+                in_header = False
+                in_data = True
+                continue
+
+            if in_header and '=' in line:
+                key, val = line.split('=', 1)
+                key = key.strip().lower()
+                val = val.strip()
+                if key == 'positionx':
+                    try:
+                        result['position_x'] = float(val)
+                    except ValueError:
+                        pass
+                elif key == 'positiony':
+                    try:
+                        result['position_y'] = float(val)
+                    except ValueError:
+                        pass
+                elif key == 'positionz':
+                    try:
+                        result['position_z'] = float(val)
+                    except ValueError:
+                        pass
+                elif key == 'xaxisunit':
+                    result['x_axis_unit'] = val
+
+            elif in_data and ',' in line and (line[0].isdigit() or line[0] == '-'):
+                # Parse data line (skip header lines)
+                try:
+                    parts = line.split(',')
+                    if len(parts) >= 2:
+                        x = float(parts[0].strip())
+                        y = float(parts[1].strip())
+                        x_values.append(x)
+                        y_values.append(y)
+                except ValueError:
+                    pass
+
+        if x_values:
+            result['x_values'] = x_values
+        if y_values:
+            result['y_values'] = y_values
+
+        return result
+
+    @staticmethod
+    def _parse_information(filepath: str, archive: EntryArchive, logger) -> dict:
+        """Parse Information file and extract metadata by section."""
+        result = {}
+        try:
+            with archive.m_context.raw_file(filepath) as f:
+                content = f.read()
+                # Decode bytes to string if necessary
+                if isinstance(content, bytes):
+                    content = content.decode('utf-8', errors='replace')
+        except Exception as e:
+            logger.error(f'Could not read {filepath}: {e}')
+            return result
+
+        lines = content.split('\n')
+        current_section = None
+
+        for line in lines:
+            line_strip = line.strip()
+            if not line_strip:
+                continue
+
+            # Detect sections
+            if ':' not in line:
+                if line_strip and not line_strip.endswith(':'):
+                    current_section = line_strip.lower().replace(' ', '_')
+                continue
+
+            # Parse key:value pairs
+            if ':' in line:
+                parts = line.split(':', 1)
+                key = parts[0].strip().lower().replace(' ', '_')
+                val = parts[1].strip() if len(parts) > 1 else ''
+
+                # Map known keys
+                if key == 'system_id':
+                    result['system_id'] = val
+                elif key == 'configuration':
+                    result['configuration'] = val
+                elif key == 'user_name':
+                    result['user_name'] = val
+                elif key == 'duration':
+                    result['duration'] = val
+                elif key == 'excitation_wavelength_[nm]' or key == 'excitation_wavelength':
+                    try:
+                        result['excitation_wavelength'] = float(val)
+                    except ValueError:
+                        pass
+                elif 'grating' in key:
+                    result['grating'] = val
+                elif key == 'center_wavelength_[nm]' or key == 'center_wavelength':
+                    try:
+                        result['center_wavelength'] = float(val)
+                    except ValueError:
+                        pass
+                elif 'spectral_center' in key and '[ev]' in key:
+                    # PL format: spectral_center in eV
+                    try:
+                        result['spectral_center'] = float(val)
+                    except ValueError:
+                        pass
+                elif 'spectral_center' in key and ('[rel._1/cm]' in key or '1/cm' in key):
+                    # Raman format: spectral_center in 1/cm
+                    try:
+                        result['spectral_center'] = float(val)
+                    except ValueError:
+                        pass
+                elif key == 'width_[pixels]':
+                    try:
+                        result['pixels_width'] = int(val)
+                    except ValueError:
+                        pass
+                elif key == 'height_[pixels]':
+                    try:
+                        result['pixels_height'] = int(val)
+                    except ValueError:
+                        pass
+                elif key == 'temperature_[°c]' or key == 'temperature_[c]':
+                    try:
+                        result['temperature'] = float(val)
+                    except ValueError:
+                        pass
+                elif key == 'cycle_time_[s]':
+                    try:
+                        result['cycle_time'] = float(val)
+                    except ValueError:
+                        pass
+                elif key == 'integration_time_[s]':
+                    try:
+                        result['integration_time'] = float(val)
+                    except ValueError:
+                        pass
+                elif key == 'number_of_accumulations':
+                    try:
+                        result['accumulations'] = int(val)
+                    except ValueError:
+                        pass
+                elif 'ad_converter' in key or 'ad_converters' in key:
+                    result['ad_converter'] = val
+                elif 'vertical_shift_speed' in key:
+                    try:
+                        result['vertical_shift_speed'] = float(val.split()[0])
+                    except (ValueError, IndexError):
+                        pass
+                elif 'horizontal_shift_speed' in key:
+                    try:
+                        result['horizontal_shift_speed'] = float(val.split()[0])
+                    except (ValueError, IndexError):
+                        pass
+                elif 'preamplifier_gain' in key:
+                    try:
+                        result['preamplifier_gain'] = int(val)
+                    except ValueError:
+                        pass
+                elif 'readmode' in key.lower() or 'readout_mode' in key:
+                    result['readout_mode'] = val
+                elif 'objective' in key and 'name' in key:
+                    result['objective_name'] = val
+                elif 'magnification' in key and current_section == 'objective':
+                    try:
+                        result['objective_magnification'] = float(val.split()[0])
+                    except (ValueError, IndexError):
+                        pass
+
+        return result
+
+
+# Keep old name as alias for backwards compatibility
+RamanWitecParser = WitecOpticalSpectrumParser

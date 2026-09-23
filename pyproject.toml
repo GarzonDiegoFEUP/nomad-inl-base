@@ -178,6 +178,7 @@ meteor_entry_point = "nomad_inl_base.schema_packages:meteor_entry_point"
 meteor_parser_entry_point = "nomad_inl_base.parsers:meteor_parser_entry_point"
 testo_entry_point = "nomad_inl_base.schema_packages:testo_entry_point"
 testo_vi2_parser_entry_point = "nomad_inl_base.parsers:testo_vi2_parser_entry_point"
+witec_optical_spectrum_parser_entry_point = "nomad_inl_base.parsers:witec_optical_spectrum_parser_entry_point"
 
 
 

@@ -242,3 +242,22 @@ testo_vi2_parser_entry_point = TestoVI2ParserEntryPoint(
     ),
     mainfile_name_re=r'(?i).*\.vi2$',
 )
+
+
+class WitecOpticalSpectrumParserEntryPoint(ParserEntryPoint):
+    def load(self):
+        from nomad_inl_base.parsers.parser import WitecOpticalSpectrumParser
+
+        return WitecOpticalSpectrumParser(**self.dict())
+
+
+witec_optical_spectrum_parser_entry_point = WitecOpticalSpectrumParserEntryPoint(
+    name='WitecOpticalSpectrumParser',
+    description=(
+        'Parser for Witec Alpha300 optical spectrum measurements (Raman or Photoluminescence). '
+        'Auto-detects measurement type from x-axis unit: "rel. 1/cm" (Raman) or "eV" (PL). '
+        'Processes two-file pairs: *_Spec.Data*.txt and *Information*.txt'
+    ),
+    mainfile_name_re=r'.*_Spec\.Data.*\.txt$',
+    mainfile_mime_re=r'text/plain',
+)

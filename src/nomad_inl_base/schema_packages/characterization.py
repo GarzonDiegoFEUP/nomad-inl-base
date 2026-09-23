@@ -101,6 +101,83 @@ class INLCharacterization(Measurement, EntryData):
     def m_update_from_dict(self, dct, **kwargs):
         return super().m_update_from_dict(_coerce_string_floats(dct), **kwargs)
 
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """Auto-link characterization to matching INL Thin Film Stacks.
+        
+        If the samples field is empty (no manual linking), this method:
+        1. Extracts sample name from the characterization filename
+        2. Searches for matching INLThinFilmStack entries in the archive
+        3. Uses fuzzy matching with a 0.85 confidence threshold
+        4. Links to the best match if found (or most recent if multiple matches)
+        
+        This allows automatic sample inference from filename conventions without
+        requiring manual linking by the user.
+        """
+        super().normalize(archive, logger)
+
+        # Only auto-link if no manual linking was done
+        if self.samples or len(self.samples or []) > 0:
+            return
+
+        # Import here to avoid circular imports
+        from nomad_inl_base.parsers.parser import (
+            _extract_sample_name,
+            _find_matching_thin_film_stacks,
+        )
+        from nomad_inl_base.schema_packages.entities import (
+            INLSampleReference,
+        )
+
+        try:
+            # Get the mainfile path from archive metadata
+            mainfile = None
+            if hasattr(archive, 'metadata') and hasattr(archive.metadata, 'mainfile'):
+                mainfile = archive.metadata.mainfile
+
+            if not mainfile:
+                return
+
+            # Extract sample name from filename
+            sample_name = _extract_sample_name(mainfile)
+            if not sample_name:
+                return
+
+            # Search for matching thin film stacks in the archive
+            # Note: We need to search within the current upload context
+            # This requires access to sibling entries in the archive
+            matches = _find_matching_thin_film_stacks(sample_name, archive)
+
+            if not matches:
+                logger.info(
+                    f'Auto-linking: Sample name "{sample_name}" was inferred from filename '
+                    f'but no matching INL Thin Film Stack was found in this upload. '
+                    f'Manual linking may be needed.'
+                )
+                return
+
+            # Use the best match (highest confidence)
+            best_confidence, best_stack = matches[0]
+
+            # Create and append sample reference
+            sample_ref = INLSampleReference()
+            sample_ref.reference = best_stack
+
+            # Initialize samples list if needed
+            if not hasattr(self, 'samples') or self.samples is None:
+                self.samples = []
+
+            self.samples.append(sample_ref)
+
+            logger.info(
+                f'Auto-linked characterization to sample: {best_stack.name} '
+                f'(confidence: {best_confidence:.2%})'
+            )
+        except Exception as exc:
+            logger.warning(
+                'INLCharacterization: auto-linking to sample failed.',
+                exc_info=exc,
+            )
+
 
 class INLXRayDiffraction(INLCharacterization, ELNXRayDiffraction):
     m_def = Section(
@@ -1078,7 +1155,7 @@ class INLSolarCellIV(INLCharacterization, PlotSection):
         # Plot all JV curves overlaid
         if self.iv_curves:
             fig_all = go.Figure()
-            
+
             # Build a mapping of measurement_name → cell_area for unit conversion
             area_map = {}
             if self.results:
@@ -1087,17 +1164,17 @@ class INLSolarCellIV(INLCharacterization, PlotSection):
                         area_map[r.measurement_name] = float(
                             r.cell_area.to('centimeter**2').magnitude
                         )
-            
+
             # Determine if we can use current density or fall back to current
             can_use_density = any(area > 0 for area in area_map.values()) if area_map else False
             y_label = 'Current Density (mA/cm²)' if can_use_density else 'Current (mA)'
-            
+
             # Add each curve as a trace
             for curve in self.iv_curves:
                 if curve.voltage is not None and curve.current is not None:
                     v_arr = np.array(curve.voltage)
                     i_arr = np.array(curve.current) * 1000.0  # A → mA
-                    
+
                     # Apply area normalization if available
                     if can_use_density:
                         area_cm2 = area_map.get(curve.measurement_name, None)
@@ -1107,14 +1184,14 @@ class INLSolarCellIV(INLCharacterization, PlotSection):
                             j_arr = i_arr
                     else:
                         j_arr = i_arr
-                    
+
                     v = [None if not np.isfinite(x) else float(x) for x in v_arr]
                     j = [None if not np.isfinite(x) else float(x) for x in j_arr]
                     label = curve.measurement_name or f'Curve {len(fig_all.data)}'
                     fig_all.add_trace(
                         go.Scatter(x=v, y=j, mode='lines', name=label)
                     )
-            
+
             fig_all.update_layout(
                 template='plotly_white',
                 height=400,
@@ -2247,6 +2324,445 @@ class EISMeasurement(INLCharacterization, PlotSection):
             self.figures.append(
                 PlotlyFigure(label='Bode', figure=fig_bode.to_plotly_json())
             )
+
+
+# ---------------------------------------------------------------------------
+# Raman Spectroscopy
+# ---------------------------------------------------------------------------
+
+
+class ExcitationBeam(ArchiveSection):
+    """Laser excitation beam parameters."""
+
+    m_def = Section(label='Excitation Beam')
+
+    wavelength = Quantity(
+        type=np.float64,
+        unit='nanometer',
+        description='Laser excitation wavelength.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='nanometer',
+        ),
+    )
+
+    power = Quantity(
+        type=np.float64,
+        unit='watt',
+        description='Laser excitation power (measured/set at sample). Supports milliwatts (mW) or microwatts (µW). Enter as decimal number; unit is selected in ELN. Example: 50 mW or 500 µW.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='milliwatt',
+        ),
+    )
+
+
+class SpectrometerSettings(ArchiveSection):
+    """Spectrometer/monochromator configuration."""
+
+    m_def = Section(label='Spectrometer Settings')
+
+    grating_type = Quantity(
+        type=str,
+        description='Grating specification (e.g., "G2: 1800 g/mm BLZ=500nm").',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    center_wavelength = Quantity(
+        type=np.float64,
+        unit='nanometer',
+        description='Center wavelength of the monochromator.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='nanometer',
+        ),
+    )
+
+    spectral_center = Quantity(
+        type=np.float64,
+        unit='1/cm',
+        description='Spectral center in Raman shift units.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='1/cm',
+        ),
+    )
+
+
+class DetectorSettings(ArchiveSection):
+    """Detector (camera) configuration."""
+
+    m_def = Section(label='Detector Settings')
+
+    camera_model = Quantity(
+        type=str,
+        description='Camera model name.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    pixels_width = Quantity(
+        type=int,
+        description='Width of detector in pixels.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+    pixels_height = Quantity(
+        type=int,
+        description='Height of detector in pixels.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+    temperature = Quantity(
+        type=np.float64,
+        unit='celsius',
+        description='Detector operating temperature.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='celsius',
+        ),
+    )
+
+    cycle_time = Quantity(
+        type=np.float64,
+        unit='second',
+        description='Detector cycle time.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='millisecond',
+        ),
+    )
+
+    integration_time = Quantity(
+        type=np.float64,
+        unit='second',
+        description='Integration time per accumulation.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='millisecond',
+        ),
+    )
+
+    accumulations = Quantity(
+        type=int,
+        description='Number of accumulations.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+    ad_converter = Quantity(
+        type=str,
+        description='A/D converter specification (e.g., "AD1 (16Bit)").',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    vertical_shift_speed = Quantity(
+        type=np.float64,
+        unit='microsecond',
+        description='Vertical shift speed.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='microsecond',
+        ),
+    )
+
+    horizontal_shift_speed = Quantity(
+        type=np.float64,
+        unit='megahertz',
+        description='Horizontal shift speed.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='megahertz',
+        ),
+    )
+
+    preamplifier_gain = Quantity(
+        type=int,
+        description='Preamplifier gain setting.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+    readout_mode = Quantity(
+        type=str,
+        description='Detector readout mode (e.g., "Full Vertical Binning").',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+
+class ObjectiveInfo(ArchiveSection):
+    """Microscope objective specifications."""
+
+    m_def = Section(label='Objective Info')
+
+    name = Quantity(
+        type=str,
+        description='Objective model name.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    magnification = Quantity(
+        type=np.float64,
+        description='Objective magnification (e.g., 50.0x).',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+    numerical_aperture = Quantity(
+        type=np.float64,
+        description='Objective numerical aperture.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.NumberEditQuantity),
+    )
+
+
+class SampleLocation(ArchiveSection):
+    """Sample stage position coordinates."""
+
+    m_def = Section(label='Sample Location')
+
+    x = Quantity(
+        type=np.float64,
+        unit='micrometer',
+        description='Sample stage X position (global coordinate).',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='micrometer',
+        ),
+    )
+
+    y = Quantity(
+        type=np.float64,
+        unit='micrometer',
+        description='Sample stage Y position (global coordinate).',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='micrometer',
+        ),
+    )
+
+    z = Quantity(
+        type=np.float64,
+        unit='micrometer',
+        description='Sample stage Z position (global coordinate).',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='micrometer',
+        ),
+    )
+
+
+class SpectrumData(ArchiveSection):
+    """Raman spectrum data arrays."""
+
+    m_def = Section(label='Spectrum Data')
+
+    x_values = Quantity(
+        type=np.float64,
+        shape=['*'],
+        unit='1/cm',
+        description='Raman shift axis (X-axis).',
+        a_eln=ELNAnnotation(defaultDisplayUnit='1/cm'),
+    )
+
+    y_values = Quantity(
+        type=np.float64,
+        shape=['*'],
+        unit='count',
+        description='Intensity values (Y-axis), in CCD counts.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='count'),
+    )
+
+    y_unit = Quantity(
+        type=str,
+        description='Unit of intensity values (typically "CCD cts" or "counts").',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+
+class INLRaman(INLCharacterization, PlotSection):
+    """Raman spectroscopy measurement following INL characterization standards."""
+
+    m_def = Section(
+        label='INL Raman Spectroscopy',
+        categories=[INLCharacterizationCategory],
+    )
+
+    # Metadata subsections
+    excitation = SubSection(section_def=ExcitationBeam)
+    spectrometer = SubSection(section_def=SpectrometerSettings)
+    detector = SubSection(section_def=DetectorSettings)
+    objective = SubSection(section_def=ObjectiveInfo)
+    sample_location = SubSection(section_def=SampleLocation)
+    spectrum = SubSection(section_def=SpectrumData)
+
+    # Configuration info
+    configuration = Quantity(
+        type=str,
+        description='Measurement configuration (e.g., "Raman CCD1_532").',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    duration = Quantity(
+        type=np.float64,
+        unit='second',
+        description='Total measurement duration.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='second',
+        ),
+    )
+
+    system_id = Quantity(
+        type=str,
+        description='Instrument system ID.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    power = Quantity(
+        type=np.float64,
+        unit='watt',
+        description='Laser excitation power.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='milliwatt',
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        import plotly.graph_objects as go
+
+        super().normalize(archive, logger)
+
+        # Populate excitation power from manual entry
+        if self.power is not None and self.power > 0:
+            if not self.excitation:
+                self.excitation = ExcitationBeam()
+            self.excitation.power = self.power
+
+        self.figures = []
+
+        # Generate Raman spectrum plot
+        if self.spectrum and self.spectrum.x_values is not None and self.spectrum.y_values is not None:
+            x_values = np.array(self.spectrum.x_values)
+            y_values = np.array(self.spectrum.y_values)
+
+            if len(x_values) > 0 and len(y_values) > 0 and len(x_values) == len(y_values):
+                fig = go.Figure()
+                fig.add_trace(
+                    go.Scatter(
+                        x=x_values,
+                        y=y_values,
+                        mode='lines',
+                        name='Raman Spectrum',
+                        line=dict(color='#1f77b4', width=2),
+                        hovertemplate='Raman Shift: %{x:.2f} cm⁻¹<br>Intensity: %{y:.0f} cts<extra></extra>',
+                    )
+                )
+                fig.update_layout(
+                    template='plotly_white',
+                    height=400,
+                    width=716,
+                    xaxis_title='Raman Shift (cm⁻¹)',
+                    yaxis_title='Intensity (CCD cts)',
+                    title='Raman Spectrum',
+                    hovermode='x unified',
+                )
+                self.figures.append(
+                    PlotlyFigure(label='Raman Spectrum', figure=fig.to_plotly_json())
+                )
+
+
+class INLPhotoluminescence(INLCharacterization, PlotSection):
+    """Photoluminescence (PL) measurement following INL characterization standards.
+    
+    Measured with the same Witec Alpha300 system as Raman, but with x-axis in eV
+    instead of Raman shift (cm⁻¹). Detects emitted photons after optical excitation.
+    """
+
+    m_def = Section(
+        label='INL Photoluminescence',
+        categories=[INLCharacterizationCategory],
+    )
+
+    # Metadata subsections (same as Raman)
+    excitation = SubSection(section_def=ExcitationBeam)
+    spectrometer = SubSection(section_def=SpectrometerSettings)
+    detector = SubSection(section_def=DetectorSettings)
+    objective = SubSection(section_def=ObjectiveInfo)
+    sample_location = SubSection(section_def=SampleLocation)
+    spectrum = SubSection(section_def=SpectrumData)
+
+    # Configuration info
+    configuration = Quantity(
+        type=str,
+        description='Measurement configuration (e.g., "Raman CCD1_532").',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    duration = Quantity(
+        type=np.float64,
+        unit='second',
+        description='Total measurement duration.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='second',
+        ),
+    )
+
+    system_id = Quantity(
+        type=str,
+        description='Instrument system ID.',
+        a_eln=ELNAnnotation(component=ELNComponentEnum.StringEditQuantity),
+    )
+
+    power = Quantity(
+        type=np.float64,
+        unit='watt',
+        description='Laser excitation power.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='milliwatt',
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        import plotly.graph_objects as go
+
+        super().normalize(archive, logger)
+
+        # Populate excitation power from manual entry
+        if self.power is not None and self.power > 0:
+            if not self.excitation:
+                self.excitation = ExcitationBeam()
+            self.excitation.power = self.power
+
+        self.figures = []
+
+        # Generate PL spectrum plot
+        if self.spectrum and self.spectrum.x_values is not None and self.spectrum.y_values is not None:
+            x_values = np.array(self.spectrum.x_values)
+            y_values = np.array(self.spectrum.y_values)
+
+            if len(x_values) > 0 and len(y_values) > 0 and len(x_values) == len(y_values):
+                fig = go.Figure()
+                fig.add_trace(
+                    go.Scatter(
+                        x=x_values,
+                        y=y_values,
+                        mode='lines',
+                        name='PL Spectrum',
+                        line=dict(color='#ff7f0e', width=2),
+                        hovertemplate='Photon Energy: %{x:.3f} eV<br>Intensity: %{y:.0f} cts<extra></extra>',
+                    )
+                )
+                fig.update_layout(
+                    template='plotly_white',
+                    height=400,
+                    width=716,
+                    xaxis_title='Photon Energy (eV)',
+                    yaxis_title='Intensity (CCD cts)',
+                    title='Photoluminescence Spectrum',
+                    hovermode='x unified',
+                )
+                self.figures.append(
+                    PlotlyFigure(label='PL Spectrum', figure=fig.to_plotly_json())
+                )
 
 
 m_package.__init_metainfo__()
