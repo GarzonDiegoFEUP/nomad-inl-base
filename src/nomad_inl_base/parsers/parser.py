@@ -661,7 +661,7 @@ class FourPointProbeParser(MatchingParser):
         archive.metadata.entry_name = data_file
 
 
-def _extract_sample_name(filename: str) -> 'str | None':
+def _extract_sample_name(filename: str) -> 'str | None':  # noqa: PLR0911
     """
     Extract the sample name from a characterization filename by removing instrument-specific identifiers.
 
@@ -685,66 +685,84 @@ def _extract_sample_name(filename: str) -> 'str | None':
     
     Returns None if extraction fails.
     """
-    basename = filename.rsplit('/', maxsplit=1)[-1]
+    from pathlib import Path
+    
+    if not filename or not filename.strip():
+        return None
 
-    # Pattern 1: Battery chambers (PC03/PC04) - most specific, try first
-    match = re.search(
-        r'All Signals_(?P<sample>.+?)\s+\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}',
-        basename,
+    name = Path(filename).name
+
+    # Remove NOMAD archive suffixes: sample.pl.archive -> sample
+    if name.lower().endswith('.archive'):
+        name = name[:-len('.archive')]
+        name = name.rsplit('.', 1)[0]
+
+    stem = Path(name).stem
+
+    if not stem:
+        return None
+
+    # PC03/PC04 naming: PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv
+    match = re.match(
+        r'^PC(?:03|04)_All Signals_(.*?)'
+        r'\s+\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}$',
+        stem,
+        re.IGNORECASE,
     )
     if match:
-        sample_name = match.group('sample').strip()
-        return sample_name or None
+        sample = match.group(1).strip()
+        return sample or None
 
-    # Pattern 2: SEM TIFF format (YYMMDD - [Sample Name].tif, no _NNN suffix)
-    # SEM files with _NNN suffix are image stacks, not individual samples
-    match = re.match(r'\d{6}\s*-\s*(.+?)\.tif$', basename, re.IGNORECASE)
+    # Old-style chamber files do not contain a sample name.
+    if re.fullmatch(r'PC(?:03|04)_sample', stem, re.IGNORECASE):
+        return None
+
+    if re.match(r'^PC(?:03|04)_All Signals_', stem, re.IGNORECASE):
+        remainder = re.sub(
+            r'^PC(?:03|04)_All Signals_',
+            '',
+            stem,
+            flags=re.IGNORECASE,
+        )
+        if re.fullmatch(
+            r'\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}',
+            remainder,
+        ):
+            return None
+
+    # SEM: YYMMDD - sample.tif
+    match = re.match(r'^\d{6}\s*-\s*(.+)$', stem)
     if match:
-        candidate = match.group(1).strip()
-        # Only return if there's no underscore-number suffix (which indicates image stack)
-        if not re.search(r'_\d+$', candidate):
-            return candidate or None
+        return match.group(1).strip() or None
 
-    # Pattern 3: Solar Cell IV/EQE formats (remove "Results Table" or "IV Graph")
-    for marker in ['Results Table', 'IV Graph']:
-        match = re.search(rf'(.+?)\s+{marker}', basename, re.IGNORECASE)
-        if match:
-            return match.group(1).strip() or None
+    # Witec files
+    stem = re.sub(r'_Spec\.Data(?:\s+\d+)?$', '', stem, flags=re.IGNORECASE)
 
-    # Pattern 4: Suffix removal for common characterization file types
-    # Order matters: longest suffixes first to avoid partial matches
-    # Note: Using word boundaries and case-insensitive matching
-    suffixes_patterns = [
-        r'\s+(?:mVs|ED|4pp|gdoes|eqe|EIS|CV|Chrono)(?:\.xlsx?|\.txt|\.xls)?$',  # Unified pattern with optional extension
-        r'\.mpr$',  # Eclab (MPR)
-        r'\.emsa$', r'\.ems$', r'\.msa$',  # EDX/EDS
-        r'\.001$', r'\.002$',  # Bruker AFM (numbered)
-        r'_Spec\.Data$',  # Witec spectroscopy
-        r'profile\.pdf$',  # KLA-Tencor profiler
-    ]
+    # Instrument suffixes
+    suffixes = (
+        r'\s+(?:4pp|mVs|ED|profile|eqe|gdoes|IV Graph|Results Table|EIS)$'
+    )
+    stem = re.sub(suffixes, '', stem, flags=re.IGNORECASE)
 
-    for pattern in suffixes_patterns:
-        cleaned = re.sub(pattern, '', basename, flags=re.IGNORECASE).strip()
-        if cleaned and cleaned != basename:
-            return cleaned or None
+    # Bruker AFM numbered files
+    stem = re.sub(r'\.\d{3}$', '', stem)
 
-    # Pattern 5: Generic fallback - remove file extension
-    name_only = re.sub(r'\.[^.]+$', '', basename).strip()
-    if name_only and name_only != basename:
-        return name_only
+    # Known extension-style formats
+    if not stem.strip():
+        return None
 
-    return None
+    return stem.strip()
 
 
 def _find_matching_thin_film_stacks(
     sample_name: 'str | None',
     archive: 'EntryArchive',
-    confidence_threshold: float = 0.85,
+    threshold: float = 0.85,
 ) -> 'list[tuple]':
     """
     Find INLThinFilmStack entries matching the given sample name using fuzzy matching.
 
-    Uses Python's difflib.SequenceMatcher for case-insensitive string similarity.
+    Uses rapidfuzz for case-insensitive string similarity.
     Returns a list of (confidence_score, INLThinFilmStack_entry) tuples sorted by:
     1. Confidence score (highest first)
     2. Archive creation/modification date (most recent first)
@@ -752,86 +770,35 @@ def _find_matching_thin_film_stacks(
     Args:
         sample_name: Extracted sample name from characterization filename
         archive: NOMAD EntryArchive context to query for stacks
-        confidence_threshold: Minimum similarity score (0.0-1.0) to include match
+        threshold: Minimum similarity score (0.0-1.0) to include match
 
     Returns:
         List of (confidence, entry) tuples for all matching stacks above threshold,
         or empty list if sample_name is None or no matches found.
     """
-    from difflib import SequenceMatcher
+    from rapidfuzz.fuzz import ratio
+
     from nomad_inl_base.schema_packages.entities import INLThinFilmStack
 
-    if sample_name is None:
+    if not sample_name or not getattr(archive, 'data', None):
         return []
 
+    target = sample_name.strip().casefold()
     matches = []
-    sample_name_lower = sample_name.lower()
 
-    # Collect all entries from the archive
-    entries = []
+    for entry in archive.data.values():
+        if not isinstance(entry, INLThinFilmStack):
+            continue
 
-    try:
-        # Strategy 1: Access through archive.data (direct archive access)
-        if hasattr(archive, 'data') and archive.data is not None:
-            if isinstance(archive.data, dict):
-                # archive.data is a dictionary of entries
-                entries.extend(archive.data.values())
-            elif hasattr(archive.data, '__iter__'):
-                # archive.data is iterable
-                try:
-                    entries.extend(list(archive.data))
-                except Exception:
-                    pass
-    except Exception:
-        pass
+        name = getattr(entry, 'name', None)
+        if not name:
+            continue
 
-    # Strategy 2: Access through m_context for cross-entry queries
-    # This is used during normalization to find sibling entries
-    try:
-        if hasattr(archive, 'm_context') and archive.m_context is not None:
-            # Try to get the root directory which contains all entries in upload
-            if hasattr(archive.m_context, 'root_dir'):
-                root = archive.m_context.root_dir
-                # The root has an archive that contains all entries
-                if hasattr(root, 'data') and root.data is not None:
-                    if isinstance(root.data, dict):
-                        entries.extend(root.data.values())
-                    elif hasattr(root.data, '__iter__'):
-                        try:
-                            entries.extend(list(root.data))
-                        except Exception:
-                            pass
-    except Exception:
-        pass
+        confidence = ratio(target, name.strip().casefold()) / 100.0
+        if confidence >= threshold:
+            matches.append((confidence, entry))
 
-    # Filter and match against INLThinFilmStack entries
-    for entry in entries:
-        if isinstance(entry, INLThinFilmStack):
-            stack_name = getattr(entry, 'name', None) or getattr(entry, 'lab_id', None)
-            if stack_name:
-                stack_name_lower = str(stack_name).lower()
-                # Calculate similarity using SequenceMatcher (case-insensitive)
-                ratio = SequenceMatcher(None, sample_name_lower, stack_name_lower).ratio()
-
-                if ratio >= confidence_threshold:
-                    matches.append((ratio, entry))
-
-    # Sort by confidence (descending), then by archive metadata date (most recent first)
-    def sort_key(item):
-        confidence, entry = item
-        # Try to extract archive metadata date for secondary sort
-        entry_date = 0.0
-        try:
-            if hasattr(entry, 'm_context') and hasattr(entry.m_context, 'root_dir'):
-                root = entry.m_context.root_dir
-                if hasattr(root, 'metadata') and hasattr(root.metadata, 'creation_time'):
-                    entry_date = float(root.metadata.creation_time.timestamp())
-        except Exception:
-            pass
-        # Return tuple: (-confidence for desc order, -date for desc order)
-        return (-confidence, -entry_date)
-
-    matches.sort(key=sort_key)
+    matches.sort(key=lambda item: item[0], reverse=True)
     return matches
 
 
@@ -2988,8 +2955,8 @@ class WitecOpticalSpectrumParser(MatchingParser):
     """
 
     def parse(self, mainfile: str, archive: EntryArchive, logger) -> None:
-        import os
         import glob
+        import os
 
         filetype = 'yaml'
         base_name = mainfile.rsplit('/', maxsplit=1)[-1]
@@ -3231,8 +3198,8 @@ class WitecOpticalSpectrumParser(MatchingParser):
         x_values = []
         y_values = []
 
-        for line in lines:
-            line = line.strip()
+        for raw_line in lines:
+            line = raw_line.strip()
             if line == '[Header]':
                 in_header = True
                 in_data = False
@@ -3326,14 +3293,14 @@ class WitecOpticalSpectrumParser(MatchingParser):
                     result['user_name'] = val
                 elif key == 'duration':
                     result['duration'] = val
-                elif key == 'excitation_wavelength_[nm]' or key == 'excitation_wavelength':
+                elif key in {'excitation_wavelength_[nm]', 'excitation_wavelength'}:
                     try:
                         result['excitation_wavelength'] = float(val)
                     except ValueError:
                         pass
                 elif 'grating' in key:
                     result['grating'] = val
-                elif key == 'center_wavelength_[nm]' or key == 'center_wavelength':
+                elif key in {'center_wavelength_[nm]', 'center_wavelength'}:
                     try:
                         result['center_wavelength'] = float(val)
                     except ValueError:
@@ -3360,7 +3327,7 @@ class WitecOpticalSpectrumParser(MatchingParser):
                         result['pixels_height'] = int(val)
                     except ValueError:
                         pass
-                elif key == 'temperature_[°c]' or key == 'temperature_[c]':
+                elif key in {'temperature_[°c]', 'temperature_[c]'}:
                     try:
                         result['temperature'] = float(val)
                     except ValueError:

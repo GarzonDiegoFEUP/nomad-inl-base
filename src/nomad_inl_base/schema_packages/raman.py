@@ -16,11 +16,11 @@ import plotly.graph_objects as go
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
-from nomad.metainfo import (
-    Category,
-    Quantity,
-    Section,
-    SubSection,
+from nomad.metainfo import Quantity, Section, SubSection
+
+from nomad_inl_base.schema_packages.characterization import (
+    INLCharacterization,
+    INLCharacterizationCategory,
 )
 
 

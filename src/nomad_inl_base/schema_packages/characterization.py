@@ -4,6 +4,8 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
+import re
+
 import numpy as np
 import plotly.express as px
 from nomad.datamodel.data import ArchiveSection, EntryData, EntryDataCategory
@@ -26,6 +28,41 @@ from plotly.subplots import make_subplots
 from nomad_inl_base.schema_packages.entities import INLSampleReference, INLThinFilmStack
 
 m_package = SchemaPackage()
+
+
+def _candidate_sample_names(sample_name: str) -> list[str]:
+    """Generate fallback sample name candidates for fuzzy matching.
+    
+    Progressive cleaning strategies:
+    1. Original sample name
+    2. Remove archive extensions (.pl.archive, .raman.archive, etc.)
+    3. Remove trailing acquisition sequence numbers (_001, _002, etc.)
+    
+    Args:
+        sample_name: The initial extracted sample name
+        
+    Returns:
+        List of candidate sample names to try for matching, in order of preference.
+    """
+    candidates = [sample_name]
+
+    # Remove archive/instrument extension suffixes.
+    cleaned = re.sub(
+        r'\.(?:pl|raman|xrd|uv)\.archive$',
+        '',
+        sample_name,
+        flags=re.IGNORECASE,
+    )
+    if cleaned != sample_name:
+        candidates.append(cleaned)
+
+    # Remove trailing acquisition sequence numbers:
+    # Sample_A_002 -> Sample_A
+    cleaned_seq = re.sub(r'_\d{3}$', '', cleaned)
+    if cleaned_seq != cleaned:
+        candidates.append(cleaned_seq)
+
+    return candidates
 
 
 def _coerce_string_floats(dct: dict, handle_comma_decimals: bool = True) -> dict:
@@ -106,9 +143,10 @@ class INLCharacterization(Measurement, EntryData):
         
         If the samples field is empty (no manual linking), this method:
         1. Extracts sample name from the characterization filename
-        2. Searches for matching INLThinFilmStack entries in the archive
-        3. Uses fuzzy matching with a 0.85 confidence threshold
-        4. Links to the best match if found (or most recent if multiple matches)
+        2. Generates fallback candidates by progressively cleaning the name
+        3. Searches for matching INLThinFilmStack entries in the archive
+        4. Uses fuzzy matching with a 0.85 confidence threshold
+        5. Links to the best match if found
         
         This allows automatic sample inference from filename conventions without
         requiring manual linking by the user.
@@ -116,19 +154,16 @@ class INLCharacterization(Measurement, EntryData):
         super().normalize(archive, logger)
 
         # Only auto-link if no manual linking was done
-        if self.samples or len(self.samples or []) > 0:
+        if self.samples:
             return
 
-        # Import here to avoid circular imports
-        from nomad_inl_base.parsers.parser import (
-            _extract_sample_name,
-            _find_matching_thin_film_stacks,
-        )
-        from nomad_inl_base.schema_packages.entities import (
-            INLSampleReference,
-        )
-
         try:
+            # Import here to avoid circular imports
+            from nomad_inl_base.parsers.parser import (
+                _extract_sample_name,
+                _find_matching_thin_film_stacks,
+            )
+
             # Get the mainfile path from archive metadata
             mainfile = None
             if hasattr(archive, 'metadata') and hasattr(archive.metadata, 'mainfile'):
@@ -142,35 +177,34 @@ class INLCharacterization(Measurement, EntryData):
             if not sample_name:
                 return
 
-            # Search for matching thin film stacks in the archive
-            # Note: We need to search within the current upload context
-            # This requires access to sibling entries in the archive
-            matches = _find_matching_thin_film_stacks(sample_name, archive)
+            # Try to find matches with each candidate in order
+            matches = []
+            matched_name = sample_name
+
+            for candidate in _candidate_sample_names(sample_name):
+                matches = _find_matching_thin_film_stacks(
+                    candidate,
+                    archive,
+                    threshold=0.85,
+                )
+                if matches:
+                    matched_name = candidate
+                    break
 
             if not matches:
                 logger.info(
-                    f'Auto-linking: Sample name "{sample_name}" was inferred from filename '
-                    f'but no matching INL Thin Film Stack was found in this upload. '
-                    f'Manual linking may be needed.'
+                    f'Auto-linking: no thin-film stack matched "{sample_name}".'
                 )
                 return
 
-            # Use the best match (highest confidence)
-            best_confidence, best_stack = matches[0]
-
-            # Create and append sample reference
-            sample_ref = INLSampleReference()
-            sample_ref.reference = best_stack
-
-            # Initialize samples list if needed
-            if not hasattr(self, 'samples') or self.samples is None:
-                self.samples = []
-
-            self.samples.append(sample_ref)
+            confidence, stack = matches[0]
+            reference = INLSampleReference()
+            reference.reference = stack
+            self.samples.append(reference)
 
             logger.info(
-                f'Auto-linked characterization to sample: {best_stack.name} '
-                f'(confidence: {best_confidence:.2%})'
+                f'Auto-linked characterization to sample: {stack.name} '
+                f'(inferred from "{matched_name}", confidence: {confidence:.2%})'
             )
         except Exception as exc:
             logger.warning(

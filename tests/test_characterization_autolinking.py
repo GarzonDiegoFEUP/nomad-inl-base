@@ -8,8 +8,9 @@ Tests cover:
 4. Edge cases and error handling
 """
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 from nomad_inl_base.parsers.parser import (
     _extract_sample_name,
@@ -17,10 +18,9 @@ from nomad_inl_base.parsers.parser import (
 )
 from nomad_inl_base.schema_packages.characterization import INLCharacterization
 from nomad_inl_base.schema_packages.entities import (
-    INLThinFilmStack,
     INLSampleReference,
+    INLThinFilmStack,
 )
-
 
 # ============================================================================
 # Phase 1: Test _extract_sample_name() - Multiple characterization types

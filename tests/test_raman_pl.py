@@ -10,19 +10,18 @@ Tests cover:
 
 import numpy as np
 import pytest
-
 from nomad.datamodel.datamodel import EntryArchive
+
 from nomad_inl_base.schema_packages.characterization import (
-    INLRaman,
-    INLPhotoluminescence,
-    ExcitationBeam,
-    SpectrometerSettings,
     DetectorSettings,
+    ExcitationBeam,
+    INLPhotoluminescence,
+    INLRaman,
     ObjectiveInfo,
     SampleLocation,
+    SpectrometerSettings,
     SpectrumData,
 )
-
 
 # ============================================================================
 # Test Fixtures - Raman
