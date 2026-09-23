@@ -701,7 +701,11 @@ def _extract_sample_name(filename: str) -> 'str | None':
     if match:
         sample_name = match.group('sample').strip()
         return sample_name or None
-    if re.search(r'All Signals_\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}', basename):
+    if re.fullmatch(
+        r'PC0[34]_All Signals_\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}\.[^.]+',
+        basename,
+        re.IGNORECASE,
+    ):
         return None
 
     # Pattern 2: SEM TIFF format (YYMMDD - [Sample Name].tif)
