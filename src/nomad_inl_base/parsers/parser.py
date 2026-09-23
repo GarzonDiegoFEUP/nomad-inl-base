@@ -661,122 +661,104 @@ class FourPointProbeParser(MatchingParser):
         archive.metadata.entry_name = data_file
 
 
-def _extract_sample_name(filename: str) -> 'str | None':  # noqa: PLR0911
-    """
-    Extract the sample name from a characterization filename by removing instrument-specific identifiers.
-
-    Supports multiple naming conventions from INL characterization instruments:
-    
-    **Battery chambers (PC03/PC04):**
-        PC03_All Signals_[Sample Name] Date.csv
-        PC04_All Signals_[Sample Name] Date.csv
-        e.g. PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv → LNbO_004
-    
-    **Generic format (suffix removal):**
-        [Sample Name].[suffix]  where suffix identifies characterization type
-        e.g. sample_name 4pp.xlsx → sample_name
-             sample_name mVs.xlsx → sample_name
-             sample_name ED.xlsx → sample_name
-    
-    **Special formats:**
-        SEM TIFF: YYMMDD - [Sample Name].tif → [Sample Name]
-        Solar Cell: [Sample Name] Results Table.txt → [Sample Name]
-        Solar Cell: [Sample Name] IV Graph.txt → [Sample Name]
-    
-    Returns None if extraction fails.
-    """
+def _extract_sample_name(filename: str) -> str | None:  # noqa: PLR0911
+    """Extract sample name from characterization filenames."""
     from pathlib import Path
-    
+
     if not filename or not filename.strip():
         return None
 
-    name = Path(filename).name
-
-    # Remove NOMAD archive suffixes: sample.pl.archive -> sample
-    if name.lower().endswith('.archive'):
-        name = name[:-len('.archive')]
-        name = name.rsplit('.', 1)[0]
-
-    stem = Path(name).stem
-
-    if not stem:
+    basename = Path(filename).name
+    if basename.startswith('.'):
         return None
 
-    # PC03/PC04 naming: PC04_All Signals_LNbO_004 2026.07.16-09.32.33.csv
+    # An extension is required for a valid characterization filename.
+    if '.' not in basename:
+        return None
+
+    # NOMAD archive names:
+    # sample.pl.archive -> sample
+    # sample.raman.archive -> sample
+    if basename.lower().endswith('.archive'):
+        basename = basename[: -len('.archive')]
+        basename = basename.rsplit('.', 1)[0]
+
+    # PC03/PC04 chamber format.
     match = re.match(
         r'^PC(?:03|04)_All Signals_(.*?)'
-        r'\s+\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}$',
-        stem,
+        r'\s+\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}'
+        r'\.(?:csv)?$',
+        basename,
         re.IGNORECASE,
     )
     if match:
-        sample = match.group(1).strip()
-        return sample or None
+        return match.group(1).strip() or None
 
-    # Old-style chamber files do not contain a sample name.
-    if re.fullmatch(r'PC(?:03|04)_sample', stem, re.IGNORECASE):
+    if re.fullmatch(r'PC(?:03|04)_sample\.[^.]+', basename, re.IGNORECASE):
         return None
 
-    if re.match(r'^PC(?:03|04)_All Signals_', stem, re.IGNORECASE):
-        remainder = re.sub(
-            r'^PC(?:03|04)_All Signals_',
-            '',
-            stem,
-            flags=re.IGNORECASE,
-        )
-        if re.fullmatch(
-            r'\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}',
-            remainder,
-        ):
-            return None
-
     # SEM: YYMMDD - sample.tif
-    match = re.match(r'^\d{6}\s*-\s*(.+)$', stem)
+    match = re.match(
+        r'^\d{6}\s*-\s*(.+)\.(?:tif|tiff)$',
+        basename,
+        re.IGNORECASE,
+    )
     if match:
         return match.group(1).strip() or None
 
-    # Witec files
-    stem = re.sub(r'_Spec\.Data(?:\s+\d+)?$', '', stem, flags=re.IGNORECASE)
-
-    # Instrument suffixes
-    suffixes = (
-        r'\s+(?:4pp|mVs|ED|profile|eqe|gdoes|IV Graph|Results Table|EIS)$'
+    # Witec: preserve the complete compound suffix while matching.
+    witec = re.sub(
+        r'_Spec\.Data(?:\s+\d+)?(?:\.[^.]+)?$',
+        '',
+        basename,
+        flags=re.IGNORECASE,
     )
-    stem = re.sub(suffixes, '', stem, flags=re.IGNORECASE)
+    if witec != basename:
+        return witec.strip() or None
 
-    # Bruker AFM numbered files
-    stem = re.sub(r'\.\d{3}$', '', stem)
-
-    # Known extension-style formats
-    if not stem.strip():
+    stem = Path(basename).stem
+    if not stem or stem.startswith('.'):
         return None
 
-    return stem.strip()
+    # Solar cell formats.
+    for marker in ('Results Table', 'IV Graph'):
+        match = re.search(
+            rf'^(.+?)\s+{re.escape(marker)}(?:\.[^.]+)?$',
+            basename,
+            re.IGNORECASE,
+        )
+        if match:
+            return match.group(1).strip() or None
+
+    # Remove characterization suffixes. EIS must be retained by design.
+    stem = re.sub(
+        r'\s+(?:4pp|mVs|ED|profile|eqe|gdoes|CV|Chrono)$',
+        '',
+        stem,
+        flags=re.IGNORECASE,
+    )
+
+    # Eclab names retain "EIS":
+    # LNbO_004 EIS.mpr -> LNbO_004 EIS
+    if stem.lower().endswith('.mpr'):
+        return stem[:-4].strip() or None
+
+    # EDX extensions.
+    stem = re.sub(r'\.(?:msa|emsa|ems)$', '', stem, flags=re.IGNORECASE)
+
+    # Bruker AFM numbered files.
+    stem = re.sub(r'\.\d{3}$', '', stem)
+
+    return stem.strip() or None
 
 
 def _find_matching_thin_film_stacks(
-    sample_name: 'str | None',
-    archive: 'EntryArchive',
+    sample_name: str | None,
+    archive,
     threshold: float = 0.85,
-) -> 'list[tuple]':
-    """
-    Find INLThinFilmStack entries matching the given sample name using fuzzy matching.
-
-    Uses rapidfuzz for case-insensitive string similarity.
-    Returns a list of (confidence_score, INLThinFilmStack_entry) tuples sorted by:
-    1. Confidence score (highest first)
-    2. Archive creation/modification date (most recent first)
-
-    Args:
-        sample_name: Extracted sample name from characterization filename
-        archive: NOMAD EntryArchive context to query for stacks
-        threshold: Minimum similarity score (0.0-1.0) to include match
-
-    Returns:
-        List of (confidence, entry) tuples for all matching stacks above threshold,
-        or empty list if sample_name is None or no matches found.
-    """
-    from rapidfuzz.fuzz import ratio
+) -> list[tuple[float, object]]:
+    """Find INLThinFilmStack entries matching the sample name."""
+    from difflib import SequenceMatcher
 
     from nomad_inl_base.schema_packages.entities import INLThinFilmStack
 
@@ -786,7 +768,13 @@ def _find_matching_thin_film_stacks(
     target = sample_name.strip().casefold()
     matches = []
 
-    for entry in archive.data.values():
+    entries = (
+        archive.data.values()
+        if isinstance(archive.data, dict)
+        else archive.data
+    )
+
+    for entry in entries:
         if not isinstance(entry, INLThinFilmStack):
             continue
 
@@ -794,9 +782,16 @@ def _find_matching_thin_film_stacks(
         if not name:
             continue
 
-        confidence = ratio(target, name.strip().casefold()) / 100.0
+        confidence = SequenceMatcher(
+            None,
+            target,
+            str(name).strip().casefold(),
+        ).ratio()
+
         if confidence >= threshold:
             matches.append((confidence, entry))
+
+    return sorted(matches, key=lambda item: item[0], reverse=True)
 
     matches.sort(key=lambda item: item[0], reverse=True)
     return matches

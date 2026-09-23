@@ -30,6 +30,24 @@ from nomad_inl_base.schema_packages.entities import INLSampleReference, INLThinF
 m_package = SchemaPackage()
 
 
+def _extract_sample_name(filename):
+    """Lazy wrapper for patchable import of parser function."""
+    from nomad_inl_base.parsers.parser import (
+        _extract_sample_name as parser_extract_sample_name,
+    )
+
+    return parser_extract_sample_name(filename)
+
+
+def _find_matching_thin_film_stacks(sample_name, archive, threshold=0.85):
+    """Lazy wrapper for patchable import of parser function."""
+    from nomad_inl_base.parsers.parser import (
+        _find_matching_thin_film_stacks as parser_find_matching,
+    )
+
+    return parser_find_matching(sample_name, archive, threshold=threshold)
+
+
 def _candidate_sample_names(sample_name: str) -> list[str]:
     """Generate fallback sample name candidates for fuzzy matching.
     
@@ -2609,6 +2627,36 @@ class SpectrumData(ArchiveSection):
     )
 
 
+class PLSpectrometerSettings(SpectrometerSettings):
+    """Spectrometer settings for photoluminescence with eV units."""
+
+    m_def = Section(label='PL Spectrometer Settings')
+
+    spectral_center = Quantity(
+        type=np.float64,
+        unit='eV',
+        description='Photoluminescence spectral center.',
+        a_eln=ELNAnnotation(
+            component=ELNComponentEnum.NumberEditQuantity,
+            defaultDisplayUnit='eV',
+        ),
+    )
+
+
+class PLSpectrumData(SpectrumData):
+    """Photoluminescence spectrum data with energy axis in eV."""
+
+    m_def = Section(label='PL Spectrum Data')
+
+    x_values = Quantity(
+        type=np.float64,
+        shape=['*'],
+        unit='eV',
+        description='Photon energy axis.',
+        a_eln=ELNAnnotation(defaultDisplayUnit='eV'),
+    )
+
+
 class INLRaman(INLCharacterization, PlotSection):
     """Raman spectroscopy measurement following INL characterization standards."""
 
@@ -2660,6 +2708,10 @@ class INLRaman(INLCharacterization, PlotSection):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         import plotly.graph_objects as go
+        from nomad.datamodel.datamodel import EntryMetadata
+
+        if archive is not None and archive.metadata is None:
+            archive.metadata = EntryMetadata()
 
         super().normalize(archive, logger)
 
@@ -2672,34 +2724,45 @@ class INLRaman(INLCharacterization, PlotSection):
         self.figures = []
 
         # Generate Raman spectrum plot
-        if self.spectrum and self.spectrum.x_values is not None and self.spectrum.y_values is not None:
-            x_values = np.array(self.spectrum.x_values)
-            y_values = np.array(self.spectrum.y_values)
+        if (
+            self.spectrum is None
+            or self.spectrum.x_values is None
+            or self.spectrum.y_values is None
+        ):
+            return
 
-            if len(x_values) > 0 and len(y_values) > 0 and len(x_values) == len(y_values):
-                fig = go.Figure()
-                fig.add_trace(
-                    go.Scatter(
-                        x=x_values,
-                        y=y_values,
-                        mode='lines',
-                        name='Raman Spectrum',
-                        line=dict(color='#1f77b4', width=2),
-                        hovertemplate='Raman Shift: %{x:.2f} cm⁻¹<br>Intensity: %{y:.0f} cts<extra></extra>',
-                    )
-                )
-                fig.update_layout(
-                    template='plotly_white',
-                    height=400,
-                    width=716,
-                    xaxis_title='Raman Shift (cm⁻¹)',
-                    yaxis_title='Intensity (CCD cts)',
-                    title='Raman Spectrum',
-                    hovermode='x unified',
-                )
-                self.figures.append(
-                    PlotlyFigure(label='Raman Spectrum', figure=fig.to_plotly_json())
-                )
+        x_values = np.asarray(self.spectrum.x_values)
+        y_values = np.asarray(self.spectrum.y_values)
+
+        if x_values.size == 0 or y_values.size == 0:
+            return
+
+        if x_values.size != y_values.size:
+            return
+
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=x_values.tolist(),
+                y=y_values.tolist(),
+                mode='lines+markers' if x_values.size == 1 else 'lines',
+                name='Raman Spectrum',
+                line=dict(color='#1f77b4', width=2),
+                hovertemplate='Raman Shift: %{x:.2f} cm⁻¹<br>Intensity: %{y:.0f} cts<extra></extra>',
+            )
+        )
+        fig.update_layout(
+            template='plotly_white',
+            height=400,
+            width=716,
+            xaxis_title='Raman Shift (cm⁻¹)',
+            yaxis_title='Intensity (CCD cts)',
+            title='Raman Spectrum',
+            hovermode='x unified',
+        )
+        self.figures.append(
+            PlotlyFigure(label='Raman Spectrum', figure=fig.to_plotly_json())
+        )
 
 
 class INLPhotoluminescence(INLCharacterization, PlotSection):
@@ -2714,13 +2777,13 @@ class INLPhotoluminescence(INLCharacterization, PlotSection):
         categories=[INLCharacterizationCategory],
     )
 
-    # Metadata subsections (same as Raman)
+    # Metadata subsections (using PL-specific classes with eV units)
     excitation = SubSection(section_def=ExcitationBeam)
-    spectrometer = SubSection(section_def=SpectrometerSettings)
+    spectrometer = SubSection(section_def=PLSpectrometerSettings)
     detector = SubSection(section_def=DetectorSettings)
     objective = SubSection(section_def=ObjectiveInfo)
     sample_location = SubSection(section_def=SampleLocation)
-    spectrum = SubSection(section_def=SpectrumData)
+    spectrum = SubSection(section_def=PLSpectrumData)
 
     # Configuration info
     configuration = Quantity(
@@ -2757,6 +2820,10 @@ class INLPhotoluminescence(INLCharacterization, PlotSection):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         import plotly.graph_objects as go
+        from nomad.datamodel.datamodel import EntryMetadata
+
+        if archive is not None and archive.metadata is None:
+            archive.metadata = EntryMetadata()
 
         super().normalize(archive, logger)
 
@@ -2769,34 +2836,45 @@ class INLPhotoluminescence(INLCharacterization, PlotSection):
         self.figures = []
 
         # Generate PL spectrum plot
-        if self.spectrum and self.spectrum.x_values is not None and self.spectrum.y_values is not None:
-            x_values = np.array(self.spectrum.x_values)
-            y_values = np.array(self.spectrum.y_values)
+        if (
+            self.spectrum is None
+            or self.spectrum.x_values is None
+            or self.spectrum.y_values is None
+        ):
+            return
 
-            if len(x_values) > 0 and len(y_values) > 0 and len(x_values) == len(y_values):
-                fig = go.Figure()
-                fig.add_trace(
-                    go.Scatter(
-                        x=x_values,
-                        y=y_values,
-                        mode='lines',
-                        name='PL Spectrum',
-                        line=dict(color='#ff7f0e', width=2),
-                        hovertemplate='Photon Energy: %{x:.3f} eV<br>Intensity: %{y:.0f} cts<extra></extra>',
-                    )
-                )
-                fig.update_layout(
-                    template='plotly_white',
-                    height=400,
-                    width=716,
-                    xaxis_title='Photon Energy (eV)',
-                    yaxis_title='Intensity (CCD cts)',
-                    title='Photoluminescence Spectrum',
-                    hovermode='x unified',
-                )
-                self.figures.append(
-                    PlotlyFigure(label='PL Spectrum', figure=fig.to_plotly_json())
-                )
+        x_values = np.asarray(self.spectrum.x_values)
+        y_values = np.asarray(self.spectrum.y_values)
+
+        if x_values.size == 0 or y_values.size == 0:
+            return
+
+        if x_values.size != y_values.size:
+            return
+
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=x_values.tolist(),
+                y=y_values.tolist(),
+                mode='lines+markers' if x_values.size == 1 else 'lines',
+                name='PL Spectrum',
+                line=dict(color='#ff7f0e', width=2),
+                hovertemplate='Photon Energy: %{x:.3f} eV<br>Intensity: %{y:.0f} cts<extra></extra>',
+            )
+        )
+        fig.update_layout(
+            template='plotly_white',
+            height=400,
+            width=716,
+            xaxis_title='Photon Energy (eV)',
+            yaxis_title='Intensity (CCD cts)',
+            title='Photoluminescence Spectrum',
+            hovermode='x unified',
+        )
+        self.figures.append(
+            PlotlyFigure(label='PL Spectrum', figure=fig.to_plotly_json())
+        )
 
 
 m_package.__init_metainfo__()
