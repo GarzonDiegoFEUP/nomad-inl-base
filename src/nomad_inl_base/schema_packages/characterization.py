@@ -169,14 +169,12 @@ class INLCharacterization(Measurement, EntryData):
             # This requires access to sibling entries in the archive
             matches = _find_matching_thin_film_stacks(sample_name, archive)
             if not matches and isinstance(sample_name, str):
-                fallback_name = sample_name
                 for pattern in [r'\.(?:pl|raman|xrd|uv)\.archive$', r'_\d{3}$']:
-                    candidate = re.sub(pattern, '', fallback_name, flags=re.IGNORECASE).strip()
-                    if candidate and candidate != fallback_name:
-                        fallback_name = candidate
-                        matches = _find_matching_thin_film_stacks(fallback_name, archive)
+                    candidate = re.sub(pattern, '', sample_name, flags=re.IGNORECASE).strip()
+                    if candidate and candidate != sample_name:
+                        matches = _find_matching_thin_film_stacks(candidate, archive)
                         if matches:
-                            sample_name = fallback_name
+                            sample_name = candidate
                             break
 
             if not matches:
